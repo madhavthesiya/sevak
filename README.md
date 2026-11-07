@@ -2,7 +2,7 @@
 
 # ⬡ SEVAK — Service Marketplace API
 
-**A production-grade REST API built on a BCNF-normalized 23-table PostgreSQL schema**
+**A REST API built on a BCNF-normalized 23-table PostgreSQL schema**
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.4-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
@@ -27,7 +27,7 @@ This project focuses on **database engineering excellence** — featuring a rigo
 - 📊 **21 REST endpoints** with pagination, showcasing advanced SQL (Window Functions, Derived Tables, STRING_AGG)
 - ⚡ **Stored Procedures** for transactional operations (booking cancellation/confirmation)
 - 🔄 **Database Triggers** for automatic rating recalculation on review INSERT/UPDATE/DELETE
-- 📦 **Materialized Views** for O(1) pre-computed analytics (leaderboard, city revenue)
+- 📦 **Materialized Views** for pre-computed analytics (leaderboard, city revenue)
 - 📖 **Interactive Swagger UI** for live API exploration
 - 🌐 **Live deployment** at [`sevak.madhavv.me`](https://sevak.madhavv.me/swagger-ui.html)
 
@@ -101,7 +101,7 @@ AFTER (BCNF compliant):
 
 📄 Full mathematical proof: [`SEVAK_Normalization_Proof.md`](docs/SEVAK_Normalization_Proof.md)
 
-📊 Entity-Relationship Diagram: [`FINAL_SCHEMA.pdf`](docs/FINAL_SCHEMA.pdf)
+📊 Relational Schema: [`FINAL_SCHEMA.pdf`](docs/FINAL_SCHEMA.pdf)
 
 📝 Top 15 SQL Queries: [`sevak_queries.sql`](sql/sevak_queries.sql)
 
@@ -230,7 +230,7 @@ sevak-api/
 │   │   ├── GeneralController.java        # 4 browse/search endpoints
 │   │   ├── CustomerController.java       # 5 customer endpoints
 │   │   ├── ProviderController.java       # 5 provider endpoints
-│   │   ├── AdminController.java          # 3 analytics endpoints
+│   │   ├── AdminController.java          # 5 analytics endpoints
 │   │   ├── BookingActionController.java  # 2 stored procedure endpoints
 │   │   └── HealthController.java         # /health check
 │   └── repository/
@@ -262,16 +262,18 @@ This project intentionally uses **Spring JDBC** instead of JPA/Hibernate to demo
 ```sql
 SELECT
     RANK() OVER (ORDER BY sp.avg_rating DESC NULLS LAST,
-                 COUNT(b.booking_id) DESC)   AS rank,
+                 COUNT(DISTINCT b.booking_id) DESC)  AS rank,
     sp.provider_id, u.email, ci.city_name,
     sp.avg_rating,
-    COUNT(b.booking_id)                      AS jobs_completed,
-    COALESCE(SUM(b.total_amount), 0)         AS total_revenue
+    COUNT(DISTINCT b.booking_id)                     AS jobs_completed,
+    COALESCE(SUM(p.amount), 0)                       AS total_revenue
 FROM service_providers sp
 JOIN users u ON sp.user_id = u.user_id
 JOIN cities ci ON sp.city_id = ci.city_id
 LEFT JOIN bookings b ON sp.provider_id = b.provider_id
                     AND b.status = 'completed'
+LEFT JOIN payments p ON b.booking_id = p.booking_id
+                    AND p.status = 'success'
 WHERE sp.is_active = TRUE
 GROUP BY sp.provider_id, u.email, ci.city_name, sp.avg_rating
 ORDER BY rank
@@ -327,19 +329,30 @@ CALL sp_cancel_booking(booking_id, 'Customer changed mind');
     "city_name": "Ahmedabad",
     "avg_rating": 5.00,
     "jobs_completed": 1,
-    "total_revenue": 180.00
+    "total_revenue": 495.00
+  },
+  {
+    "rank": 1,
+    "provider_id": 3,
+    "email": "amit.plumber@gmail.com",
+    "city_name": "Mumbai",
+    "avg_rating": 5.00,
+    "jobs_completed": 1,
+    "total_revenue": 1400.00
   },
   {
     "rank": 3,
-    "provider_id": 5,
-    "email": "karan.carpenter@gmail.com",
-    "city_name": "Delhi",
-    "avg_rating": 4.80,
-    "jobs_completed": 0,
-    "total_revenue": 0
+    "provider_id": 2,
+    "email": "sunita.cleaner@gmail.com",
+    "city_name": "Ahmedabad",
+    "avg_rating": 4.00,
+    "jobs_completed": 2,
+    "total_revenue": 4025.00
   }
 ]
 ```
+
+> **Note on ranking:** Providers 1 and 3 tie with a 5.00 rating and 1 completed job, so both receive rank 1. Because `RANK()` is used instead of `DENSE_RANK()`, rank 2 is skipped and the next provider receives rank 3.
 ---
 
 <div align="center">

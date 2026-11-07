@@ -3,7 +3,7 @@
 ## Overview
 
 This document demonstrates how database-level optimizations in SEVAK reduce query execution
-time from expensive multi-table JOINs to pre-computed O(1) reads using **Materialized Views**.
+time from expensive multi-table JOINs to fast pre-computed reads using **Materialized Views**.
 
 ---
 
@@ -72,7 +72,7 @@ CREATE UNIQUE INDEX idx_mv_leaderboard_provider ON mv_provider_leaderboard(provi
 
 ```
 GET /api/admin/leaderboard           → Runs live 4-table JOIN (real-time, slower)
-GET /api/admin/leaderboard?fast=true → Reads from materialized view (pre-computed, O(1))
+GET /api/admin/leaderboard?fast=true → Reads from materialized view (pre-computed cached scan)
 POST /api/admin/refresh-views        → Rebuilds materialized views with latest data
 ```
 

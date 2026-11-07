@@ -290,6 +290,7 @@ CREATE TABLE complaints (
 -- ============================================================
 CREATE INDEX idx_bookings_customer   ON bookings(customer_id);
 CREATE INDEX idx_bookings_provider   ON bookings(provider_id);
+CREATE INDEX idx_bookings_location   ON bookings(location_id);
 CREATE INDEX idx_bookings_status     ON bookings(status);
 CREATE INDEX idx_bookings_date       ON bookings(scheduled_date);
 CREATE INDEX idx_services_category   ON services(category_id);
@@ -298,6 +299,8 @@ CREATE INDEX idx_locations_area      ON locations(area_id);
 CREATE INDEX idx_cust_addr_customer  ON customer_addresses(customer_id);
 CREATE INDEX idx_prov_docs_provider  ON provider_documents(provider_id);
 CREATE INDEX idx_svc_reviews_svc     ON service_reviews(service_id);
+CREATE INDEX idx_payments_booking    ON payments(booking_id);
+CREATE INDEX idx_prov_reviews_booking ON provider_reviews(booking_id);
 CREATE INDEX idx_complaints_status   ON complaints(status);
 
 -- ============================================================

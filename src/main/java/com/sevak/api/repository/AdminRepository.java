@@ -79,7 +79,7 @@ public class AdminRepository {
                 """);
     }
 
-    // ── Leaderboard from Materialized View (O(1) read) ────
+    // ── Leaderboard from Materialized View (Pre-computed read) ───
     public List<Map<String, Object>> getLeaderboardFast() {
         return jdbc.queryForList("SELECT * FROM mv_provider_leaderboard ORDER BY rank");
     }

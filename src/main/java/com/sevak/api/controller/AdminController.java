@@ -30,7 +30,7 @@ public class AdminController {
 
     @GetMapping("/leaderboard")
     @Operation(summary = "Provider leaderboard",
-            description = "Ranks providers by rating and completed jobs. Use ?fast=true to read from a pre-computed Materialized View for O(1) performance.")
+            description = "Ranks providers by rating and completed jobs. Use ?fast=true to read from a pre-computed Materialized View.")
     public ResponseEntity<List<Map<String, Object>>> getLeaderboard(
             @Parameter(description = "Use materialized view for faster response") @RequestParam(defaultValue = "false") boolean fast) {
         return ResponseEntity.ok(fast ? repo.getLeaderboardFast() : repo.getLeaderboard());
