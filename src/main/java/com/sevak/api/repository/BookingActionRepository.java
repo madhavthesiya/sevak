@@ -2,6 +2,9 @@ package com.sevak.api.repository;
 
 import com.sevak.api.exception.ConflictException;
 import com.sevak.api.exception.NotFoundException;
+import com.sevak.api.exception.UnprocessableException;
+import org.postgresql.util.PSQLException;
+import org.postgresql.util.ServerErrorMessage;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -22,37 +25,61 @@ public class BookingActionRepository {
     public Map<String, Object> cancelBooking(int bookingId, String reason) {
         try {
             jdbc.update("CALL sp_cancel_booking(?, ?)", bookingId, reason);
-            return Map.of(
-                    "success", true,
-                    "message", "Booking " + bookingId + " cancelled successfully",
-                    "booking_id", bookingId
-            );
         } catch (DataAccessException ex) {
-            String state = ex.getMostSpecificCause() instanceof SQLException sql ? sql.getSQLState() : null;
-            switch (String.valueOf(state)) {
-                case "SV404" -> throw new NotFoundException("Booking " + bookingId + " not found");
-                case "SV409" -> throw new ConflictException("Booking " + bookingId + " cannot be cancelled in its current state");
-                default      -> throw ex;
-            }
+            throw translate(ex, bookingId);
         }
+        return Map.of(
+                "success", true,
+                "message", "Booking " + bookingId + " cancelled successfully",
+                "booking_id", bookingId
+        );
     }
 
     // ── Confirm Booking (Calls Stored Procedure) ────────────
     public Map<String, Object> confirmBooking(int bookingId) {
         try {
             jdbc.update("CALL sp_confirm_booking(?)", bookingId);
-            return Map.of(
-                    "success", true,
-                    "message", "Booking " + bookingId + " confirmed successfully",
-                    "booking_id", bookingId
-            );
         } catch (DataAccessException ex) {
-            String state = ex.getMostSpecificCause() instanceof SQLException sql ? sql.getSQLState() : null;
-            switch (String.valueOf(state)) {
-                case "SV404" -> throw new NotFoundException("Booking " + bookingId + " not found");
-                case "SV409" -> throw new ConflictException("Booking " + bookingId + " cannot be confirmed in its current state");
-                default      -> throw ex;
+            throw translate(ex, bookingId);
+        }
+        return Map.of(
+                "success", true,
+                "message", "Booking " + bookingId + " confirmed successfully",
+                "booking_id", bookingId
+        );
+    }
+
+    /**
+     * Maps the custom SQLSTATE codes raised by our stored procedures to API exceptions.
+     * SV404 = booking not found, SV409 = wrong booking status, SV422 = business rule broken.
+     * Any other database error is re-thrown and becomes a generic 500 (details only in the logs).
+     */
+    private static RuntimeException translate(DataAccessException ex, int bookingId) {
+        Throwable cause = ex.getMostSpecificCause();
+        String state = cause instanceof SQLException sql ? sql.getSQLState() : null;
+        if (state == null) {
+            return ex;
+        }
+        return switch (state) {
+            case "SV404" -> new NotFoundException("Booking " + bookingId + " not found");
+            case "SV409" -> new ConflictException(procedureMessage(cause));
+            case "SV422" -> new UnprocessableException(procedureMessage(cause));
+            default -> ex;
+        };
+    }
+
+    /**
+     * Returns only the MESSAGE text written in our RAISE EXCEPTION statement.
+     * PSQLException.getMessage() would also include "ERROR:" and the PL/pgSQL function and line
+     * ("Where: ..."), which we don't want to show to API clients.
+     */
+    private static String procedureMessage(Throwable cause) {
+        if (cause instanceof PSQLException psql) {
+            ServerErrorMessage server = psql.getServerErrorMessage();
+            if (server != null && server.getMessage() != null) {
+                return server.getMessage();
             }
         }
+        return "The booking could not be updated";
     }
 }

@@ -508,7 +508,7 @@ BEGIN
 
     -- Step 2: Validate – Cannot cancel already completed or cancelled bookings
     IF v_current_status IN ('completed', 'cancelled') THEN
-        RAISE EXCEPTION USING ERRCODE = 'SV409', MESSAGE = format('Booking %s cannot be cancelled', p_booking_id);
+        RAISE EXCEPTION USING ERRCODE = 'SV409', MESSAGE = format('Booking %s is %s and cannot be cancelled', p_booking_id, v_current_status);
     END IF;
 
     -- Step 3: Update booking status to 'cancelled'
@@ -604,7 +604,7 @@ BEGIN
     ) INTO v_offers_service;
 
     IF NOT v_offers_service THEN
-        RAISE EXCEPTION USING ERRCODE = 'SV409', MESSAGE = format('Provider %s does not offer service ID %s.', v_provider_id, v_service_id);
+        RAISE EXCEPTION USING ERRCODE = 'SV422', MESSAGE = format('Provider %s does not offer service ID %s.', v_provider_id, v_service_id);
     END IF;
 
     -- Step 4: Verify provider is available on the scheduled day and time
@@ -617,7 +617,7 @@ BEGIN
     ) INTO v_is_available;
 
     IF NOT v_is_available THEN
-        RAISE EXCEPTION USING ERRCODE = 'SV409', MESSAGE = format('Provider %s is not available on %s at %s.', v_provider_id, v_scheduled_day, v_scheduled_time);
+        RAISE EXCEPTION USING ERRCODE = 'SV422', MESSAGE = format('Provider %s is not available on %s at %s.', v_provider_id, v_scheduled_day, v_scheduled_time);
     END IF;
 
     -- Step 5: Confirm the booking
