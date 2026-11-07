@@ -4,14 +4,19 @@ import com.sevak.api.repository.GeneralRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.DayOfWeek;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/general")
+@Validated
 @Tag(name = "1. General", description = "Browse services, search providers, check availability")
 public class GeneralController {
 
@@ -24,8 +29,8 @@ public class GeneralController {
     @GetMapping("/services")
     @Operation(summary = "Browse all services", description = "List all services grouped by category with base prices. Supports pagination.")
     public ResponseEntity<List<Map<String, Object>>> getAllServices(
-            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
         return ResponseEntity.ok(repo.getAllServices(page, limit));
     }
 
@@ -35,8 +40,8 @@ public class GeneralController {
     public ResponseEntity<List<Map<String, Object>>> searchProviders(
             @Parameter(description = "Service name keyword (e.g. cleaning, fan, painting)")
             @RequestParam String q,
-            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
         return ResponseEntity.ok(repo.searchProviders(q, page, limit));
     }
 
@@ -44,7 +49,7 @@ public class GeneralController {
     @Operation(summary = "Top rated providers",
             description = "Returns the highest-rated verified providers across all cities. Defaults to top 5.")
     public ResponseEntity<List<Map<String, Object>>> getTopProviders(
-            @Parameter(description = "Number of top providers to return") @RequestParam(defaultValue = "5") int top) {
+            @Parameter(description = "Number of top providers to return") @RequestParam(defaultValue = "5") @Min(1) @Max(50) int top) {
         return ResponseEntity.ok(repo.getTopProviders(top));
     }
 
@@ -52,10 +57,11 @@ public class GeneralController {
     @Operation(summary = "Providers available on a day",
             description = "List all active providers available on the specified day with their time slots. Supports pagination.")
     public ResponseEntity<List<Map<String, Object>>> getAvailableProviders(
-            @Parameter(description = "Day of week (e.g. Monday, Tuesday)")
-            @RequestParam String day,
-            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") int limit) {
-        return ResponseEntity.ok(repo.getAvailableProviders(day, page, limit));
+            @Parameter(description = "Day of week (e.g. MONDAY, Monday)")
+            @RequestParam DayOfWeek day,
+            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
+        String dbDay = day.name().charAt(0) + day.name().substring(1).toLowerCase();
+        return ResponseEntity.ok(repo.getAvailableProviders(dbDay, page, limit));
     }
 }

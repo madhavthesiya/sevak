@@ -4,7 +4,10 @@ import com.sevak.api.repository.CustomerRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,6 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/customers")
+@Validated
 @Tag(name = "2. Customer", description = "Bookings, payments, spending summary, saved addresses")
 public class CustomerController {
 
@@ -25,8 +29,8 @@ public class CustomerController {
     @Operation(summary = "My bookings", description = "All bookings for a customer ordered by date descending. Supports pagination.")
     public ResponseEntity<List<Map<String, Object>>> getBookings(
             @Parameter(description = "Customer ID") @PathVariable int id,
-            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
         return ResponseEntity.ok(repo.getBookings(id, page, limit));
     }
 
@@ -42,8 +46,8 @@ public class CustomerController {
     @Operation(summary = "Payment history", description = "All payments for a customer's bookings. Supports pagination.")
     public ResponseEntity<List<Map<String, Object>>> getPayments(
             @Parameter(description = "Customer ID") @PathVariable int id,
-            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
         return ResponseEntity.ok(repo.getPayments(id, page, limit));
     }
 

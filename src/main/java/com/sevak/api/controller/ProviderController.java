@@ -4,7 +4,10 @@ import com.sevak.api.repository.ProviderRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,6 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/providers")
+@Validated
 @Tag(name = "3. Provider", description = "Jobs, earnings, reviews, rating comparison")
 public class ProviderController {
 
@@ -26,8 +30,8 @@ public class ProviderController {
             description = "All pending jobs for a provider with customer name and service location. Supports pagination.")
     public ResponseEntity<List<Map<String, Object>>> getPendingJobs(
             @Parameter(description = "Provider ID") @PathVariable int id,
-            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
         return ResponseEntity.ok(repo.getPendingJobs(id, page, limit));
     }
 
@@ -36,8 +40,8 @@ public class ProviderController {
             description = "All completed jobs with payment status. Uses LEFT JOIN for optional payments. Supports pagination.")
     public ResponseEntity<List<Map<String, Object>>> getCompletedJobs(
             @Parameter(description = "Provider ID") @PathVariable int id,
-            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
         return ResponseEntity.ok(repo.getCompletedJobs(id, page, limit));
     }
 
@@ -54,8 +58,8 @@ public class ProviderController {
             description = "All reviews received from customers with rating and comment. Supports pagination.")
     public ResponseEntity<List<Map<String, Object>>> getReviews(
             @Parameter(description = "Provider ID") @PathVariable int id,
-            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
         return ResponseEntity.ok(repo.getReviews(id, page, limit));
     }
 
