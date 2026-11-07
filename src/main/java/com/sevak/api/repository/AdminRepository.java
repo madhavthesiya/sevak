@@ -15,19 +15,25 @@ public class AdminRepository {
         this.jdbc = jdbc;
     }
 
-    // ── Revenue by Category (SUM, GROUP BY, 4-table JOIN) ───
+    // ── Revenue by Category (Proportional Allocation via Window Function) ───
     public List<Map<String, Object>> getRevenueByCat() {
         return jdbc.queryForList("""
-                SELECT cat.category_name,
-                       COUNT(DISTINCT b.booking_id) AS total_bookings,
-                       SUM(p.amount)                AS total_revenue
-                FROM payments p
-                JOIN bookings b ON p.booking_id = b.booking_id
-                JOIN booking_items bi ON b.booking_id = bi.booking_id
-                JOIN services s ON bi.service_id = s.service_id
-                JOIN categories cat ON s.category_id = cat.category_id
-                WHERE p.status = 'success'
-                GROUP BY cat.category_name
+                WITH item_totals AS (
+                    SELECT bi.booking_id,
+                           s.category_id,
+                           SUM(bi.quantity * bi.unit_price)                                    AS cat_amount,
+                           SUM(SUM(bi.quantity * bi.unit_price)) OVER (PARTITION BY bi.booking_id) AS booking_items_total
+                    FROM booking_items bi
+                    JOIN services s ON s.service_id = bi.service_id
+                    GROUP BY bi.booking_id, s.category_id
+                )
+                SELECT c.category_name,
+                       COUNT(DISTINCT it.booking_id)                                              AS total_bookings,
+                       ROUND(SUM(p.amount * it.cat_amount / NULLIF(it.booking_items_total, 0)), 2) AS total_revenue
+                FROM item_totals it
+                JOIN payments   p ON p.booking_id  = it.booking_id AND p.status = 'success'
+                JOIN categories c ON c.category_id = it.category_id
+                GROUP BY c.category_name
                 ORDER BY total_revenue DESC
                 """);
     }
