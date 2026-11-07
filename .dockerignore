@@ -3,3 +3,6 @@ target/
 .gitignore
 *.md
 .mvn/wrapper/maven-wrapper.jar
+.env
+.idea
+docs/
