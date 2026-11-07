@@ -1,8 +1,10 @@
 package com.sevak.api.controller;
 
+import com.sevak.api.config.OpenApiConfig;
 import com.sevak.api.repository.AdminRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,6 +53,7 @@ public class AdminController {
     }
 
     @PostMapping("/refresh-views")
+    @SecurityRequirement(name = OpenApiConfig.API_KEY_SCHEME)
     @Operation(summary = "Refresh materialized views",
             description = "Rebuilds mv_provider_leaderboard and mv_city_revenue_summary with the latest data from the base tables.")
     public ResponseEntity<Map<String, Object>> refreshViews() {

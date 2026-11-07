@@ -1,8 +1,10 @@
 package com.sevak.api.controller;
 
+import com.sevak.api.config.OpenApiConfig;
 import com.sevak.api.repository.BookingActionRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +14,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/bookings")
 @Tag(name = "5. Booking Actions", description = "Cancel or confirm bookings using PostgreSQL stored procedures")
+@SecurityRequirement(name = OpenApiConfig.API_KEY_SCHEME)
 public class BookingActionController {
 
     private final BookingActionRepository repo;

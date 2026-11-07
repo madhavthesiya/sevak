@@ -152,10 +152,25 @@ AFTER (BCNF compliant):
 | `POST` | `/api/bookings/{id}/cancel` | **Stored Procedure** (sp_cancel_booking) |
 | `POST` | `/api/bookings/{id}/confirm` | **Stored Procedure** (sp_confirm_booking) |
 
+> 🔑 **All `POST` endpoints need an `X-Api-Key` header** (temporary protection until JWT auth is added).
+> Locally the key is `dev-admin-key` unless you set `SEVAK_ADMIN_KEY`. In Swagger UI, click **Authorize** and paste the key.
+
 ### 6. Health Check
 | Method | Endpoint | Description |
 |:-------|:---------|:------------|
-| `GET` | `/health` | Returns API status, DB connectivity, and version |
+| `GET` | `/health` | `200` with `"database": "connected"`, or `503` when the database is unreachable |
+
+### Error Responses
+Errors use the standard [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457) JSON format:
+
+| Status | When |
+|:-------|:-----|
+| `400` | Invalid parameter (e.g. `page=0`, `limit=500`, `day=Funday`, `id=abc`) |
+| `401` | `POST` request without a valid `X-Api-Key` |
+| `404` | Unknown URL or booking not found |
+| `409` | Booking is in the wrong status for the action (e.g. cancelling a completed booking) |
+| `422` | Business rule broken (e.g. provider not available at the booked time) |
+| `500` | Unexpected error; details are only written to the server log |
 
 ---
 
@@ -194,9 +209,10 @@ open http://localhost:8080/swagger-ui.html
 ### Docker (One Command)
 
 ```bash
-docker-compose up --build
+docker compose up --build
 # API:     http://localhost:8080/swagger-ui.html
 # Health:  http://localhost:8080/health
+# POST endpoints: send the header  X-Api-Key: dev-admin-key
 ```
 
 ---
