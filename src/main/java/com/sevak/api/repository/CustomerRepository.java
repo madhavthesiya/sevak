@@ -68,7 +68,9 @@ public class CustomerRepository {
                     COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.booking_id END)  AS cancelled,
                     COUNT(DISTINCT CASE WHEN b.status IN ('pending', 'confirmed', 'in_progress') THEN b.booking_id END) AS pending,
                     COALESCE(SUM(CASE WHEN p.status = 'success' THEN p.amount ELSE 0 END), 0) AS paid,
-                    COALESCE(SUM(CASE WHEN b.status IN ('pending', 'confirmed', 'in_progress') THEN b.total_amount ELSE 0 END), 0) AS upcoming,
+                    COALESCE(SUM(CASE WHEN b.status IN ('pending', 'confirmed', 'in_progress')
+                                       AND (p.status IS NULL OR p.status <> 'success')
+                                      THEN b.total_amount ELSE 0 END), 0)  AS upcoming,
                     COALESCE(SUM(CASE WHEN p.status = 'refunded' THEN p.amount ELSE 0 END), 0) AS refunded
                 FROM bookings b
                 LEFT JOIN payments p ON p.booking_id = b.booking_id
