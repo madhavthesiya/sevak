@@ -35,7 +35,7 @@ public class CustomerController {
     public ResponseEntity<List<Map<String, Object>>> getBookingItems(
             @PathVariable int customerId,
             @Parameter(description = "Booking ID") @PathVariable int bookingId) {
-        return ResponseEntity.ok(repo.getBookingItems(bookingId));
+        return ResponseEntity.ok(repo.getBookingItems(customerId, bookingId));
     }
 
     @GetMapping("/{id}/payments")

@@ -31,17 +31,18 @@ public class CustomerRepository {
     }
 
     // ── Booking Items (Itemized) ─────────────────────────────
-    public List<Map<String, Object>> getBookingItems(int bookingId) {
+    public List<Map<String, Object>> getBookingItems(int customerId, int bookingId) {
         return jdbc.queryForList("""
                 SELECT bi.item_no, s.service_name, sv.variant_name,
                        bi.quantity, bi.unit_price,
                        (bi.quantity * bi.unit_price) AS line_total
                 FROM booking_items bi
+                JOIN bookings b ON bi.booking_id = b.booking_id
                 JOIN services s ON bi.service_id = s.service_id
                 LEFT JOIN service_variants sv ON bi.variant_id = sv.variant_id
-                WHERE bi.booking_id = ?
+                WHERE bi.booking_id = ? AND b.customer_id = ?
                 ORDER BY bi.item_no
-                """, bookingId);
+                """, bookingId, customerId);
     }
 
     // ── Payment History ──────────────────────────────────────
