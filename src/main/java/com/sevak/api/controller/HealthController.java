@@ -1,8 +1,10 @@
 package com.sevak.api.controller;
 
 import io.swagger.v3.oas.annotations.Hidden;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,19 +27,19 @@ public class HealthController {
     @GetMapping("/health")
     @Hidden // Hide from Swagger — internal use only
     public ResponseEntity<Map<String, Object>> health() {
-        String dbStatus;
+        boolean dbUp;
         try {
             jdbc.queryForObject("SELECT 1", Integer.class);
-            dbStatus = "connected";
-        } catch (Exception e) {
-            dbStatus = "disconnected";
+            dbUp = true;
+        } catch (DataAccessException e) {
+            dbUp = false;
         }
 
-        return ResponseEntity.ok(Map.of(
-                "status", "UP",
-                "timestamp", Instant.now().toString(),
-                "database", dbStatus,
-                "version", "1.0.0"
-        ));
+        return ResponseEntity.status(dbUp ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of(
+                        "status", dbUp ? "UP" : "DOWN",
+                        "database", dbUp ? "connected" : "disconnected",
+                        "timestamp", Instant.now().toString()
+                ));
     }
 }

@@ -4,6 +4,8 @@ import com.sevak.api.repository.CustomerRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,8 +27,8 @@ public class CustomerController {
     @Operation(summary = "My bookings", description = "All bookings for a customer ordered by date descending. Supports pagination.")
     public ResponseEntity<List<Map<String, Object>>> getBookings(
             @Parameter(description = "Customer ID") @PathVariable int id,
-            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
         return ResponseEntity.ok(repo.getBookings(id, page, limit));
     }
 
@@ -35,22 +37,22 @@ public class CustomerController {
     public ResponseEntity<List<Map<String, Object>>> getBookingItems(
             @PathVariable int customerId,
             @Parameter(description = "Booking ID") @PathVariable int bookingId) {
-        return ResponseEntity.ok(repo.getBookingItems(bookingId));
+        return ResponseEntity.ok(repo.getBookingItems(customerId, bookingId));
     }
 
     @GetMapping("/{id}/payments")
     @Operation(summary = "Payment history", description = "All payments for a customer's bookings. Supports pagination.")
     public ResponseEntity<List<Map<String, Object>>> getPayments(
             @Parameter(description = "Customer ID") @PathVariable int id,
-            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
         return ResponseEntity.ok(repo.getPayments(id, page, limit));
     }
 
     @GetMapping("/{id}/spending")
     @Operation(summary = "Spending summary",
-            description = "Aggregate spending stats: total bookings, completed/cancelled/pending counts, total spent, avg per booking. Uses CASE, SUM, COUNT, GROUP BY.")
-    public ResponseEntity<List<Map<String, Object>>> getSpendingSummary(
+            description = "Aggregate spending stats: total bookings, completed/cancelled/pending counts, paid, upcoming, refunded amounts. Uses CASE, SUM, COUNT.")
+    public ResponseEntity<Map<String, Object>> getSpendingSummary(
             @Parameter(description = "Customer ID") @PathVariable int id) {
         return ResponseEntity.ok(repo.getSpendingSummary(id));
     }

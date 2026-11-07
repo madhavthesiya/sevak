@@ -15,19 +15,25 @@ public class AdminRepository {
         this.jdbc = jdbc;
     }
 
-    // ── Revenue by Category (SUM, GROUP BY, 4-table JOIN) ───
+    // ── Revenue by Category (Proportional Allocation via Window Function) ───
     public List<Map<String, Object>> getRevenueByCat() {
         return jdbc.queryForList("""
-                SELECT cat.category_name,
-                       COUNT(DISTINCT b.booking_id) AS total_bookings,
-                       SUM(p.amount)                AS total_revenue
-                FROM payments p
-                JOIN bookings b ON p.booking_id = b.booking_id
-                JOIN booking_items bi ON b.booking_id = bi.booking_id
-                JOIN services s ON bi.service_id = s.service_id
-                JOIN categories cat ON s.category_id = cat.category_id
-                WHERE p.status = 'success'
-                GROUP BY cat.category_name
+                WITH item_totals AS (
+                    SELECT bi.booking_id,
+                           s.category_id,
+                           SUM(bi.quantity * bi.unit_price)                                    AS cat_amount,
+                           SUM(SUM(bi.quantity * bi.unit_price)) OVER (PARTITION BY bi.booking_id) AS booking_items_total
+                    FROM booking_items bi
+                    JOIN services s ON s.service_id = bi.service_id
+                    GROUP BY bi.booking_id, s.category_id
+                )
+                SELECT c.category_name,
+                       COUNT(DISTINCT it.booking_id)                                              AS total_bookings,
+                       ROUND(SUM(p.amount * it.cat_amount / NULLIF(it.booking_items_total, 0)), 2) AS total_revenue
+                FROM item_totals it
+                JOIN payments   p ON p.booking_id  = it.booking_id AND p.status = 'success'
+                JOIN categories c ON c.category_id = it.category_id
+                GROUP BY c.category_name
                 ORDER BY total_revenue DESC
                 """);
     }
@@ -37,18 +43,20 @@ public class AdminRepository {
         return jdbc.queryForList("""
                 SELECT
                     RANK() OVER (ORDER BY sp.avg_rating DESC NULLS LAST,
-                                 COUNT(b.booking_id) DESC)   AS rank,
+                                 COUNT(DISTINCT b.booking_id) DESC)  AS rank,
                     sp.provider_id,
                     u.email,
                     ci.city_name,
                     sp.avg_rating,
-                    COUNT(b.booking_id)                      AS jobs_completed,
-                    COALESCE(SUM(b.total_amount), 0)         AS total_revenue
+                    COUNT(DISTINCT b.booking_id)                     AS jobs_completed,
+                    COALESCE(SUM(p.amount), 0)                       AS total_revenue
                 FROM service_providers sp
                 JOIN users u ON sp.user_id = u.user_id
                 JOIN cities ci ON sp.city_id = ci.city_id
                 LEFT JOIN bookings b ON sp.provider_id = b.provider_id
                                     AND b.status = 'completed'
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
+                                    AND p.status = 'success'
                 WHERE sp.is_active = TRUE
                 GROUP BY sp.provider_id, u.email, ci.city_name, sp.avg_rating
                 ORDER BY rank
@@ -71,7 +79,7 @@ public class AdminRepository {
                 """);
     }
 
-    // ── Leaderboard from Materialized View (O(1) read) ────
+    // ── Leaderboard from Materialized View (Pre-computed read) ───
     public List<Map<String, Object>> getLeaderboardFast() {
         return jdbc.queryForList("SELECT * FROM mv_provider_leaderboard ORDER BY rank");
     }

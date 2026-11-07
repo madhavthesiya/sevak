@@ -4,10 +4,14 @@ import com.sevak.api.repository.GeneralRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.DayOfWeek;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @RestController
@@ -24,8 +28,8 @@ public class GeneralController {
     @GetMapping("/services")
     @Operation(summary = "Browse all services", description = "List all services grouped by category with base prices. Supports pagination.")
     public ResponseEntity<List<Map<String, Object>>> getAllServices(
-            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
         return ResponseEntity.ok(repo.getAllServices(page, limit));
     }
 
@@ -35,8 +39,8 @@ public class GeneralController {
     public ResponseEntity<List<Map<String, Object>>> searchProviders(
             @Parameter(description = "Service name keyword (e.g. cleaning, fan, painting)")
             @RequestParam String q,
-            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
         return ResponseEntity.ok(repo.searchProviders(q, page, limit));
     }
 
@@ -44,7 +48,7 @@ public class GeneralController {
     @Operation(summary = "Top rated providers",
             description = "Returns the highest-rated verified providers across all cities. Defaults to top 5.")
     public ResponseEntity<List<Map<String, Object>>> getTopProviders(
-            @Parameter(description = "Number of top providers to return") @RequestParam(defaultValue = "5") int top) {
+            @Parameter(description = "Number of top providers to return") @RequestParam(defaultValue = "5") @Min(1) @Max(50) int top) {
         return ResponseEntity.ok(repo.getTopProviders(top));
     }
 
@@ -52,10 +56,25 @@ public class GeneralController {
     @Operation(summary = "Providers available on a day",
             description = "List all active providers available on the specified day with their time slots. Supports pagination.")
     public ResponseEntity<List<Map<String, Object>>> getAvailableProviders(
-            @Parameter(description = "Day of week (e.g. Monday, Tuesday)")
+            @Parameter(description = "Day of week, any letter case (e.g. Monday, monday, MONDAY)")
             @RequestParam String day,
-            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") int limit) {
-        return ResponseEntity.ok(repo.getAvailableProviders(day, page, limit));
+            @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
+            @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
+        return ResponseEntity.ok(repo.getAvailableProviders(toDbDay(day), page, limit));
+    }
+
+    /**
+     * Spring's default String-to-enum conversion is case-sensitive, so we parse the day ourselves.
+     * The database stores days as 'Monday', 'Tuesday', ... (see the CHECK constraint on provider_availability).
+     */
+    private static String toDbDay(String day) {
+        DayOfWeek parsed;
+        try {
+            parsed = DayOfWeek.valueOf(day.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid day '" + day + "'. Use a day name such as Monday.");
+        }
+        String name = parsed.name();
+        return name.charAt(0) + name.substring(1).toLowerCase(Locale.ROOT);
     }
 }

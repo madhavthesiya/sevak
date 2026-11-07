@@ -31,17 +31,18 @@ public class CustomerRepository {
     }
 
     // ── Booking Items (Itemized) ─────────────────────────────
-    public List<Map<String, Object>> getBookingItems(int bookingId) {
+    public List<Map<String, Object>> getBookingItems(int customerId, int bookingId) {
         return jdbc.queryForList("""
                 SELECT bi.item_no, s.service_name, sv.variant_name,
                        bi.quantity, bi.unit_price,
                        (bi.quantity * bi.unit_price) AS line_total
                 FROM booking_items bi
+                JOIN bookings b ON bi.booking_id = b.booking_id
                 JOIN services s ON bi.service_id = s.service_id
                 LEFT JOIN service_variants sv ON bi.variant_id = sv.variant_id
-                WHERE bi.booking_id = ?
+                WHERE bi.booking_id = ? AND b.customer_id = ?
                 ORDER BY bi.item_no
-                """, bookingId);
+                """, bookingId, customerId);
     }
 
     // ── Payment History ──────────────────────────────────────
@@ -58,19 +59,24 @@ public class CustomerRepository {
                 """, customerId, limit, offset);
     }
 
-    // ── Spending Summary (CASE, SUM, COUNT, GROUP BY) ────────
-    public List<Map<String, Object>> getSpendingSummary(int customerId) {
-        return jdbc.queryForList("""
+    // ── Spending Summary (CASE, SUM, COUNT) ──────────────────
+    public Map<String, Object> getSpendingSummary(int customerId) {
+        List<Map<String, Object>> list = jdbc.queryForList("""
                 SELECT
-                    COUNT(*)                                           AS total_bookings,
-                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)  AS completed,
-                    SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END)  AS cancelled,
-                    SUM(CASE WHEN status = 'pending'   THEN 1 ELSE 0 END)  AS pending,
-                    SUM(total_amount)                                  AS total_spent,
-                    ROUND(AVG(total_amount), 2)                        AS avg_per_booking
-                FROM bookings
-                WHERE customer_id = ?
+                    COUNT(DISTINCT b.booking_id)                                            AS total_bookings,
+                    COUNT(DISTINCT CASE WHEN b.status = 'completed' THEN b.booking_id END)  AS completed,
+                    COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.booking_id END)  AS cancelled,
+                    COUNT(DISTINCT CASE WHEN b.status IN ('pending', 'confirmed', 'in_progress') THEN b.booking_id END) AS pending,
+                    COALESCE(SUM(CASE WHEN p.status = 'success' THEN p.amount ELSE 0 END), 0) AS paid,
+                    COALESCE(SUM(CASE WHEN b.status IN ('pending', 'confirmed', 'in_progress')
+                                       AND (p.status IS NULL OR p.status <> 'success')
+                                      THEN b.total_amount ELSE 0 END), 0)  AS upcoming,
+                    COALESCE(SUM(CASE WHEN p.status = 'refunded' THEN p.amount ELSE 0 END), 0) AS refunded
+                FROM bookings b
+                LEFT JOIN payments p ON p.booking_id = b.booking_id
+                WHERE b.customer_id = ?
                 """, customerId);
+        return list.isEmpty() ? Map.of() : list.get(0);
     }
 
     // ── Saved Addresses (4-table JOIN via locations) ─────────

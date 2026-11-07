@@ -290,6 +290,7 @@ CREATE TABLE complaints (
 -- ============================================================
 CREATE INDEX idx_bookings_customer   ON bookings(customer_id);
 CREATE INDEX idx_bookings_provider   ON bookings(provider_id);
+CREATE INDEX idx_bookings_location   ON bookings(location_id);
 CREATE INDEX idx_bookings_status     ON bookings(status);
 CREATE INDEX idx_bookings_date       ON bookings(scheduled_date);
 CREATE INDEX idx_services_category   ON services(category_id);
@@ -313,18 +314,20 @@ CREATE INDEX idx_complaints_status   ON complaints(status);
 CREATE MATERIALIZED VIEW mv_provider_leaderboard AS
 SELECT
     RANK() OVER (ORDER BY sp.avg_rating DESC NULLS LAST,
-                 COUNT(b.booking_id) DESC)       AS rank,
+                 COUNT(DISTINCT b.booking_id) DESC)       AS rank,
     sp.provider_id,
     u.email,
     ci.city_name,
     sp.avg_rating,
-    COUNT(b.booking_id)                          AS jobs_completed,
-    COALESCE(SUM(b.total_amount), 0)             AS total_revenue
+    COUNT(DISTINCT b.booking_id)                          AS jobs_completed,
+    COALESCE(SUM(p.amount), 0)                            AS total_revenue
 FROM service_providers sp
 JOIN users u    ON sp.user_id     = u.user_id
 JOIN cities ci  ON sp.city_id     = ci.city_id
 LEFT JOIN bookings b ON sp.provider_id = b.provider_id
                     AND b.status = 'completed'
+LEFT JOIN payments p ON b.booking_id = p.booking_id
+                    AND p.status = 'success'
 WHERE sp.is_active = TRUE
 GROUP BY sp.provider_id, u.email, ci.city_name, sp.avg_rating
 ORDER BY rank;
@@ -500,13 +503,12 @@ BEGIN
     WHERE booking_id = p_booking_id;
 
     IF v_current_status IS NULL THEN
-        RAISE EXCEPTION 'Booking ID % does not exist.', p_booking_id;
+        RAISE EXCEPTION USING ERRCODE = 'SV404', MESSAGE = format('Booking %s not found', p_booking_id);
     END IF;
 
     -- Step 2: Validate – Cannot cancel already completed or cancelled bookings
     IF v_current_status IN ('completed', 'cancelled') THEN
-        RAISE EXCEPTION 'Booking % cannot be cancelled. Current status: %',
-            p_booking_id, v_current_status;
+        RAISE EXCEPTION USING ERRCODE = 'SV409', MESSAGE = format('Booking %s is %s and cannot be cancelled', p_booking_id, v_current_status);
     END IF;
 
     -- Step 3: Update booking status to 'cancelled'
@@ -581,12 +583,11 @@ BEGIN
     WHERE b.booking_id = p_booking_id;
 
     IF v_current_status IS NULL THEN
-        RAISE EXCEPTION 'Booking ID % does not exist.', p_booking_id;
+        RAISE EXCEPTION USING ERRCODE = 'SV404', MESSAGE = format('Booking %s not found', p_booking_id);
     END IF;
 
     IF v_current_status <> 'pending' THEN
-        RAISE EXCEPTION 'Booking % is not pending. Current status: %',
-            p_booking_id, v_current_status;
+        RAISE EXCEPTION USING ERRCODE = 'SV409', MESSAGE = format('Booking %s is not pending. Current status: %s', p_booking_id, v_current_status);
     END IF;
 
     -- Step 2: Get the first service in this booking
@@ -603,8 +604,7 @@ BEGIN
     ) INTO v_offers_service;
 
     IF NOT v_offers_service THEN
-        RAISE EXCEPTION 'Provider % does not offer service ID %.',
-            v_provider_id, v_service_id;
+        RAISE EXCEPTION USING ERRCODE = 'SV422', MESSAGE = format('Provider %s does not offer service ID %s.', v_provider_id, v_service_id);
     END IF;
 
     -- Step 4: Verify provider is available on the scheduled day and time
@@ -617,8 +617,7 @@ BEGIN
     ) INTO v_is_available;
 
     IF NOT v_is_available THEN
-        RAISE EXCEPTION 'Provider % is not available on % at %.',
-            v_provider_id, v_scheduled_day, v_scheduled_time;
+        RAISE EXCEPTION USING ERRCODE = 'SV422', MESSAGE = format('Provider %s is not available on %s at %s.', v_provider_id, v_scheduled_day, v_scheduled_time);
     END IF;
 
     -- Step 5: Confirm the booking
