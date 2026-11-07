@@ -129,15 +129,15 @@ with a single pre-computed read.
 ## Indexes
 
 The following indexes support both the live queries and the base tables that feed
-the materialized views:
+the materialized views. A UNIQUE constraint already creates an index, so no extra index is added on those columns:
 
 | Index | Table | Purpose |
 |:------|:------|:--------|
 | `idx_bookings_provider` | `bookings` | Speed up LEFT JOIN on provider_id |
 | `idx_bookings_customer` | `bookings` | Speed up customer booking lookups |
 | `idx_bookings_location` | `bookings` | Speed up location-based revenue joins |
-| `idx_payments_booking` | `payments` | Speed up payment lookups by booking |
-| `idx_prov_reviews_booking` | `provider_reviews` | Speed up review aggregation |
+| `payments_booking_id_key` (auto) | `payments` | Created automatically by `UNIQUE (booking_id)`; also serves payment lookups by booking |
+| `provider_reviews_booking_id_key` (auto) | `provider_reviews` | Created automatically by `UNIQUE (booking_id)`; also serves review aggregation |
 | `idx_mv_leaderboard_provider` | `mv_provider_leaderboard` | Required for REFRESH CONCURRENTLY |
 | `idx_mv_city_revenue` | `mv_city_revenue_summary` | Required for REFRESH CONCURRENTLY |
 

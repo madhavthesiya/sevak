@@ -299,8 +299,6 @@ CREATE INDEX idx_locations_area      ON locations(area_id);
 CREATE INDEX idx_cust_addr_customer  ON customer_addresses(customer_id);
 CREATE INDEX idx_prov_docs_provider  ON provider_documents(provider_id);
 CREATE INDEX idx_svc_reviews_svc     ON service_reviews(service_id);
-CREATE INDEX idx_payments_booking    ON payments(booking_id);
-CREATE INDEX idx_prov_reviews_booking ON provider_reviews(booking_id);
 CREATE INDEX idx_complaints_status   ON complaints(status);
 
 -- ============================================================
