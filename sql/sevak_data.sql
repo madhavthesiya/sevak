@@ -52,12 +52,12 @@ INSERT INTO customers (user_id, name, phone) VALUES
 -- 4. SERVICE PROVIDERS  (6 rows, linked to user_id 8–13)
 -- ============================================================
 INSERT INTO service_providers (user_id, city_id, bio, experience_years, avg_rating, verification_status, custom_price, is_active) VALUES
-(8,  1, 'Expert electrician with 10+ years of experience.',  10, 4.50, 'verified',  500.00, TRUE),
-(9,  1, 'Professional home cleaning services.',               5, 4.20, 'verified',  300.00, TRUE),
-(10, 2, 'Licensed plumber for residential & commercial.',     8, 4.70, 'verified',  600.00, TRUE),
-(11, 3, 'Creative wall painter and interior decorator.',       6, 3.90, 'verified',  450.00, TRUE),
-(12, 4, 'Skilled carpenter specializing in custom furniture.', 12, 4.80, 'verified',  700.00, TRUE),
-(13, 5, 'Home tutor for Mathematics and Science.',             3, 3.50, 'pending',   250.00, FALSE);
+(8,  1, 'Expert electrician with 10+ years of experience.',  10, NULL, 'verified',  500.00, TRUE),
+(9,  1, 'Professional home cleaning services.',               5, NULL, 'verified',  300.00, TRUE),
+(10, 2, 'Licensed plumber for residential & commercial.',     8, NULL, 'verified',  600.00, TRUE),
+(11, 3, 'Creative wall painter and interior decorator.',       6, NULL, 'verified',  450.00, TRUE),
+(12, 4, 'Skilled carpenter specializing in custom furniture.', 12, NULL, 'verified',  700.00, TRUE),
+(13, 5, 'Home tutor for Mathematics and Science.',             3, NULL, 'pending',   250.00, FALSE);
 
 -- ============================================================
 -- 5. ADMINS  (2 rows, linked to user_id 14–15)
@@ -97,7 +97,7 @@ INSERT INTO locations (area_id, street, landmark, latitude, longitude) VALUES
 (5,  '12, 80 Feet Road',       'Koramangala 4th Block',   12.9280000, 77.6220000);
 
 -- ============================================================
--- 7b. CUSTOMER ADDRESSES  (10 rows — maps customers to locations)
+-- 7b. CUSTOMER ADDRESSES  (15 rows — maps customers to locations)
 -- ============================================================
 INSERT INTO customer_addresses (customer_id, location_id, label) VALUES
 (1, 1,  'Home'),
@@ -109,7 +109,12 @@ INSERT INTO customer_addresses (customer_id, location_id, label) VALUES
 (5, 7,  'Office'),
 (6, 8,  'Home'),
 (7, 9,  'Home'),
-(3, 10, 'Office');
+(3, 10, 'Office'),
+(3, 1,  'Parents Home'),
+(6, 2,  'Parents Home'),
+(3, 6,  'Delhi Office'),
+(2, 5,  'Bangalore Branch'),
+(7, 1,  'Ahmedabad Home');
 
 -- ============================================================
 -- 8. CATEGORIES  (6 rows)
@@ -185,16 +190,16 @@ INSERT INTO coupons (code, discount_type, discount_value, min_order, usage_limit
 -- 13. BOOKINGS  (10 rows)
 -- ============================================================
 INSERT INTO bookings (customer_id, provider_id, location_id, coupon_id, scheduled_date, scheduled_time, status, total_amount, special_instructions) VALUES
-(1, 1, 1,  1,    '2026-04-05', '10:00', 'completed',   180.00, 'Please bring own ladder'),
-(1, 2, 2,  NULL, '2026-04-06', '09:00', 'completed',  1500.00, 'Focus on kitchen and bathrooms'),
-(2, 3, 3,  2,    '2026-04-07', '11:00', 'completed',   200.00, 'Leaking pipe in bathroom'),
-(3, 1, 4,  NULL, '2026-04-08', '14:00', 'confirmed',   350.00, NULL),
-(4, 4, 5,  3,    '2026-04-09', '10:30', 'in_progress', 680.00, 'Light blue color preferred'),
-(5, 5, 6,  NULL, '2026-04-10', '16:00', 'pending',     600.00, 'Assemble IKEA wardrobe'),
-(6, 2, 8,  5,    '2026-04-11', '08:00', 'completed',  1125.00, 'Deep clean before house party'),
-(3, 5, 10, NULL, '2026-04-12', '12:00', 'cancelled',   350.00, 'Repair broken window latch'),
-(2, 4, 3,  NULL, '2026-04-13', '15:00', 'completed',  5000.00, 'Full flat painting – neutral tones'),
-(7, 1, 9,  1,    '2026-04-14', '11:00', 'pending',    2250.00, 'Full house rewiring needed');
+(1, 1, 1, 1,    '2026-04-05', '10:00', 'completed',   495.00, 'Please bring own ladder'),
+(1, 2, 2, NULL, '2026-04-06', '09:00', 'completed',  2000.00, 'Focus on kitchen and bathrooms'),
+(2, 3, 3, 2,    '2026-04-07', '11:00', 'completed',  1400.00, 'Leaking pipe in bathroom'),
+(3, 1, 1, NULL, '2026-04-08', '14:00', 'confirmed',   350.00, NULL),
+(4, 4, 5, 3,    '2026-04-09', '10:30', 'in_progress', 1700.00, 'Light blue color preferred'),
+(5, 5, 6, NULL, '2026-04-10', '16:00', 'pending',     600.00, 'Assemble IKEA wardrobe'),
+(6, 2, 2, 5,    '2026-04-11', '08:00', 'completed',  2025.00, 'Deep clean before house party'),
+(3, 5, 6, NULL, '2026-04-12', '12:00', 'cancelled',   350.00, 'Repair broken window latch'),
+(2, 4, 5, NULL, '2026-04-13', '15:00', 'completed',  5000.00, 'Full flat painting – neutral tones'),
+(7, 1, 1, 1,    '2026-04-14', '11:00', 'pending',    2250.00, 'Full house rewiring needed');
 
 -- ============================================================
 -- 14. BOOKING ITEMS  (15 rows)
@@ -237,11 +242,11 @@ INSERT INTO booking_status_log (booking_id, log_time, status, remarks) VALUES
 -- 16. PAYMENTS  (8 rows – 1:1 with completed/in-progress bookings)
 -- ============================================================
 INSERT INTO payments (booking_id, payment_method, status, amount, gateway_ref, paid_at) VALUES
-(1,  'UPI',         'success',  180.00,  'TXN_UPI_001',  '2026-04-05 11:05:00'),
-(2,  'Credit Card', 'success', 1500.00,  'TXN_CC_002',   '2026-04-06 12:05:00'),
-(3,  'UPI',         'success',  200.00,  'TXN_UPI_003',  '2026-04-07 12:35:00'),
-(5,  'Debit Card',  'pending',  680.00,  NULL,            NULL),
-(7,  'Net Banking', 'success', 1125.00,  'TXN_NB_007',   '2026-04-11 11:30:00'),
+(1,  'UPI',         'success',  495.00,  'TXN_UPI_001',  '2026-04-05 11:05:00'),
+(2,  'Credit Card', 'success', 2000.00,  'TXN_CC_002',   '2026-04-06 12:05:00'),
+(3,  'UPI',         'success', 1400.00,  'TXN_UPI_003',  '2026-04-07 12:35:00'),
+(5,  'Debit Card',  'pending', 1700.00,  NULL,            NULL),
+(7,  'Net Banking', 'success', 2025.00,  'TXN_NB_007',   '2026-04-11 11:30:00'),
 (9,  'UPI',         'success', 5000.00,  'TXN_UPI_009',  '2026-04-13 17:00:00'),
 (10, 'Credit Card', 'pending', 2250.00,  NULL,            NULL),
 (8,  'UPI',         'refunded', 350.00,  'TXN_UPI_008',  '2026-04-12 13:00:00');
@@ -308,6 +313,12 @@ INSERT INTO complaints (booking_id, subject, status) VALUES
 (5,  'Painter arrived 1 hour late',           'in_progress'),
 (8,  'Refund not received after cancellation', 'resolved'),
 (9,  'Paint peeling off after 2 days',         'open');
+
+-- ============================================================
+-- 23. REFRESH MATERIALIZED VIEWS
+-- ============================================================
+REFRESH MATERIALIZED VIEW mv_provider_leaderboard;
+REFRESH MATERIALIZED VIEW mv_city_revenue_summary;
 
 -- ============================================================
 --  END OF DATA SEEDING
