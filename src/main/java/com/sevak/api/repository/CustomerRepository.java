@@ -59,19 +59,22 @@ public class CustomerRepository {
                 """, customerId, limit, offset);
     }
 
-    // ── Spending Summary (CASE, SUM, COUNT, GROUP BY) ────────
-    public List<Map<String, Object>> getSpendingSummary(int customerId) {
-        return jdbc.queryForList("""
+    // ── Spending Summary (CASE, SUM, COUNT) ──────────────────
+    public Map<String, Object> getSpendingSummary(int customerId) {
+        List<Map<String, Object>> list = jdbc.queryForList("""
                 SELECT
-                    COUNT(*)                                           AS total_bookings,
-                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)  AS completed,
-                    SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END)  AS cancelled,
-                    SUM(CASE WHEN status = 'pending'   THEN 1 ELSE 0 END)  AS pending,
-                    SUM(total_amount)                                  AS total_spent,
-                    ROUND(AVG(total_amount), 2)                        AS avg_per_booking
-                FROM bookings
-                WHERE customer_id = ?
+                    COUNT(DISTINCT b.booking_id)                                            AS total_bookings,
+                    COUNT(DISTINCT CASE WHEN b.status = 'completed' THEN b.booking_id END)  AS completed,
+                    COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.booking_id END)  AS cancelled,
+                    COUNT(DISTINCT CASE WHEN b.status IN ('pending', 'confirmed', 'in_progress') THEN b.booking_id END) AS pending,
+                    COALESCE(SUM(CASE WHEN p.status = 'success' THEN p.amount ELSE 0 END), 0) AS paid,
+                    COALESCE(SUM(CASE WHEN b.status IN ('pending', 'confirmed', 'in_progress') THEN b.total_amount ELSE 0 END), 0) AS upcoming,
+                    COALESCE(SUM(CASE WHEN p.status = 'refunded' THEN p.amount ELSE 0 END), 0) AS refunded
+                FROM bookings b
+                LEFT JOIN payments p ON p.booking_id = b.booking_id
+                WHERE b.customer_id = ?
                 """, customerId);
+        return list.isEmpty() ? Map.of() : list.get(0);
     }
 
     // ── Saved Addresses (4-table JOIN via locations) ─────────

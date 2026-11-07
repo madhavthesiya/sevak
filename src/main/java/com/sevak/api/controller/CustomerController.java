@@ -49,8 +49,8 @@ public class CustomerController {
 
     @GetMapping("/{id}/spending")
     @Operation(summary = "Spending summary",
-            description = "Aggregate spending stats: total bookings, completed/cancelled/pending counts, total spent, avg per booking. Uses CASE, SUM, COUNT, GROUP BY.")
-    public ResponseEntity<List<Map<String, Object>>> getSpendingSummary(
+            description = "Aggregate spending stats: total bookings, completed/cancelled/pending counts, paid, upcoming, refunded amounts. Uses CASE, SUM, COUNT.")
+    public ResponseEntity<Map<String, Object>> getSpendingSummary(
             @Parameter(description = "Customer ID") @PathVariable int id) {
         return ResponseEntity.ok(repo.getSpendingSummary(id));
     }

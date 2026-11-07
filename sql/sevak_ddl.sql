@@ -313,18 +313,20 @@ CREATE INDEX idx_complaints_status   ON complaints(status);
 CREATE MATERIALIZED VIEW mv_provider_leaderboard AS
 SELECT
     RANK() OVER (ORDER BY sp.avg_rating DESC NULLS LAST,
-                 COUNT(b.booking_id) DESC)       AS rank,
+                 COUNT(DISTINCT b.booking_id) DESC)       AS rank,
     sp.provider_id,
     u.email,
     ci.city_name,
     sp.avg_rating,
-    COUNT(b.booking_id)                          AS jobs_completed,
-    COALESCE(SUM(b.total_amount), 0)             AS total_revenue
+    COUNT(DISTINCT b.booking_id)                          AS jobs_completed,
+    COALESCE(SUM(p.amount), 0)                            AS total_revenue
 FROM service_providers sp
 JOIN users u    ON sp.user_id     = u.user_id
 JOIN cities ci  ON sp.city_id     = ci.city_id
 LEFT JOIN bookings b ON sp.provider_id = b.provider_id
                     AND b.status = 'completed'
+LEFT JOIN payments p ON b.booking_id = p.booking_id
+                    AND p.status = 'success'
 WHERE sp.is_active = TRUE
 GROUP BY sp.provider_id, u.email, ci.city_name, sp.avg_rating
 ORDER BY rank;
