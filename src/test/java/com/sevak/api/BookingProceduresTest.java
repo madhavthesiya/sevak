@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
 /** The sp_cancel_booking and sp_confirm_booking procedures, called through the API. */
@@ -21,13 +22,14 @@ class BookingProceduresTest extends IntegrationTest {
     private static final int UNKNOWN_BOOKING = 9999;
 
     private ResultActions cancel(int bookingId) throws Exception {
-        return mvc.perform(post("/api/bookings/{id}/cancel", bookingId)
+        return mvc.perform(post("/api/v1/bookings/{id}/cancel", bookingId)
                 .header(API_KEY_HEADER, API_KEY)
-                .param("reason", "Changed my mind"));
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\": \"Changed my mind\"}"));
     }
 
     private ResultActions confirm(int bookingId) throws Exception {
-        return mvc.perform(post("/api/bookings/{id}/confirm", bookingId).header(API_KEY_HEADER, API_KEY));
+        return mvc.perform(post("/api/v1/bookings/{id}/accept", bookingId).header(API_KEY_HEADER, API_KEY));
     }
 
     private String statusOf(int bookingId) {
