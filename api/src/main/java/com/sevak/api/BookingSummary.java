@@ -9,4 +9,5 @@ public record BookingSummary(
         OffsetDateTime scheduledStart,
         OffsetDateTime scheduledEnd,
         String status,
-        BigDecimal totalAmount) {}
+        BigDecimal totalAmount,
+        String services) {}

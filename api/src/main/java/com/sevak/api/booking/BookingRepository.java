@@ -17,6 +17,24 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class BookingRepository {
 
+    public static final String PRICE_ITEM_SQL = """
+                        SELECT COALESCE(sv.price, ps.price) AS unit_price, COALESCE(sv.duration, 60) AS duration
+                        FROM provider_services ps
+                        LEFT JOIN service_variants sv
+                               ON sv.service_id = ps.service_id AND sv.variant_id = CAST(:variant AS int)
+                        WHERE ps.provider_id = :provider AND ps.service_id = :service AND ps.is_active
+                          AND (CAST(:variant AS int) IS NULL OR sv.variant_id IS NOT NULL)
+                        """;
+
+    public static final String INSERT_BOOKING_SQL = """
+                        INSERT INTO bookings (customer_id, provider_id, location_id, coupon_id, scheduled_start,
+                                              scheduled_end, status, subtotal, discount, total_amount,
+                                              special_instructions)
+                        VALUES (:customer, :provider, :location, :coupon, :start, :end, 'pending', :subtotal,
+                                :discount, :total, :instructions)
+                        RETURNING booking_id
+                        """;
+
     private final JdbcClient jdbc;
 
     public BookingRepository(JdbcClient jdbc) {
@@ -114,14 +132,7 @@ public class BookingRepository {
         params.put("provider", providerId);
         params.put("service", serviceId);
         params.put("variant", variantId);
-        return jdbc.sql("""
-                        SELECT COALESCE(sv.price, ps.price) AS unit_price, COALESCE(sv.duration, 60) AS duration
-                        FROM provider_services ps
-                        LEFT JOIN service_variants sv
-                               ON sv.service_id = ps.service_id AND sv.variant_id = CAST(:variant AS int)
-                        WHERE ps.provider_id = :provider AND ps.service_id = :service AND ps.is_active
-                          AND (CAST(:variant AS int) IS NULL OR sv.variant_id IS NOT NULL)
-                        """).params(params).query(PricedItem.class).optional();
+        return jdbc.sql(PRICE_ITEM_SQL).params(params).query(PricedItem.class).optional();
     }
 
     public boolean providerAvailable(int providerId, OffsetDateTime start, OffsetDateTime end) {
@@ -150,6 +161,25 @@ public class BookingRepository {
                         """)
                 .param("code", code)
                 .param("subtotal", subtotal)
+                .query(RedeemedCoupon.class)
+                .optional();
+    }
+
+    /** The same conditions as redeemCoupon, plus this customer's history, without using the coupon up. */
+    public Optional<RedeemedCoupon> previewCoupon(String code, java.math.BigDecimal subtotal, int customerId) {
+        return jdbc.sql("""
+                        SELECT c.coupon_id, c.discount_type, c.discount_value, c.max_discount
+                        FROM coupons c
+                        WHERE UPPER(c.code) = UPPER(:code)
+                          AND (c.usage_limit IS NULL OR c.used_count < c.usage_limit)
+                          AND CURRENT_DATE BETWEEN c.valid_from AND c.valid_to
+                          AND COALESCE(c.min_order, 0) <= :subtotal
+                          AND NOT EXISTS (SELECT 1 FROM coupon_redemptions r
+                                          WHERE r.coupon_id = c.coupon_id AND r.customer_id = :customer)
+                        """)
+                .param("code", code)
+                .param("subtotal", subtotal)
+                .param("customer", customerId)
                 .query(RedeemedCoupon.class)
                 .optional();
     }
@@ -188,14 +218,7 @@ public class BookingRepository {
         params.put("discount", discount);
         params.put("total", subtotal.subtract(discount));
         params.put("instructions", instructions);
-        return jdbc.sql("""
-                        INSERT INTO bookings (customer_id, provider_id, location_id, coupon_id, scheduled_start,
-                                              scheduled_end, status, subtotal, discount, total_amount,
-                                              special_instructions)
-                        VALUES (:customer, :provider, :location, :coupon, :start, :end, 'pending', :subtotal,
-                                :discount, :total, :instructions)
-                        RETURNING booking_id
-                        """).params(params).query(Integer.class).single();
+        return jdbc.sql(INSERT_BOOKING_SQL).params(params).query(Integer.class).single();
     }
 
     public void insertItem(

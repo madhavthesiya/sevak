@@ -1,6 +1,8 @@
 package com.sevak.api.provider;
 
 import com.sevak.api.common.PageResponse;
+import com.sevak.api.meta.ShowsQuery;
+import com.sevak.api.provider.dto.FreeSlot;
 import com.sevak.api.provider.dto.ProviderOffering;
 import com.sevak.api.provider.dto.ProviderProfile;
 import com.sevak.api.provider.dto.ProviderReview;
@@ -11,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +33,7 @@ public class ProviderController {
     }
 
     @GetMapping
+    @ShowsQuery("providers.search")
     @Operation(
             summary = "Search providers",
             description =
@@ -49,12 +53,14 @@ public class ProviderController {
     }
 
     @GetMapping("/top")
+    @ShowsQuery("providers.top")
     @Operation(summary = "Top providers", description = "Verified providers ranked by Bayesian weighted rating.")
     public List<TopProvider> top(@RequestParam(defaultValue = "5") @Min(1) @Max(50) int limit) {
         return service.top(limit);
     }
 
     @GetMapping("/{id}")
+    @ShowsQuery("providers.profile")
     @Operation(
             summary = "Provider profile",
             description = "Rating vs city average, services with prices, and weekly availability.")
@@ -62,7 +68,21 @@ public class ProviderController {
         return service.profile(id);
     }
 
+    @GetMapping("/{id}/slots")
+    @ShowsQuery("providers.slots")
+    @Operation(
+            summary = "Free start times",
+            description = "30-minute start times, in order, where a job of this length fits and nothing overlaps it.")
+    public List<FreeSlot> slots(
+            @Parameter(example = "1") @PathVariable int id,
+            @RequestParam LocalDate from,
+            @RequestParam(defaultValue = "14") @Min(1) @Max(31) int days,
+            @RequestParam(defaultValue = "60") @Min(15) @Max(720) int minutes) {
+        return service.freeSlots(id, from, days, minutes);
+    }
+
     @GetMapping("/{id}/reviews")
+    @ShowsQuery("providers.reviews")
     @Operation(summary = "Provider reviews", description = "Newest first.")
     public PageResponse<ProviderReview> reviews(
             @Parameter(example = "1") @PathVariable int id,

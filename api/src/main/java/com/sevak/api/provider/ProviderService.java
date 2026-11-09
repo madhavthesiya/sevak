@@ -1,9 +1,17 @@
 package com.sevak.api.provider;
 
+import com.sevak.api.common.ConflictException;
 import com.sevak.api.common.NotFoundException;
 import com.sevak.api.common.PageResponse;
+import com.sevak.api.common.PgErrors;
 import com.sevak.api.provider.dto.EarningsByMethod;
+import com.sevak.api.provider.dto.FreeSlot;
 import com.sevak.api.provider.dto.JobSummary;
+import com.sevak.api.provider.dto.MonthlyEarnings;
+import com.sevak.api.provider.dto.NewAvailabilityRequest;
+import com.sevak.api.provider.dto.OfferedService;
+import com.sevak.api.provider.dto.OwnAvailabilitySlot;
+import com.sevak.api.provider.dto.OwnServiceRequest;
 import com.sevak.api.provider.dto.ProviderOffering;
 import com.sevak.api.provider.dto.ProviderProfile;
 import com.sevak.api.provider.dto.ProviderReview;
@@ -12,6 +20,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,8 +50,11 @@ public class ProviderService {
 
     public ProviderProfile profile(int providerId) {
         return repo.findBasics(providerId)
-                .map(basics ->
-                        new ProviderProfile(basics, repo.findServices(providerId), repo.findAvailability(providerId)))
+                .map(basics -> new ProviderProfile(
+                        basics,
+                        repo.findServices(providerId),
+                        repo.findAvailability(providerId),
+                        repo.findVariants(providerId)))
                 .orElseThrow(() -> notFound(providerId));
     }
 
@@ -68,6 +80,60 @@ public class ProviderService {
             throw new IllegalArgumentException("'from' must not be after 'to'");
         }
         return repo.findEarnings(providerId, from, to);
+    }
+
+    public List<FreeSlot> freeSlots(int providerId, LocalDate from, int days, int minutes) {
+        requireProvider(providerId);
+        return repo.findFreeSlots(providerId, from, days, minutes);
+    }
+
+    public List<OfferedService> ownServices(int providerId) {
+        return repo.findServices(providerId);
+    }
+
+    @Transactional
+    public void offerService(int providerId, OwnServiceRequest request) {
+        if (!repo.serviceExists(request.serviceId())) {
+            throw new NotFoundException("Service " + request.serviceId() + " not found");
+        }
+        repo.upsertService(providerId, request.serviceId(), request.price());
+    }
+
+    @Transactional
+    public void stopOffering(int providerId, int serviceId) {
+        if (repo.deactivateService(providerId, serviceId) == 0) {
+            throw new NotFoundException("You don't offer service " + serviceId);
+        }
+    }
+
+    public List<MonthlyEarnings> monthlyEarnings(int providerId) {
+        return repo.findMonthlyEarnings(providerId);
+    }
+
+    public List<OwnAvailabilitySlot> ownAvailability(int providerId) {
+        return repo.findOwnAvailability(providerId);
+    }
+
+    @Transactional
+    public OwnAvailabilitySlot addAvailability(int providerId, NewAvailabilityRequest request) {
+        if (!request.endTime().isAfter(request.startTime())) {
+            throw new IllegalArgumentException("The end time must be after the start time");
+        }
+        try {
+            return repo.insertAvailability(providerId, request.dayOfWeek(), request.startTime(), request.endTime());
+        } catch (DataAccessException ex) {
+            if (PgErrors.EXCLUSION_VIOLATION.equals(PgErrors.sqlState(ex))) {
+                throw new ConflictException("slot-overlap", "These hours overlap hours you already have on that day");
+            }
+            throw ex;
+        }
+    }
+
+    @Transactional
+    public void removeAvailability(int providerId, long slotId) {
+        if (repo.deleteAvailability(providerId, slotId) == 0) {
+            throw new NotFoundException("Those hours were not found");
+        }
     }
 
     private void requireProvider(int providerId) {

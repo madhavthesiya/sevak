@@ -4,21 +4,27 @@ import com.sevak.api.admin.dto.AdminActionResult;
 import com.sevak.api.admin.dto.AdminBooking;
 import com.sevak.api.admin.dto.CategoryRevenue;
 import com.sevak.api.admin.dto.CityRevenue;
+import com.sevak.api.admin.dto.ComplaintBoardItem;
 import com.sevak.api.admin.dto.ComplaintSummary;
 import com.sevak.api.admin.dto.ComplaintUpdateRequest;
 import com.sevak.api.admin.dto.LeaderboardEntry;
 import com.sevak.api.admin.dto.RefreshResult;
+import com.sevak.api.admin.dto.VerificationCandidate;
 import com.sevak.api.admin.dto.VerificationRequest;
 import com.sevak.api.auth.CurrentUser;
 import com.sevak.api.common.KeysetPage;
 import com.sevak.api.common.OpenApiConfig;
+import com.sevak.api.meta.QueryHeaderConfig;
+import com.sevak.api.meta.ShowsQuery;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -45,18 +51,39 @@ public class AdminController {
     }
 
     @GetMapping("/revenue")
+    @ShowsQuery("admin.revenue")
     @Operation(summary = "Revenue by category")
     public List<CategoryRevenue> revenue() {
         return service.revenueByCategory();
     }
 
     @GetMapping("/leaderboard")
+    @ShowsQuery("admin.leaderboard")
     @Operation(summary = "Provider leaderboard", description = "Ranked by Bayesian weighted rating.")
     public List<LeaderboardEntry> leaderboard(
             @Parameter(description = "Read the pre-computed materialized view instead of the live query")
                     @RequestParam(defaultValue = "false")
-                    boolean fast) {
+                    boolean fast,
+            HttpServletResponse response) {
+        if (fast) {
+            response.setHeader(QueryHeaderConfig.HEADER, "admin.leaderboard.fast");
+        }
         return service.leaderboard(fast);
+    }
+
+    @GetMapping("/complaints/board")
+    @ShowsQuery("admin.complaints")
+    @Operation(summary = "Every complaint", description = "Open complaints first.")
+    public List<ComplaintBoardItem> complaintBoard() {
+        return service.complaintBoard();
+    }
+
+    @GetMapping("/providers")
+    @ShowsQuery("admin.verification")
+    @Operation(summary = "Providers by verification status")
+    public List<VerificationCandidate> providers(
+            @RequestParam(defaultValue = "pending") @Pattern(regexp = "pending|verified|rejected") String status) {
+        return service.providersByVerification(status);
     }
 
     @GetMapping("/complaints")
@@ -66,6 +93,7 @@ public class AdminController {
     }
 
     @GetMapping("/city-revenue")
+    @ShowsQuery("admin.cityRevenue")
     @Operation(summary = "Revenue by city", description = "Read from a materialized view.")
     public List<CityRevenue> cityRevenue() {
         return service.cityRevenue();
