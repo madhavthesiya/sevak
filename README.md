@@ -4,7 +4,7 @@
 
 **A REST API built on a BCNF-normalized 29-table PostgreSQL schema**
 
-[![CI](https://github.com/madhavthesiya/sevak-api/actions/workflows/ci.yml/badge.svg)](https://github.com/madhavthesiya/sevak-api/actions/workflows/ci.yml)
+[![CI](https://github.com/madhavthesiya/sevak/actions/workflows/ci.yml/badge.svg)](https://github.com/madhavthesiya/sevak/actions/workflows/ci.yml)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.4-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/)
@@ -108,7 +108,7 @@ AFTER (BCNF compliant):
 
 📊 Relational Schema: [`sevak_dbml.dbml`](docs/sevak_dbml.dbml) (paste into dbdiagram.io)
 
-📝 Top 15 SQL Queries: [`sevak_queries.sql`](sql/sevak_queries.sql)
+📝 Top 15 SQL Queries: [`sevak_queries.sql`](api/sql/sevak_queries.sql)
 
 ⚡ Query Optimization Report: [`QUERY_OPTIMIZATION.md`](docs/QUERY_OPTIMIZATION.md)
 
@@ -215,8 +215,8 @@ Errors use [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457), w
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/madhavthesiya/sevak-api.git
-cd sevak-api
+git clone https://github.com/madhavthesiya/sevak.git
+cd sevak
 
 # 2. Configure environment
 cp .env.example .env
@@ -229,7 +229,7 @@ psql -U postgres -c "CREATE DATABASE sevak_db"
 # 4. Run the API
 export DB_PASSWORD=your_password   # Linux/Mac
 $env:DB_PASSWORD="your_password"   # Windows PowerShell
-mvn spring-boot:run
+cd api && ./mvnw spring-boot:run
 
 # 5. Open Swagger UI
 open http://localhost:8080/swagger-ui.html
@@ -249,10 +249,10 @@ docker compose up --build
 ## ✅ Testing
 
 ```bash
-./mvnw verify   # needs Docker running
+cd api && ./mvnw verify   # needs Docker running
 ```
 
-Tests run against a real PostgreSQL 16 in Docker (Testcontainers), and Flyway builds the database from scratch for every run. Each test is rolled back, so tests can't affect each other. They cover every read endpoint, error responses, stored procedures, triggers, revenue totals, data integrity and customer data isolation. CI runs them on every push, along with a formatting check (Spotless); the coverage report is written to `target/site/jacoco`.
+Tests run against a real PostgreSQL 16 in Docker (Testcontainers), and Flyway builds the database from scratch for every run. Each test is rolled back, so tests can't affect each other. They cover every read endpoint, error responses, stored procedures, triggers, revenue totals, data integrity and customer data isolation. CI runs them on every push, along with a formatting check (Spotless); the coverage report is written to `api/target/site/jacoco`.
 
 ---
 
@@ -278,23 +278,22 @@ Tests run against a real PostgreSQL 16 in Docker (Testcontainers), and Flyway bu
 ## 📁 Project Structure
 
 ```
-sevak-api/
-├── src/main/java/com/sevak/api/
-│   ├── common/      # Errors, pagination, request logging, OpenAPI, CORS
-│   ├── catalog/     # Services
-│   ├── provider/    # Search, profiles, jobs, earnings
-│   ├── customer/    # Bookings, payments, spending, addresses
-│   ├── booking/     # Cancel and accept
-│   └── admin/       # Analytics, keyset booking list, scheduled view refresh
-│                    # Each feature: Controller → Service → Repository, with dto/ records
-├── src/main/resources/
-│   ├── application*.properties
-│   └── db/          # Flyway: migration/ (schema, procedures, views), seed/ (demo data)
-├── src/test/java/   # Integration tests on a real PostgreSQL
-├── sql/             # Top 15 showcase queries and data integrity checks
-├── docs/            # Normalization proof, DBML, query notes
-├── Dockerfile
-└── docker-compose.yml
+sevak/
+├── api/                 # Spring Boot backend
+│   ├── src/main/java/com/sevak/api/
+│   │   ├── auth/        # Login, tokens, security rules
+│   │   ├── common/      # Errors, pagination, rate limiting, request logging, OpenAPI
+│   │   ├── catalog/     # Services
+│   │   ├── provider/    # Search, profiles, jobs, earnings
+│   │   ├── customer/    # Bookings, payments, spending, addresses
+│   │   ├── booking/     # Create, lifecycle, payments, reviews, complaints
+│   │   └── admin/       # Analytics, verification, refunds, scheduled jobs
+│   │                    # Each feature: Controller → Service → Repository, with dto/ records
+│   ├── src/main/resources/db/  # Flyway: migration/ (schema, procedures, views), seed/ (demo data)
+│   ├── src/test/java/   # Integration tests on a real PostgreSQL
+│   └── sql/             # Top 15 showcase queries and data integrity checks
+├── docs/                # Normalization proof, DBML, query notes
+└── docker-compose.yml   # Runs the database and the API
 ```
 
 ---
