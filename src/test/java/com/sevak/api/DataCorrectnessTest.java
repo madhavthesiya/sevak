@@ -50,7 +50,8 @@ class DataCorrectnessTest extends IntegrationTest {
                 .collect(Collectors.joining("\n"));
         List<String> queries = Arrays.stream(script.split(";"))
                 .map(String::trim)
-                .filter(sql -> sql.toUpperCase().startsWith("SELECT") || sql.toUpperCase().startsWith("WITH"))
+                .filter(sql -> sql.toUpperCase().startsWith("SELECT")
+                        || sql.toUpperCase().startsWith("WITH"))
                 .toList();
 
         assertThat(queries).hasSize(3);
@@ -104,7 +105,8 @@ class DataCorrectnessTest extends IntegrationTest {
 
     @Test
     void aPrepaidBookingIsPaidButNotUpcoming() throws Exception {
-        jdbc.update("INSERT INTO payments (booking_id, payment_method, status, amount) VALUES (4, 'UPI', 'success', 350)");
+        jdbc.update(
+                "INSERT INTO payments (booking_id, payment_method, status, amount) VALUES (4, 'UPI', 'success', 350)");
 
         mvc.perform(get("/api/customers/3/spending"))
                 .andExpect(jsonPath("$.paid").value(350.00))
@@ -113,11 +115,13 @@ class DataCorrectnessTest extends IntegrationTest {
 
     @Test
     void searchHidesProvidersWhoAreNotVerified() throws Exception {
-        mvc.perform(get("/api/general/services/search?q=fan")).andExpect(jsonPath("$.length()").value(1));
+        mvc.perform(get("/api/general/services/search?q=fan"))
+                .andExpect(jsonPath("$.length()").value(1));
 
         jdbc.update("UPDATE service_providers SET verification_status = 'pending' WHERE provider_id = 1");
 
-        mvc.perform(get("/api/general/services/search?q=fan")).andExpect(jsonPath("$.length()").value(0));
+        mvc.perform(get("/api/general/services/search?q=fan"))
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
@@ -129,7 +133,8 @@ class DataCorrectnessTest extends IntegrationTest {
 
     @Test
     void theOwnerCanReadTheirBookingItems() throws Exception {
-        mvc.perform(get("/api/customers/1/bookings/1/items")).andExpect(jsonPath("$.length()").value(2));
+        mvc.perform(get("/api/customers/1/bookings/1/items"))
+                .andExpect(jsonPath("$.length()").value(2));
     }
 
     @Test

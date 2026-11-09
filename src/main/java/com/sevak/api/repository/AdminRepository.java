@@ -1,10 +1,9 @@
 package com.sevak.api.repository;
 
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Map;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public class AdminRepository {
@@ -94,9 +93,11 @@ public class AdminRepository {
         jdbc.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_provider_leaderboard");
         jdbc.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_city_revenue_summary");
         return Map.of(
-                "success", true,
-                "message", "Materialized views refreshed successfully",
-                "timestamp", java.time.Instant.now().toString()
-        );
+                "success",
+                true,
+                "message",
+                "Materialized views refreshed successfully",
+                "timestamp",
+                java.time.Instant.now().toString());
     }
 }

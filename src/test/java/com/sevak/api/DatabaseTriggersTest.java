@@ -15,7 +15,9 @@ class DatabaseTriggersTest extends IntegrationTest {
 
     private List<String> statusLog(int bookingId) {
         return jdbc.queryForList(
-                "SELECT status FROM booking_status_log WHERE booking_id = ? ORDER BY log_time", String.class, bookingId);
+                "SELECT status FROM booking_status_log WHERE booking_id = ? ORDER BY log_time",
+                String.class,
+                bookingId);
     }
 
     @Test

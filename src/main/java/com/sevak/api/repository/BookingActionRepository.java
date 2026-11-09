@@ -3,14 +3,13 @@ package com.sevak.api.repository;
 import com.sevak.api.exception.ConflictException;
 import com.sevak.api.exception.NotFoundException;
 import com.sevak.api.exception.UnprocessableException;
+import java.sql.SQLException;
+import java.util.Map;
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.ServerErrorMessage;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
-
-import java.sql.SQLException;
-import java.util.Map;
 
 @Repository
 public class BookingActionRepository {
@@ -29,10 +28,12 @@ public class BookingActionRepository {
             throw translate(ex, bookingId);
         }
         return Map.of(
-                "success", true,
-                "message", "Booking " + bookingId + " cancelled successfully",
-                "booking_id", bookingId
-        );
+                "success",
+                true,
+                "message",
+                "Booking " + bookingId + " cancelled successfully",
+                "booking_id",
+                bookingId);
     }
 
     // ── Confirm Booking (Calls Stored Procedure) ────────────
@@ -43,10 +44,12 @@ public class BookingActionRepository {
             throw translate(ex, bookingId);
         }
         return Map.of(
-                "success", true,
-                "message", "Booking " + bookingId + " confirmed successfully",
-                "booking_id", bookingId
-        );
+                "success",
+                true,
+                "message",
+                "Booking " + bookingId + " confirmed successfully",
+                "booking_id",
+                bookingId);
     }
 
     /**
