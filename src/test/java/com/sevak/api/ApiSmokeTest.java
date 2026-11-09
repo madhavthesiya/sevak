@@ -19,12 +19,9 @@ class ApiSmokeTest extends IntegrationTest {
                 "/api/v1/providers",
                 "/api/v1/providers?service=clean",
                 "/api/v1/providers?day=Monday",
-                "/api/v1/customers/1/bookings",
-                "/api/v1/customers/1/payments",
-                "/api/v1/providers/1/reviews",
-                "/api/v1/providers/1/jobs?status=completed"
+                "/api/v1/providers/1/reviews"
             })
-    void pagedEndpointsReturnData(String url) throws Exception {
+    void publicPagedEndpointsReturnData(String url) throws Exception {
         mvc.perform(get(url))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()", greaterThan(0)))
@@ -32,44 +29,63 @@ class ApiSmokeTest extends IntegrationTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"/api/v1/me/bookings", "/api/v1/me/payments"})
+    void customerPagedEndpointsReturnData(String url) throws Exception {
+        mvc.perform(get(url).header(AUTH, customer(1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()", greaterThan(0)));
+    }
+
+    @Test
+    void addressesReturnData() throws Exception {
+        mvc.perform(get("/api/v1/me/addresses").header(AUTH, customer(1)))
+                .andExpect(jsonPath("$.length()", greaterThan(0)));
+    }
+
+    @Test
+    void providerWorkReturnsData() throws Exception {
+        mvc.perform(get("/api/v1/provider/jobs?status=completed").header(AUTH, provider(1)))
+                .andExpect(jsonPath("$.data.length()", greaterThan(0)));
+        mvc.perform(get("/api/v1/provider/earnings").header(AUTH, provider(1)))
+                .andExpect(jsonPath("$.length()", greaterThan(0)));
+    }
+
+    @Test
+    void topProvidersArePublic() throws Exception {
+        mvc.perform(get("/api/v1/providers/top"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()", greaterThan(0)));
+    }
+
+    @ParameterizedTest
     @ValueSource(
             strings = {
-                "/api/v1/providers/top",
-                "/api/v1/customers/1/addresses",
-                "/api/v1/providers/1/earnings",
                 "/api/v1/admin/revenue",
                 "/api/v1/admin/leaderboard",
                 "/api/v1/admin/leaderboard?fast=true",
                 "/api/v1/admin/complaints",
                 "/api/v1/admin/city-revenue"
             })
-    void listEndpointsReturnData(String url) throws Exception {
-        mvc.perform(get(url)).andExpect(status().isOk()).andExpect(jsonPath("$.length()", greaterThan(0)));
+    void adminEndpointsReturnData(String url) throws Exception {
+        mvc.perform(get(url).header(AUTH, admin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()", greaterThan(0)));
     }
 
     @Test
     void pendingJobsAreTheDefault() throws Exception {
-        mvc.perform(get("/api/v1/providers/1/jobs"))
-                .andExpect(status().isOk())
+        mvc.perform(get("/api/v1/provider/jobs").header(AUTH, provider(1)))
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].bookingId").value(10));
-    }
-
-    @Test
-    void spendingSummaryIsASingleObject() throws Exception {
-        mvc.perform(get("/api/v1/customers/1/spending"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.paid").exists())
-                .andExpect(jsonPath("$.upcoming").exists())
-                .andExpect(jsonPath("$.refunded").exists());
     }
 
     @Test
     void openApiDocsAreServed() throws Exception {
         mvc.perform(get("/api-docs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.components.securitySchemes.apiKey.name").value("X-Api-Key"))
-                .andExpect(jsonPath("$.components.schemas.ProviderOffering.properties.providerName")
+                .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.scheme")
+                        .value("bearer"))
+                .andExpect(jsonPath("$.paths['/api/v1/bookings'].post.responses['401']")
                         .exists())
                 .andExpect(jsonPath("$.paths['/api/v1/services'].get.responses['400']")
                         .exists());

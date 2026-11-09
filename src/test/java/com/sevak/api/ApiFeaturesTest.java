@@ -96,9 +96,10 @@ class ApiFeaturesTest extends IntegrationTest {
 
     @Test
     void earningsCanBeLimitedToADateRange() throws Exception {
-        mvc.perform(get("/api/v1/providers/1/earnings?from=2026-04-01&to=2026-04-30"))
+        mvc.perform(get("/api/v1/provider/earnings?from=2026-04-01&to=2026-04-30")
+                        .header(AUTH, provider(1)))
                 .andExpect(jsonPath("$[0].totalEarned").value(495.00));
-        mvc.perform(get("/api/v1/providers/1/earnings?from=2026-05-01"))
+        mvc.perform(get("/api/v1/provider/earnings?from=2026-05-01").header(AUTH, provider(1)))
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
@@ -108,7 +109,7 @@ class ApiFeaturesTest extends IntegrationTest {
         String url = "/api/v1/admin/bookings?limit=3";
         boolean more = true;
         while (more) {
-            String body = mvc.perform(get(url))
+            String body = mvc.perform(get(url).header(AUTH, admin()))
                     .andExpect(status().isOk())
                     .andReturn()
                     .getResponse()
@@ -121,7 +122,11 @@ class ApiFeaturesTest extends IntegrationTest {
                 url = "/api/v1/admin/bookings?limit=3&before=" + before.replace("+", "%2B") + "&beforeId=" + beforeId;
             }
         }
-        assertThat(ids).containsExactly(10, 9, 8, 7, 6, 5, 4, 3, 2, 1);
+        assertThat(ids)
+                .hasSize(10)
+                .containsExactlyElementsOf(jdbc.queryForList(
+                        "SELECT booking_id FROM bookings ORDER BY scheduled_start DESC, booking_id DESC",
+                        Integer.class));
     }
 
     @Test
@@ -171,6 +176,6 @@ class ApiFeaturesTest extends IntegrationTest {
 
     @Test
     void onlyTheIntendedActuatorEndpointsAreExposed() throws Exception {
-        mvc.perform(get("/actuator/env")).andExpect(status().isNotFound());
+        mvc.perform(get("/actuator/env").header(AUTH, admin())).andExpect(status().isNotFound());
     }
 }

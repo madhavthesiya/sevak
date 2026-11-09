@@ -21,15 +21,23 @@ class BookingProceduresTest extends IntegrationTest {
     private static final int PENDING_BOOKING = 10; // Tuesday 11:00; provider 1 works Tue 09-18
     private static final int UNKNOWN_BOOKING = 9999;
 
+    private int partyOf(String column, int bookingId) {
+        Integer id = jdbc.queryForObject(
+                "SELECT " + column + " FROM bookings WHERE booking_id = ?", Integer.class, bookingId);
+        return id == null ? 0 : id;
+    }
+
     private ResultActions cancel(int bookingId) throws Exception {
+        String token = bookingId == UNKNOWN_BOOKING ? customer(1) : customer(partyOf("customer_id", bookingId));
         return mvc.perform(post("/api/v1/bookings/{id}/cancel", bookingId)
-                .header(API_KEY_HEADER, API_KEY)
+                .header(AUTH, token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"reason\": \"Changed my mind\"}"));
     }
 
     private ResultActions confirm(int bookingId) throws Exception {
-        return mvc.perform(post("/api/v1/bookings/{id}/accept", bookingId).header(API_KEY_HEADER, API_KEY));
+        String token = bookingId == UNKNOWN_BOOKING ? provider(1) : provider(partyOf("provider_id", bookingId));
+        return mvc.perform(post("/api/v1/bookings/{id}/accept", bookingId).header(AUTH, token));
     }
 
     private String statusOf(int bookingId) {

@@ -1,5 +1,6 @@
 package com.sevak.api;
 
+import com.sevak.api.auth.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -16,13 +17,13 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  * schema and loads the demo data into it. Each test runs in a transaction that is rolled back
  * afterwards, so tests can change data without affecting each other.
  */
-@SpringBootTest(properties = "sevak.admin-key=" + IntegrationTest.API_KEY)
+@SpringBootTest(
+        properties = {"sevak.rate-limit.strict-per-minute=1000000", "sevak.rate-limit.general-per-minute=1000000"})
 @AutoConfigureMockMvc
 @Transactional
 public abstract class IntegrationTest {
 
-    protected static final String API_KEY = "test-key";
-    protected static final String API_KEY_HEADER = "X-Api-Key";
+    protected static final String AUTH = "Authorization";
 
     @ServiceConnection
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");
@@ -36,4 +37,21 @@ public abstract class IntegrationTest {
 
     @Autowired
     protected JdbcTemplate jdbc;
+
+    @Autowired
+    private TokenService tokens;
+
+    // In the demo data: customers are users 1-7, providers are users 8-13, admins are users 14-15.
+
+    protected String customer(int customerId) {
+        return "Bearer " + tokens.issue(customerId, "customer", customerId);
+    }
+
+    protected String provider(int providerId) {
+        return "Bearer " + tokens.issue(providerId + 7, "provider", providerId);
+    }
+
+    protected String admin() {
+        return "Bearer " + tokens.issue(14, "admin", 1);
+    }
 }

@@ -16,17 +16,13 @@ class ApiErrorsTest extends IntegrationTest {
     @ParameterizedTest
     @ValueSource(
             strings = {
-                "/api/v1/customers/abc/bookings",
                 "/api/v1/services?page=0",
                 "/api/v1/services?limit=0",
                 "/api/v1/services?limit=101",
                 "/api/v1/providers/top?limit=0",
                 "/api/v1/providers/top?limit=51",
                 "/api/v1/providers?day=Funday",
-                "/api/v1/providers/1/jobs?status=nonsense",
-                "/api/v1/providers/1/earnings?from=2026-05-01&to=2026-04-01",
-                "/api/v1/providers/1/earnings?from=yesterday",
-                "/api/v1/admin/bookings?beforeId=5"
+                "/api/v1/providers/abc"
             })
     void invalidInputReturns400(String url) throws Exception {
         mvc.perform(get(url))
@@ -53,24 +49,29 @@ class ApiErrorsTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(
-            strings = {
-                "/api/does-not-exist",
-                "/api/v1/customers/9999/bookings",
-                "/api/v1/customers/9999/spending",
-                "/api/v1/providers/9999",
-                "/api/v1/providers/9999/jobs",
-                "/api/v1/customers/1/bookings/9999"
-            })
+    @ValueSource(strings = {"/api/does-not-exist", "/api/v1/providers/9999", "/api/v1/me/bookings/9999"})
     void missingThingsReturn404(String url) throws Exception {
-        mvc.perform(get(url))
+        mvc.perform(get(url).header(AUTH, customer(1)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.type").value("urn:sevak:error:not-found"));
     }
 
     @Test
+    void providerAndAdminInputIsValidated() throws Exception {
+        mvc.perform(get("/api/v1/provider/jobs?status=nonsense").header(AUTH, provider(1)))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/v1/provider/earnings?from=2026-05-01&to=2026-04-01")
+                        .header(AUTH, provider(1)))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/v1/provider/earnings?from=yesterday").header(AUTH, provider(1)))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/v1/admin/bookings?beforeId=5").header(AUTH, admin()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void wrongMethodReturns405() throws Exception {
-        mvc.perform(post("/api/v1/services").header(API_KEY_HEADER, API_KEY))
+        mvc.perform(post("/api/v1/services").header(AUTH, admin()))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(jsonPath("$.type").value("urn:sevak:error:method-not-allowed"));
     }
@@ -87,32 +88,16 @@ class ApiErrorsTest extends IntegrationTest {
     void unexpectedDatabaseErrorReturnsGeneric500() throws Exception {
         jdbc.execute("ALTER TABLE categories RENAME TO categories_renamed"); // rolled back after the test
 
-        mvc.perform(get("/api/v1/admin/revenue"))
+        mvc.perform(get("/api/v1/admin/revenue").header(AUTH, admin()))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.detail").value("Something went wrong"))
                 .andExpect(jsonPath("$.type").value("urn:sevak:error:internal"));
     }
 
     @Test
-    void writeWithoutApiKeyReturns401() throws Exception {
-        mvc.perform(post("/api/v1/bookings/10/accept")).andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void writeWithWrongApiKeyReturns401() throws Exception {
-        mvc.perform(post("/api/v1/bookings/10/accept").header(API_KEY_HEADER, "wrong"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void refreshViewsNeedsTheApiKey() throws Exception {
-        mvc.perform(post("/api/v1/admin/refresh-views")).andExpect(status().isUnauthorized());
-    }
-
-    @Test
     void cancelNeedsAReason() throws Exception {
         mvc.perform(post("/api/v1/bookings/6/cancel")
-                        .header(API_KEY_HEADER, API_KEY)
+                        .header(AUTH, customer(5))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"reason\": \"\"}"))
                 .andExpect(status().isBadRequest())
@@ -122,7 +107,7 @@ class ApiErrorsTest extends IntegrationTest {
     @Test
     void cancelWithBrokenJsonReturns400() throws Exception {
         mvc.perform(post("/api/v1/bookings/6/cancel")
-                        .header(API_KEY_HEADER, API_KEY)
+                        .header(AUTH, customer(5))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{not json"))
                 .andExpect(status().isBadRequest());
