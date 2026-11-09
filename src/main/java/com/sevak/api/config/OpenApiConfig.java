@@ -25,16 +25,17 @@ public class OpenApiConfig {
                                 advanced SQL queries (multi-table JOINs, Window Functions, Stored Procedures).
                                 """)
                         .version("1.0.0")
-                        .contact(new Contact()
-                                .name("Madhav")
-                                .url("https://github.com/madhavthesiya")))
+                        .contact(new Contact().name("Madhav").url("https://github.com/madhavthesiya")))
                 // Write endpoints (POST) need the X-Api-Key header until JWT auth arrives in Phase 4.
                 // This adds an "Authorize" button in Swagger UI so "Try it out" can send the key.
-                .components(new Components().addSecuritySchemes(API_KEY_SCHEME, new SecurityScheme()
-                        .type(SecurityScheme.Type.APIKEY)
-                        .in(SecurityScheme.In.HEADER)
-                        .name("X-Api-Key")
-                        .description("Required for POST endpoints. Locally the key is 'dev-admin-key' "
-                                + "unless SEVAK_ADMIN_KEY is set.")));
+                .components(new Components()
+                        .addSecuritySchemes(
+                                API_KEY_SCHEME,
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.APIKEY)
+                                        .in(SecurityScheme.In.HEADER)
+                                        .name("X-Api-Key")
+                                        .description("Required for POST endpoints. Locally the key is 'dev-admin-key' "
+                                                + "unless SEVAK_ADMIN_KEY is set.")));
     }
 }

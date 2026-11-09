@@ -12,8 +12,6 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./sql/sevak_ddl.sql:/docker-entrypoint-initdb.d/01-ddl.sql
-      - ./sql/sevak_data.sql:/docker-entrypoint-initdb.d/02-data.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s

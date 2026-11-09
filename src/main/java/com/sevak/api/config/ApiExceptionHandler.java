@@ -3,6 +3,7 @@ package com.sevak.api.config;
 import com.sevak.api.exception.ConflictException;
 import com.sevak.api.exception.NotFoundException;
 import com.sevak.api.exception.UnprocessableException;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -15,8 +16,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-
-import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
@@ -51,7 +50,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             HandlerMethodValidationException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         String detail = ex.getParameterValidationResults().stream()
                 .flatMap(result -> result.getResolvableErrors().stream()
-                        .map(error -> result.getMethodParameter().getParameterName() + ": " + error.getDefaultMessage()))
+                        .map(error ->
+                                result.getMethodParameter().getParameterName() + ": " + error.getDefaultMessage()))
                 .collect(Collectors.joining("; "));
         ProblemDetail body = ProblemDetail.forStatusAndDetail(status, detail.isEmpty() ? "Validation failed" : detail);
         return handleExceptionInternal(ex, body, headers, status, request);
@@ -63,4 +63,3 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong");
     }
 }
-

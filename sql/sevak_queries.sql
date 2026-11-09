@@ -1,7 +1,7 @@
 -- ============================================================
 --  SEVAK – Service Marketplace
 --  IT214 DBMS Project
---  Run AFTER sevak_ddl.sql and sevak_data.sql
+--  Run against a database built by the Flyway migrations
 --  Schema: sevak
 -- ============================================================
 SET search_path = sevak;

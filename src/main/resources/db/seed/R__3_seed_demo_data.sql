@@ -1,7 +1,10 @@
 -- ============================================================
---  SEVAK – Sample Data Seeding Script
+--  SEVAK: demo data (repeatable, dev/demo only)
+--  Re-running this file replaces ALL data with the demo set.
 -- ============================================================
-SET search_path = sevak;
+
+TRUNCATE users, cities, categories, coupons RESTART IDENTITY CASCADE;
+
 
 -- ============================================================
 -- 1. CITIES  (5 rows)
@@ -320,6 +323,3 @@ INSERT INTO complaints (booking_id, subject, status) VALUES
 REFRESH MATERIALIZED VIEW mv_provider_leaderboard;
 REFRESH MATERIALIZED VIEW mv_city_revenue_summary;
 
--- ============================================================
---  END OF DATA SEEDING
--- ============================================================

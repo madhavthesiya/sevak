@@ -1,15 +1,14 @@
 package com.sevak.api.controller;
 
 import io.swagger.v3.oas.annotations.Hidden;
+import java.time.Instant;
+import java.util.Map;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.time.Instant;
-import java.util.Map;
 
 /**
  * Health check endpoint — used by DigitalOcean/Docker to verify the app is alive.
@@ -39,7 +38,6 @@ public class HealthController {
                 .body(Map.of(
                         "status", dbUp ? "UP" : "DOWN",
                         "database", dbUp ? "connected" : "disconnected",
-                        "timestamp", Instant.now().toString()
-                ));
+                        "timestamp", Instant.now().toString()));
     }
 }

@@ -10,24 +10,32 @@
 	</parent>
 	<groupId>com.sevak</groupId>
 	<artifactId>sevak-api</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.2.0-SNAPSHOT</version>
 	<name>sevak-api</name>
-	<description/>
-	<url/>
+	<description>REST API for SEVAK, a hyperlocal home-services marketplace built on PostgreSQL</description>
+	<url>https://github.com/madhavthesiya/sevak-api</url>
 	<licenses>
-		<license/>
+		<license>
+			<name>All Rights Reserved</name>
+		</license>
 	</licenses>
 	<developers>
-		<developer/>
+		<developer>
+			<id>madhavthesiya</id>
+			<name>Madhav Thesiya</name>
+			<url>https://github.com/madhavthesiya</url>
+		</developer>
 	</developers>
 	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
+		<connection>scm:git:https://github.com/madhavthesiya/sevak-api.git</connection>
+		<developerConnection>scm:git:https://github.com/madhavthesiya/sevak-api.git</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/madhavthesiya/sevak-api</url>
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<jacoco.version>0.8.16</jacoco.version>
+		<spotless.version>3.11.0</spotless.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -42,11 +50,28 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
-
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>3.0.2</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc-test</artifactId>
@@ -58,9 +83,14 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>3.0.2</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-postgresql</artifactId>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
@@ -69,6 +99,45 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>${spotless.version}</version>
+				<configuration>
+					<java>
+						<palantirJavaFormat/>
+					</java>
+				</configuration>
+				<executions>
+					<execution>
+						<id>check-formatting</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
