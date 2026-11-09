@@ -39,27 +39,7 @@ public class AdminRepository {
 
     // ── Provider Leaderboard (RANK() Window Function!) ──────
     public List<Map<String, Object>> getLeaderboard() {
-        return jdbc.queryForList("""
-                SELECT
-                    RANK() OVER (ORDER BY sp.avg_rating DESC NULLS LAST,
-                                 COUNT(DISTINCT b.booking_id) DESC)  AS rank,
-                    sp.provider_id,
-                    u.email,
-                    ci.city_name,
-                    sp.avg_rating,
-                    COUNT(DISTINCT b.booking_id)                     AS jobs_completed,
-                    COALESCE(SUM(p.amount), 0)                       AS total_revenue
-                FROM service_providers sp
-                JOIN users u ON sp.user_id = u.user_id
-                JOIN cities ci ON sp.city_id = ci.city_id
-                LEFT JOIN bookings b ON sp.provider_id = b.provider_id
-                                    AND b.status = 'completed'
-                LEFT JOIN payments p ON b.booking_id = p.booking_id
-                                    AND p.status = 'success'
-                WHERE sp.is_active = TRUE
-                GROUP BY sp.provider_id, u.email, ci.city_name, sp.avg_rating
-                ORDER BY rank
-                """);
+        return jdbc.queryForList("SELECT * FROM v_provider_leaderboard ORDER BY rank, provider_id");
     }
 
     // ── Complaint Dashboard (STRING_AGG, 5-table JOIN) ──────
@@ -80,7 +60,7 @@ public class AdminRepository {
 
     // ── Leaderboard from Materialized View (Pre-computed read) ───
     public List<Map<String, Object>> getLeaderboardFast() {
-        return jdbc.queryForList("SELECT * FROM mv_provider_leaderboard ORDER BY rank");
+        return jdbc.queryForList("SELECT * FROM mv_provider_leaderboard ORDER BY rank, provider_id");
     }
 
     // ── City Revenue from Materialized View ───────────────

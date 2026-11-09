@@ -18,14 +18,15 @@ public class ProviderRepository {
     public List<Map<String, Object>> getPendingJobs(int providerId, int page, int limit) {
         int offset = (page - 1) * limit;
         return jdbc.queryForList("""
-                SELECT b.booking_id, cu.name AS customer, b.scheduled_date,
-                       b.scheduled_time, b.total_amount, loc.street, ar.area_name
+                SELECT b.booking_id, cu_u.full_name AS customer, b.scheduled_start,
+                       b.scheduled_end, b.total_amount, loc.street, ar.area_name
                 FROM bookings b
                 JOIN customers cu ON b.customer_id = cu.customer_id
+                JOIN users cu_u ON cu.user_id = cu_u.user_id
                 JOIN locations loc ON b.location_id = loc.location_id
                 JOIN areas ar ON loc.area_id = ar.area_id
                 WHERE b.provider_id = ? AND b.status = 'pending'
-                ORDER BY b.scheduled_date, b.scheduled_time
+                ORDER BY b.scheduled_start, b.booking_id
                 LIMIT ? OFFSET ?
                 """, providerId, limit, offset);
     }
@@ -34,13 +35,18 @@ public class ProviderRepository {
     public List<Map<String, Object>> getCompletedJobs(int providerId, int page, int limit) {
         int offset = (page - 1) * limit;
         return jdbc.queryForList("""
-                SELECT b.booking_id, cu.name AS customer, b.scheduled_date,
+                SELECT b.booking_id, cu_u.full_name AS customer, b.scheduled_start,
                        b.total_amount, p.status AS payment_status
                 FROM bookings b
                 JOIN customers cu ON b.customer_id = cu.customer_id
-                LEFT JOIN payments p ON b.booking_id = p.booking_id
+                JOIN users cu_u ON cu.user_id = cu_u.user_id
+                LEFT JOIN LATERAL (
+                    SELECT status FROM payments
+                    WHERE booking_id = b.booking_id
+                    ORDER BY created_at DESC, payment_id DESC LIMIT 1
+                ) p ON TRUE
                 WHERE b.provider_id = ? AND b.status = 'completed'
-                ORDER BY b.scheduled_date DESC
+                ORDER BY b.scheduled_start DESC, b.booking_id DESC
                 LIMIT ? OFFSET ?
                 """, providerId, limit, offset);
     }
@@ -63,13 +69,14 @@ public class ProviderRepository {
     public List<Map<String, Object>> getReviews(int providerId, int page, int limit) {
         int offset = (page - 1) * limit;
         return jdbc.queryForList("""
-                SELECT pr.rating, pr.comment, cu.name AS customer,
-                       b.scheduled_date
+                SELECT pr.rating, pr.comment, cu_u.full_name AS customer,
+                       b.scheduled_start
                 FROM provider_reviews pr
                 JOIN bookings b ON pr.booking_id = b.booking_id
                 JOIN customers cu ON b.customer_id = cu.customer_id
+                JOIN users cu_u ON cu.user_id = cu_u.user_id
                 WHERE b.provider_id = ?
-                ORDER BY b.scheduled_date DESC
+                ORDER BY b.scheduled_start DESC, b.booking_id DESC
                 LIMIT ? OFFSET ?
                 """, providerId, limit, offset);
     }

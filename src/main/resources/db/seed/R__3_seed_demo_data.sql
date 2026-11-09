@@ -5,10 +5,6 @@
 
 TRUNCATE users, cities, categories, coupons RESTART IDENTITY CASCADE;
 
-
--- ============================================================
--- 1. CITIES  (5 rows)
--- ============================================================
 INSERT INTO cities (city_name, state) VALUES
 ('Ahmedabad',  'Gujarat'),
 ('Mumbai',     'Maharashtra'),
@@ -16,62 +12,44 @@ INSERT INTO cities (city_name, state) VALUES
 ('Delhi',      'Delhi'),
 ('Pune',       'Maharashtra');
 
--- ============================================================
--- 2. USERS  (15 rows: 7 customers + 6 providers + 2 admins)
--- ============================================================
-INSERT INTO users (email, password, role, status) VALUES
--- Customers (user_id 1–7)
-('aarav.sharma@gmail.com',   'hashed_pass1', 'customer', 'active'),
-('priya.patel@gmail.com',    'hashed_pass2', 'customer', 'active'),
-('rohan.mehta@gmail.com',    'hashed_pass3', 'customer', 'active'),
-('sneha.reddy@gmail.com',    'hashed_pass4', 'customer', 'active'),
-('vikram.singh@gmail.com',   'hashed_pass5', 'customer', 'active'),
-('neha.gupta@gmail.com',     'hashed_pass6', 'customer', 'active'),
-('arjun.desai@gmail.com',    'hashed_pass7', 'customer', 'inactive'),
--- Providers (user_id 8–13)
-('ravi.electrician@gmail.com','hashed_pass8',  'provider', 'active'),
-('sunita.cleaner@gmail.com', 'hashed_pass9',  'provider', 'active'),
-('amit.plumber@gmail.com',   'hashed_pass10', 'provider', 'active'),
-('pooja.painter@gmail.com',  'hashed_pass11', 'provider', 'active'),
-('karan.carpenter@gmail.com','hashed_pass12', 'provider', 'active'),
-('meena.tutor@gmail.com',    'hashed_pass13', 'provider', 'inactive'),
--- Admins (user_id 14–15)
-('admin.raj@sevak.com',      'hashed_admin1', 'admin',    'active'),
-('admin.divya@sevak.com',    'hashed_admin2', 'admin',    'active');
+-- user_id 1-7 customers, 8-13 providers, 14-15 admins
+INSERT INTO users (email, password_hash, role, status, full_name, phone) VALUES
+('aarav.sharma@gmail.com',    'hashed_pass1',  'customer', 'active',   'Aarav Sharma',   '9876543210'),
+('priya.patel@gmail.com',     'hashed_pass2',  'customer', 'active',   'Priya Patel',    '9876543211'),
+('rohan.mehta@gmail.com',     'hashed_pass3',  'customer', 'active',   'Rohan Mehta',    '9876543212'),
+('sneha.reddy@gmail.com',     'hashed_pass4',  'customer', 'active',   'Sneha Reddy',    '9876543213'),
+('vikram.singh@gmail.com',    'hashed_pass5',  'customer', 'active',   'Vikram Singh',   '9876543214'),
+('neha.gupta@gmail.com',      'hashed_pass6',  'customer', 'active',   'Neha Gupta',     '9876543215'),
+('arjun.desai@gmail.com',     'hashed_pass7',  'customer', 'inactive', 'Arjun Desai',    '9876543216'),
+('ravi.electrician@gmail.com','hashed_pass8',  'provider', 'active',   'Ravi Kumar',     '9876500001'),
+('sunita.cleaner@gmail.com',  'hashed_pass9',  'provider', 'active',   'Sunita Devi',    '9876500002'),
+('amit.plumber@gmail.com',    'hashed_pass10', 'provider', 'active',   'Amit Joshi',     '9876500003'),
+('pooja.painter@gmail.com',   'hashed_pass11', 'provider', 'active',   'Pooja Nair',     '9876500004'),
+('karan.carpenter@gmail.com', 'hashed_pass12', 'provider', 'active',   'Karan Malhotra', '9876500005'),
+('meena.tutor@gmail.com',     'hashed_pass13', 'provider', 'inactive', 'Meena Iyer',     '9876500006'),
+('admin.raj@sevak.com',       'hashed_admin1', 'admin',    'active',   'Raj Verma',      NULL),
+('admin.divya@sevak.com',     'hashed_admin2', 'admin',    'active',   'Divya Rao',      NULL);
 
--- ============================================================
--- 3. CUSTOMERS  (7 rows, linked to user_id 1–7)
--- ============================================================
-INSERT INTO customers (user_id, name, phone) VALUES
-(1,  'Aarav Sharma',  '9876543210'),
-(2,  'Priya Patel',   '9876543211'),
-(3,  'Rohan Mehta',   '9876543212'),
-(4,  'Sneha Reddy',   '9876543213'),
-(5,  'Vikram Singh',  '9876543214'),
-(6,  'Neha Gupta',    '9876543215'),
-(7,  'Arjun Desai',   '9876543216');
+INSERT INTO customers (user_id) SELECT generate_series(1, 7);
 
--- ============================================================
--- 4. SERVICE PROVIDERS  (6 rows, linked to user_id 8–13)
--- ============================================================
-INSERT INTO service_providers (user_id, city_id, bio, experience_years, avg_rating, verification_status, custom_price, is_active) VALUES
-(8,  1, 'Expert electrician with 10+ years of experience.',  10, NULL, 'verified',  500.00, TRUE),
-(9,  1, 'Professional home cleaning services.',               5, NULL, 'verified',  300.00, TRUE),
-(10, 2, 'Licensed plumber for residential & commercial.',     8, NULL, 'verified',  600.00, TRUE),
-(11, 3, 'Creative wall painter and interior decorator.',       6, NULL, 'verified',  450.00, TRUE),
-(12, 4, 'Skilled carpenter specializing in custom furniture.', 12, NULL, 'verified',  700.00, TRUE),
-(13, 5, 'Home tutor for Mathematics and Science.',             3, NULL, 'pending',   250.00, FALSE);
+-- avg_rating and review_count start empty; the review trigger fills them in.
+INSERT INTO service_providers (user_id, city_id, bio, experience_years, verification_status, is_active) VALUES
+(8,  1, 'Expert electrician with 10+ years of experience.',   10, 'verified', TRUE),
+(9,  1, 'Professional home cleaning services.',                5, 'verified', TRUE),
+(10, 2, 'Licensed plumber for residential & commercial.',      8, 'verified', TRUE),
+(11, 3, 'Creative wall painter and interior decorator.',       6, 'verified', TRUE),
+(12, 4, 'Skilled carpenter specializing in custom furniture.', 12, 'verified', TRUE),
+(13, 5, 'Home tutor for Mathematics and Science.',             3, 'pending',  FALSE);
 
--- ============================================================
--- 5. ADMINS  (2 rows, linked to user_id 14–15)
--- ============================================================
-INSERT INTO admins (user_id, admin_role, permissions, department) VALUES
-(14, 'Super Admin',   'ALL',                'Operations'),
-(15, 'Support Admin', 'READ,RESOLVE_TICKET','Customer Support');
+INSERT INTO admins (user_id, admin_role, department) VALUES
+(14, 'Super Admin',   'Operations'),
+(15, 'Support Admin', 'Customer Support');
 
--- ============================================================
--- 6. AREAS  (10 rows)
--- ============================================================
+INSERT INTO admin_permissions (admin_id, permission) VALUES
+(1, 'ALL'),
+(2, 'READ'),
+(2, 'RESOLVE_TICKET');
+
 INSERT INTO areas (city_id, area_name, pincode) VALUES
 (1, 'Navrangpura',   '380009'),
 (1, 'Satellite',     '380015'),
@@ -84,9 +62,6 @@ INSERT INTO areas (city_id, area_name, pincode) VALUES
 (5, 'Kothrud',       '411038'),
 (5, 'Viman Nagar',   '411014');
 
--- ============================================================
--- 7. LOCATIONS  (10 rows — physical places)
--- ============================================================
 INSERT INTO locations (area_id, street, landmark, latitude, longitude) VALUES
 (1,  '12, Nehru Road',         'Near CG Road',           23.0300000, 72.5700000),
 (2,  '45, SG Highway',         'Opp. Iscon Temple',      23.0225000, 72.5300000),
@@ -99,29 +74,23 @@ INSERT INTO locations (area_id, street, landmark, latitude, longitude) VALUES
 (10, '89, Airport Road',       'Near Pheonix Mall',       18.5670000, 73.9140000),
 (5,  '12, 80 Feet Road',       'Koramangala 4th Block',   12.9280000, 77.6220000);
 
--- ============================================================
--- 7b. CUSTOMER ADDRESSES  (15 rows — maps customers to locations)
--- ============================================================
-INSERT INTO customer_addresses (customer_id, location_id, label) VALUES
-(1, 1,  'Home'),
-(1, 2,  'Office'),
-(2, 3,  'Home'),
-(3, 4,  'Home'),
-(4, 5,  'Home'),
-(5, 6,  'Home'),
-(5, 7,  'Office'),
-(6, 8,  'Home'),
-(7, 9,  'Home'),
-(3, 10, 'Office'),
-(3, 1,  'Parents Home'),
-(6, 2,  'Parents Home'),
-(3, 6,  'Delhi Office'),
-(2, 5,  'Bangalore Branch'),
-(7, 1,  'Ahmedabad Home');
+INSERT INTO customer_addresses (customer_id, location_id, label, house_no) VALUES
+(1, 1,  'Home',             'Flat 101'),
+(1, 2,  'Office',           '3rd Floor'),
+(2, 3,  'Home',             'Flat 12B'),
+(3, 4,  'Home',             'A-301'),
+(4, 5,  'Home',             'House 56'),
+(5, 6,  'Home',             'Flat 7'),
+(5, 7,  'Office',           'Block D'),
+(6, 8,  'Home',             'House 34'),
+(7, 9,  'Home',             'Flat 89'),
+(3, 10, 'Office',           '2nd Floor'),
+(3, 1,  'Parents Home',     'Flat 202'),
+(6, 2,  'Parents Home',     'Flat 11'),
+(3, 6,  'Delhi Office',     'Suite 4'),
+(2, 5,  'Bangalore Branch', 'Unit 9'),
+(7, 1,  'Ahmedabad Home',   'Flat 305');
 
--- ============================================================
--- 8. CATEGORIES  (6 rows)
--- ============================================================
 INSERT INTO categories (category_name, description) VALUES
 ('Electrical',       'Wiring, appliance repair, and electrical installations'),
 ('Cleaning',         'Home deep cleaning, kitchen cleaning, bathroom cleaning'),
@@ -130,9 +99,6 @@ INSERT INTO categories (category_name, description) VALUES
 ('Carpentry',        'Furniture repair, custom builds, and wood polishing'),
 ('Home Tutoring',    'Academic tutoring for school and college students');
 
--- ============================================================
--- 9. SERVICES  (12 rows)
--- ============================================================
 INSERT INTO services (category_id, service_name, base_price, description) VALUES
 (1, 'Fan Installation',           200.00, 'Ceiling or wall fan installation'),
 (1, 'Full House Wiring',         2500.00, 'Complete house electrical wiring'),
@@ -147,9 +113,6 @@ INSERT INTO services (category_id, service_name, base_price, description) VALUES
 (6, 'Math Tutoring (Grade 10)',   300.00, 'CBSE Grade 10 Mathematics'),
 (6, 'Science Tutoring (Grade 12)',400.00, 'CBSE Grade 12 Physics and Chemistry');
 
--- ============================================================
--- 10. SERVICE VARIANTS  (10 rows)
--- ============================================================
 INSERT INTO service_variants (service_id, variant_name, price, duration) VALUES
 (1,  'Standard',     200.00,  30),
 (1,  'Premium',      350.00,  45),
@@ -162,26 +125,24 @@ INSERT INTO service_variants (service_id, variant_name, price, duration) VALUES
 (7,  'Premium',     1200.00, 300),
 (9,  'Basic',        600.00,  60);
 
--- ============================================================
--- 11. PROVIDER SERVICES  (M:N – which providers offer which services)
--- ============================================================
-INSERT INTO provider_services (provider_id, service_id) VALUES
-(1, 1),   -- Ravi offers Fan Installation
-(1, 2),   -- Ravi offers Full House Wiring
-(2, 3),   -- Sunita offers Deep Home Cleaning
-(2, 4),   -- Sunita offers Kitchen Cleaning
-(3, 5),   -- Amit offers Pipe Leakage Repair
-(3, 6),   -- Amit offers Bathroom Fitting
-(4, 7),   -- Pooja offers Single Room Painting
-(4, 8),   -- Pooja offers Full House Painting
-(5, 9),   -- Karan offers Furniture Assembly
-(5, 10),  -- Karan offers Door/Window Repair
-(6, 11),  -- Meena offers Math Tutoring
-(6, 12);  -- Meena offers Science Tutoring
+INSERT INTO provider_services (provider_id, service_id, price) VALUES
+(1, 1,  220.00),
+(1, 2,  2600.00),
+(2, 3,  1500.00),
+(2, 4,  500.00),
+(3, 5,  400.00),
+(3, 6,  1250.00),
+(4, 7,  800.00),
+(4, 8,  5200.00),
+(5, 9,  600.00),
+(5, 10, 350.00),
+(6, 11, 300.00),
+(6, 12, 400.00);
 
--- ============================================================
--- 12. COUPONS  (5 rows)
--- ============================================================
+INSERT INTO provider_service_areas (provider_id, area_id)
+SELECT sp.provider_id, a.area_id
+FROM service_providers sp JOIN areas a ON a.city_id = sp.city_id;
+
 INSERT INTO coupons (code, discount_type, discount_value, min_order, usage_limit, valid_from, valid_to) VALUES
 ('WELCOME10',  'percentage', 10.00, 500.00,  100, '2026-01-01', '2026-12-31'),
 ('FLAT200',    'flat',       200.00, 1000.00,  50, '2026-03-01', '2026-06-30'),
@@ -189,24 +150,19 @@ INSERT INTO coupons (code, discount_type, discount_value, min_order, usage_limit
 ('MEGA500',    'flat',       500.00, 3000.00,  20, '2026-01-01', '2026-03-31'),
 ('NEWUSER25',  'percentage', 25.00, 300.00,  200, '2026-01-01', '2026-12-31');
 
--- ============================================================
--- 13. BOOKINGS  (10 rows)
--- ============================================================
-INSERT INTO bookings (customer_id, provider_id, location_id, coupon_id, scheduled_date, scheduled_time, status, total_amount, special_instructions) VALUES
-(1, 1, 1, 1,    '2026-04-05', '10:00', 'completed',   495.00, 'Please bring own ladder'),
-(1, 2, 2, NULL, '2026-04-06', '09:00', 'completed',  2000.00, 'Focus on kitchen and bathrooms'),
-(2, 3, 3, 2,    '2026-04-07', '11:00', 'completed',  1400.00, 'Leaking pipe in bathroom'),
-(3, 1, 1, NULL, '2026-04-08', '14:00', 'confirmed',   350.00, NULL),
-(4, 4, 5, 3,    '2026-04-09', '10:30', 'in_progress', 1700.00, 'Light blue color preferred'),
-(5, 5, 6, NULL, '2026-04-10', '16:00', 'pending',     600.00, 'Assemble IKEA wardrobe'),
-(6, 2, 2, 5,    '2026-04-11', '08:00', 'completed',  2025.00, 'Deep clean before house party'),
-(3, 5, 6, NULL, '2026-04-12', '12:00', 'cancelled',   350.00, 'Repair broken window latch'),
-(2, 4, 5, NULL, '2026-04-13', '15:00', 'completed',  5000.00, 'Full flat painting – neutral tones'),
-(7, 1, 1, 1,    '2026-04-14', '11:00', 'pending',    2250.00, 'Full house rewiring needed');
+-- scheduled_end = start + the sum of variant durations (60 minutes for an item without a variant).
+INSERT INTO bookings (customer_id, provider_id, location_id, coupon_id, scheduled_start, scheduled_end, status, subtotal, discount, total_amount, special_instructions, created_at) VALUES
+(1, 1, 1, 1,    '2026-04-05 10:00+05:30', '2026-04-05 11:15+05:30', 'completed',   550.00,   55.00,  495.00, 'Please bring own ladder',            '2026-04-03 18:00+05:30'),
+(1, 2, 2, NULL, '2026-04-06 09:00+05:30', '2026-04-06 12:00+05:30', 'completed',  2000.00,    0.00, 2000.00, 'Focus on kitchen and bathrooms',     '2026-04-04 09:00+05:30'),
+(2, 3, 3, 2,    '2026-04-07 11:00+05:30', '2026-04-07 12:30+05:30', 'completed',  1600.00,  200.00, 1400.00, 'Leaking pipe in bathroom',           '2026-04-05 20:00+05:30'),
+(3, 1, 1, NULL, '2026-04-08 14:00+05:30', '2026-04-08 14:45+05:30', 'confirmed',   350.00,    0.00,  350.00, NULL,                                 '2026-04-06 10:00+05:30'),
+(4, 4, 5, 3,    '2026-04-09 10:30+05:30', '2026-04-09 19:30+05:30', 'in_progress', 2000.00, 300.00, 1700.00, 'Light blue color preferred',         '2026-04-07 12:00+05:30'),
+(5, 5, 6, NULL, '2026-04-10 16:00+05:30', '2026-04-10 17:00+05:30', 'pending',     600.00,    0.00,  600.00, 'Assemble IKEA wardrobe',             '2026-04-08 16:00+05:30'),
+(6, 2, 2, 5,    '2026-04-11 08:00+05:30', '2026-04-11 12:00+05:30', 'completed',  2700.00,  675.00, 2025.00, 'Deep clean before house party',      '2026-04-09 08:00+05:30'),
+(3, 5, 6, NULL, '2026-04-12 12:00+05:30', '2026-04-12 13:00+05:30', 'cancelled',   350.00,    0.00,  350.00, 'Repair broken window latch',         '2026-04-10 12:00+05:30'),
+(2, 4, 5, NULL, '2026-04-13 15:00+05:30', '2026-04-13 16:00+05:30', 'completed',  5000.00,    0.00, 5000.00, 'Full flat painting - neutral tones', '2026-04-11 15:00+05:30'),
+(7, 1, 1, 1,    '2026-04-14 11:00+05:30', '2026-04-14 12:00+05:30', 'pending',    2500.00,  250.00, 2250.00, 'Full house rewiring needed',         '2026-04-12 11:00+05:30');
 
--- ============================================================
--- 14. BOOKING ITEMS  (15 rows)
--- ============================================================
 INSERT INTO booking_items (booking_id, item_no, service_id, variant_id, quantity, unit_price) VALUES
 (1,  1, 1,  1,    1, 200.00),    -- Booking 1: Fan Installation – Standard
 (2,  1, 3,  3,    1, 1500.00),   -- Booking 2: Deep Cleaning – 1 BHK
@@ -224,45 +180,61 @@ INSERT INTO booking_items (booking_id, item_no, service_id, variant_id, quantity
 (3,  2, 6,  NULL, 1, 1200.00),   -- Booking 3: + Bathroom Fitting
 (2,  2, 4,  NULL, 1, 500.00);    -- Booking 2: + Kitchen Cleaning
 
--- ============================================================
--- 15. BOOKING STATUS LOG  (12 rows)
--- ============================================================
-INSERT INTO booking_status_log (booking_id, log_time, status, remarks) VALUES
-(1,  '2026-04-05 10:00:00', 'pending',     'Booking placed by customer'),
-(1,  '2026-04-05 10:05:00', 'confirmed',   'Provider accepted'),
-(1,  '2026-04-05 10:30:00', 'in_progress', 'Provider en route'),
-(1,  '2026-04-05 11:00:00', 'completed',   'Service finished'),
-(2,  '2026-04-06 09:00:00', 'pending',     'Booking placed'),
-(2,  '2026-04-06 09:10:00', 'confirmed',   'Provider accepted'),
-(2,  '2026-04-06 12:00:00', 'completed',   'Cleaning done'),
-(3,  '2026-04-07 11:00:00', 'pending',     'Booking placed'),
-(3,  '2026-04-07 11:15:00', 'confirmed',   'Provider accepted'),
-(3,  '2026-04-07 12:30:00', 'completed',   'Leak fixed'),
-(8,  '2026-04-12 12:00:00', 'pending',     'Booking placed'),
-(8,  '2026-04-12 12:30:00', 'cancelled',   'Customer cancelled – not needed');
+UPDATE coupons c SET used_count = (SELECT COUNT(*) FROM bookings b WHERE b.coupon_id = c.coupon_id);
 
--- ============================================================
--- 16. PAYMENTS  (8 rows – 1:1 with completed/in-progress bookings)
--- ============================================================
-INSERT INTO payments (booking_id, payment_method, status, amount, gateway_ref, paid_at) VALUES
-(1,  'UPI',         'success',  495.00,  'TXN_UPI_001',  '2026-04-05 11:05:00'),
-(2,  'Credit Card', 'success', 2000.00,  'TXN_CC_002',   '2026-04-06 12:05:00'),
-(3,  'UPI',         'success', 1400.00,  'TXN_UPI_003',  '2026-04-07 12:35:00'),
-(5,  'Debit Card',  'pending', 1700.00,  NULL,            NULL),
-(7,  'Net Banking', 'success', 2025.00,  'TXN_NB_007',   '2026-04-11 11:30:00'),
-(9,  'UPI',         'success', 5000.00,  'TXN_UPI_009',  '2026-04-13 17:00:00'),
-(10, 'Credit Card', 'pending', 2250.00,  NULL,            NULL),
-(8,  'UPI',         'refunded', 350.00,  'TXN_UPI_008',  '2026-04-12 13:00:00');
+-- The insert trigger logged each booking's final status; replace that with the full history.
+TRUNCATE booking_status_log RESTART IDENTITY;
 
--- ============================================================
--- 17. CANCELLATIONS  (1 row for booking 8)
--- ============================================================
-INSERT INTO cancellations (booking_id, reason, refund_status) VALUES
-(8, 'Customer decided the repair was not needed after all.', 'processed');
+INSERT INTO booking_status_log (booking_id, old_status, new_status, changed_at, remarks) VALUES
+(1,  NULL,          'pending',     '2026-04-03 18:00+05:30', 'Booking placed by customer'),
+(1,  'pending',     'confirmed',   '2026-04-03 18:05+05:30', 'Provider accepted'),
+(1,  'confirmed',   'in_progress', '2026-04-05 10:00+05:30', 'Provider arrived'),
+(1,  'in_progress', 'completed',   '2026-04-05 11:15+05:30', 'Service finished'),
+(2,  NULL,          'pending',     '2026-04-04 09:00+05:30', 'Booking placed'),
+(2,  'pending',     'confirmed',   '2026-04-04 09:10+05:30', 'Provider accepted'),
+(2,  'confirmed',   'in_progress', '2026-04-06 09:00+05:30', 'Provider arrived'),
+(2,  'in_progress', 'completed',   '2026-04-06 12:00+05:30', 'Cleaning done'),
+(3,  NULL,          'pending',     '2026-04-05 20:00+05:30', 'Booking placed'),
+(3,  'pending',     'confirmed',   '2026-04-05 20:15+05:30', 'Provider accepted'),
+(3,  'confirmed',   'in_progress', '2026-04-07 11:00+05:30', 'Provider arrived'),
+(3,  'in_progress', 'completed',   '2026-04-07 12:30+05:30', 'Leak fixed'),
+(4,  NULL,          'pending',     '2026-04-06 10:00+05:30', 'Booking placed'),
+(4,  'pending',     'confirmed',   '2026-04-06 10:30+05:30', 'Provider accepted'),
+(5,  NULL,          'pending',     '2026-04-07 12:00+05:30', 'Booking placed'),
+(5,  'pending',     'confirmed',   '2026-04-07 12:20+05:30', 'Provider accepted'),
+(5,  'confirmed',   'in_progress', '2026-04-09 10:30+05:30', 'Painting started'),
+(6,  NULL,          'pending',     '2026-04-08 16:00+05:30', 'Booking placed'),
+(7,  NULL,          'pending',     '2026-04-09 08:00+05:30', 'Booking placed'),
+(7,  'pending',     'confirmed',   '2026-04-09 08:30+05:30', 'Provider accepted'),
+(7,  'confirmed',   'in_progress', '2026-04-11 08:00+05:30', 'Provider arrived'),
+(7,  'in_progress', 'completed',   '2026-04-11 12:00+05:30', 'Cleaning done'),
+(8,  NULL,          'pending',     '2026-04-10 12:00+05:30', 'Booking placed'),
+(8,  'pending',     'cancelled',   '2026-04-10 12:30+05:30', 'Customer cancelled - not needed'),
+(9,  NULL,          'pending',     '2026-04-11 15:00+05:30', 'Booking placed'),
+(9,  'pending',     'confirmed',   '2026-04-11 15:20+05:30', 'Provider accepted'),
+(9,  'confirmed',   'in_progress', '2026-04-13 15:00+05:30', 'Painting started'),
+(9,  'in_progress', 'completed',   '2026-04-13 16:00+05:30', 'Painting finished'),
+(10, NULL,          'pending',     '2026-04-12 11:00+05:30', 'Booking placed');
 
--- ============================================================
--- 18. PROVIDER DOCUMENTS  (6 rows)
--- ============================================================
+-- Booking 1 shows a failed attempt followed by a successful retry.
+INSERT INTO payments (booking_id, payment_method, status, amount, gateway_ref, paid_at, failure_reason) VALUES
+(1,  'Debit Card',  'failed',    495.00, NULL,          NULL,                     'Insufficient balance'),
+(1,  'UPI',         'success',   495.00, 'TXN_UPI_001', '2026-04-05 11:20+05:30', NULL),
+(2,  'Credit Card', 'success',  2000.00, 'TXN_CC_002',  '2026-04-06 12:05+05:30', NULL),
+(3,  'UPI',         'success',  1400.00, 'TXN_UPI_003', '2026-04-07 12:35+05:30', NULL),
+(5,  'Debit Card',  'pending',  1700.00, NULL,          NULL,                     NULL),
+(7,  'Net Banking', 'success',  2025.00, 'TXN_NB_007',  '2026-04-11 12:30+05:30', NULL),
+(9,  'UPI',         'success',  5000.00, 'TXN_UPI_009', '2026-04-13 17:00+05:30', NULL),
+(10, 'Credit Card', 'pending',  2250.00, NULL,          NULL,                     NULL),
+(8,  'UPI',         'refunded',  350.00, 'TXN_UPI_008', '2026-04-10 12:10+05:30', NULL);
+
+INSERT INTO refunds (payment_id, amount, status, requested_at, processed_at)
+SELECT payment_id, amount, 'processed', '2026-04-10 12:30+05:30', '2026-04-11 10:00+05:30'
+FROM payments WHERE booking_id = 8;
+
+INSERT INTO cancellations (booking_id, reason, cancelled_by, cancelled_at) VALUES
+(8, 'Customer decided the repair was not needed after all.', 3, '2026-04-10 12:30+05:30');
+
 INSERT INTO provider_documents (provider_id, document_type, file_url, description) VALUES
 (1, 'Aadhaar Card',  '/docs/ravi_aadhaar.pdf',   'Government ID proof'),
 (1, 'Certificate',   '/docs/ravi_electrician_cert.pdf', 'Electrician license'),
@@ -271,26 +243,24 @@ INSERT INTO provider_documents (provider_id, document_type, file_url, descriptio
 (4, 'Aadhaar Card',  '/docs/pooja_aadhaar.pdf',    'Government ID proof'),
 (5, 'Aadhaar Card',  '/docs/karan_aadhaar.pdf',    'Government ID proof');
 
--- ============================================================
--- 19. PROVIDER AVAILABILITY  (12 rows)
--- ============================================================
-INSERT INTO provider_availability (provider_id, day_of_week, start_time, end_time) VALUES
-(1, 'Monday',    '09:00', '18:00'),
-(1, 'Tuesday',   '09:00', '18:00'),
-(1, 'Wednesday', '09:00', '18:00'),
-(1, 'Saturday',  '10:00', '14:00'),
-(2, 'Monday',    '08:00', '16:00'),
-(2, 'Wednesday', '08:00', '16:00'),
-(2, 'Friday',    '08:00', '16:00'),
-(3, 'Monday',    '10:00', '19:00'),
-(3, 'Thursday',  '10:00', '19:00'),
-(4, 'Tuesday',   '09:00', '17:00'),
-(4, 'Friday',    '09:00', '17:00'),
-(5, 'Monday',    '11:00', '20:00');
+UPDATE provider_documents SET status = 'verified', verified_by = 1, verified_at = '2026-03-20 12:00+05:30';
 
--- ============================================================
--- 20. PROVIDER REVIEWS  (5 rows – only for completed bookings)
--- ============================================================
+-- Days are ISO numbers: 1 = Monday ... 7 = Sunday. Ravi has a split shift on Mondays.
+INSERT INTO provider_availability (provider_id, day_of_week, start_time, end_time) VALUES
+(1, 1, '09:00', '13:00'),
+(1, 1, '14:00', '18:00'),
+(1, 2, '09:00', '18:00'),
+(1, 3, '09:00', '18:00'),
+(1, 6, '10:00', '14:00'),
+(2, 1, '08:00', '16:00'),
+(2, 3, '08:00', '16:00'),
+(2, 5, '08:00', '16:00'),
+(3, 1, '10:00', '19:00'),
+(3, 4, '10:00', '19:00'),
+(4, 2, '09:00', '17:00'),
+(4, 5, '09:00', '17:00'),
+(5, 1, '11:00', '20:00');
+
 INSERT INTO provider_reviews (booking_id, rating, comment) VALUES
 (1, 5, 'Excellent work! Fan installed perfectly and quickly.'),
 (2, 4, 'Good cleaning but slightly late arrival.'),
@@ -298,9 +268,6 @@ INSERT INTO provider_reviews (booking_id, rating, comment) VALUES
 (7, 4, 'Thorough cleaning, house looks brand new.'),
 (9, 3, 'Decent painting job but missed some spots near the ceiling.');
 
--- ============================================================
--- 21. SERVICE REVIEWS  (6 rows)
--- ============================================================
 INSERT INTO service_reviews (service_id, booking_id, rating, comment) VALUES
 (1, 1, 5, 'Fan Installation service was quick and efficient.'),
 (3, 2, 4, 'Deep cleaning was satisfactory.'),
@@ -309,17 +276,16 @@ INSERT INTO service_reviews (service_id, booking_id, rating, comment) VALUES
 (8, 9, 3, 'Painting quality could be improved.'),
 (4, 2, 4, 'Kitchen cleaning was thorough.');
 
--- ============================================================
--- 22. COMPLAINTS  (3 rows)
--- ============================================================
-INSERT INTO complaints (booking_id, subject, status) VALUES
-(5,  'Painter arrived 1 hour late',           'in_progress'),
-(8,  'Refund not received after cancellation', 'resolved'),
-(9,  'Paint peeling off after 2 days',         'open');
+UPDATE provider_reviews r SET created_at = b.scheduled_end + interval '3 hours', updated_at = b.scheduled_end + interval '3 hours'
+FROM bookings b WHERE b.booking_id = r.booking_id;
 
--- ============================================================
--- 23. REFRESH MATERIALIZED VIEWS
--- ============================================================
+UPDATE service_reviews r SET created_at = b.scheduled_end + interval '3 hours', updated_at = b.scheduled_end + interval '3 hours'
+FROM bookings b WHERE b.booking_id = r.booking_id;
+
+INSERT INTO complaints (booking_id, subject, status, description, raised_by, assigned_admin_id, created_at, resolved_at, resolution_notes) VALUES
+(5, 'Painter arrived 1 hour late',            'in_progress', 'Arrived at 11:30 instead of 10:30.',             4, 2,    '2026-04-09 12:00+05:30', NULL, NULL),
+(8, 'Refund not received after cancellation', 'resolved',    'Refund still not visible in my account.',        3, 2,    '2026-04-10 20:00+05:30', '2026-04-11 10:30+05:30', 'Refund processed by the payment gateway.'),
+(9, 'Paint peeling off after 2 days',         'open',        'Paint on the bedroom wall has started peeling.', 2, NULL, '2026-04-15 09:00+05:30', NULL, NULL);
+
 REFRESH MATERIALIZED VIEW mv_provider_leaderboard;
 REFRESH MATERIALIZED VIEW mv_city_revenue_summary;
-
