@@ -60,8 +60,7 @@ public class CustomerRepository {
 
     // ── Spending Summary (CASE, SUM, COUNT) ──────────────────
     public Map<String, Object> getSpendingSummary(int customerId) {
-        List<Map<String, Object>> list = jdbc.queryForList(
-                """
+        List<Map<String, Object>> list = jdbc.queryForList("""
                 WITH paid AS (
                     SELECT booking_id,
                            COALESCE(SUM(amount) FILTER (WHERE status = 'success'), 0)  AS paid,
@@ -82,8 +81,7 @@ public class CustomerRepository {
                 FROM bookings b
                 LEFT JOIN paid p ON p.booking_id = b.booking_id
                 WHERE b.customer_id = ?
-                """,
-                customerId);
+                """, customerId);
         return list.isEmpty() ? Map.of() : list.get(0);
     }
 

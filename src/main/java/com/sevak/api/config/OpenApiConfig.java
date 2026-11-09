@@ -21,7 +21,7 @@ public class OpenApiConfig {
                         .title("SEVAK — Service Marketplace API")
                         .description("""
                                 RESTful API for the SEVAK Service Marketplace Database.
-                                Built on a BCNF-normalized 23-table PostgreSQL schema featuring
+                                Built on a BCNF-normalized 27-table PostgreSQL schema featuring
                                 advanced SQL queries (multi-table JOINs, Window Functions, Stored Procedures).
                                 """)
                         .version("1.0.0")
