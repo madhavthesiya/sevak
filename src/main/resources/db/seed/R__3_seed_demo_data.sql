@@ -14,21 +14,21 @@ INSERT INTO cities (city_name, state) VALUES
 
 -- user_id 1-7 customers, 8-13 providers, 14-15 admins
 INSERT INTO users (email, password_hash, role, status, full_name, phone) VALUES
-('aarav.sharma@gmail.com',    'hashed_pass1',  'customer', 'active',   'Aarav Sharma',   '9876543210'),
-('priya.patel@gmail.com',     'hashed_pass2',  'customer', 'active',   'Priya Patel',    '9876543211'),
-('rohan.mehta@gmail.com',     'hashed_pass3',  'customer', 'active',   'Rohan Mehta',    '9876543212'),
-('sneha.reddy@gmail.com',     'hashed_pass4',  'customer', 'active',   'Sneha Reddy',    '9876543213'),
-('vikram.singh@gmail.com',    'hashed_pass5',  'customer', 'active',   'Vikram Singh',   '9876543214'),
-('neha.gupta@gmail.com',      'hashed_pass6',  'customer', 'active',   'Neha Gupta',     '9876543215'),
-('arjun.desai@gmail.com',     'hashed_pass7',  'customer', 'inactive', 'Arjun Desai',    '9876543216'),
-('ravi.electrician@gmail.com','hashed_pass8',  'provider', 'active',   'Ravi Kumar',     '9876500001'),
-('sunita.cleaner@gmail.com',  'hashed_pass9',  'provider', 'active',   'Sunita Devi',    '9876500002'),
-('amit.plumber@gmail.com',    'hashed_pass10', 'provider', 'active',   'Amit Joshi',     '9876500003'),
-('pooja.painter@gmail.com',   'hashed_pass11', 'provider', 'active',   'Pooja Nair',     '9876500004'),
-('karan.carpenter@gmail.com', 'hashed_pass12', 'provider', 'active',   'Karan Malhotra', '9876500005'),
-('meena.tutor@gmail.com',     'hashed_pass13', 'provider', 'inactive', 'Meena Iyer',     '9876500006'),
-('admin.raj@sevak.com',       'hashed_admin1', 'admin',    'active',   'Raj Verma',      NULL),
-('admin.divya@sevak.com',     'hashed_admin2', 'admin',    'active',   'Divya Rao',      NULL);
+('aarav.sharma@gmail.com',    '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2',  'customer', 'active',   'Aarav Sharma',   '9876543210'),
+('priya.patel@gmail.com',     '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2',  'customer', 'active',   'Priya Patel',    '9876543211'),
+('rohan.mehta@gmail.com',     '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2',  'customer', 'active',   'Rohan Mehta',    '9876543212'),
+('sneha.reddy@gmail.com',     '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2',  'customer', 'active',   'Sneha Reddy',    '9876543213'),
+('vikram.singh@gmail.com',    '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2',  'customer', 'active',   'Vikram Singh',   '9876543214'),
+('neha.gupta@gmail.com',      '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2',  'customer', 'active',   'Neha Gupta',     '9876543215'),
+('arjun.desai@gmail.com',     '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2',  'customer', 'inactive', 'Arjun Desai',    '9876543216'),
+('ravi.electrician@gmail.com','$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2',  'provider', 'active',   'Ravi Kumar',     '9876500001'),
+('sunita.cleaner@gmail.com',  '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2',  'provider', 'active',   'Sunita Devi',    '9876500002'),
+('amit.plumber@gmail.com',    '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2', 'provider', 'active',   'Amit Joshi',     '9876500003'),
+('pooja.painter@gmail.com',   '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2', 'provider', 'active',   'Pooja Nair',     '9876500004'),
+('karan.carpenter@gmail.com', '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2', 'provider', 'active',   'Karan Malhotra', '9876500005'),
+('meena.tutor@gmail.com',     '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2', 'provider', 'inactive', 'Meena Iyer',     '9876500006'),
+('admin.raj@sevak.com',       '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2', 'admin',    'active',   'Raj Verma',      NULL),
+('admin.divya@sevak.com',     '$2a$10$RwSN2szVDZIaMrJPCx/x9uhtoAG1F.Gk2kf1wiH6HscUjFru5xbz2', 'admin',    'active',   'Divya Rao',      NULL);
 
 INSERT INTO customers (user_id) SELECT generate_series(1, 7);
 
@@ -286,6 +286,27 @@ INSERT INTO complaints (booking_id, subject, status, description, raised_by, ass
 (5, 'Painter arrived 1 hour late',            'in_progress', 'Arrived at 11:30 instead of 10:30.',             4, 2,    '2026-04-09 12:00+05:30', NULL, NULL),
 (8, 'Refund not received after cancellation', 'resolved',    'Refund still not visible in my account.',        3, 2,    '2026-04-10 20:00+05:30', '2026-04-11 10:30+05:30', 'Refund processed by the payment gateway.'),
 (9, 'Paint peeling off after 2 days',         'open',        'Paint on the bedroom wall has started peeling.', 2, NULL, '2026-04-15 09:00+05:30', NULL, NULL);
+
+INSERT INTO coupon_redemptions (coupon_id, customer_id, booking_id)
+SELECT coupon_id, customer_id, booking_id FROM bookings WHERE coupon_id IS NOT NULL;
+
+-- Keep open bookings in the future so the demo always has upcoming work.
+-- Moving by whole weeks keeps each booking on the same weekday.
+UPDATE bookings
+SET scheduled_start = scheduled_start + w.weeks,
+    scheduled_end   = scheduled_end + w.weeks,
+    created_at      = now() - interval '1 hour'
+FROM (
+    SELECT interval '1 week'
+           * (floor(extract(epoch FROM now() - timestamptz '2026-04-05 00:00+05:30') / 604800) + 2) AS weeks
+) w
+WHERE status IN ('pending', 'confirmed');
+
+UPDATE booking_status_log
+SET changed_at = now() - CASE new_status WHEN 'pending' THEN interval '1 hour' ELSE interval '30 minutes' END
+WHERE booking_id IN (SELECT booking_id FROM bookings WHERE status IN ('pending', 'confirmed'));
+
+UPDATE coupons SET valid_to = GREATEST(valid_to, CURRENT_DATE + 365) WHERE code IN ('WELCOME10', 'NEWUSER25');
 
 REFRESH MATERIALIZED VIEW mv_provider_leaderboard;
 REFRESH MATERIALIZED VIEW mv_city_revenue_summary;

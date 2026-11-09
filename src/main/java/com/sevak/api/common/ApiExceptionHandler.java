@@ -34,14 +34,19 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.NOT_FOUND, "not-found", ex.getMessage());
     }
 
+    @ExceptionHandler(UnauthorizedException.class)
+    ProblemDetail unauthorized(UnauthorizedException ex) {
+        return problem(HttpStatus.UNAUTHORIZED, "unauthenticated", ex.getMessage());
+    }
+
     @ExceptionHandler(ConflictException.class)
     ProblemDetail conflict(ConflictException ex) {
-        return problem(HttpStatus.CONFLICT, "invalid-state", ex.getMessage());
+        return problem(HttpStatus.CONFLICT, ex.type(), ex.getMessage());
     }
 
     @ExceptionHandler(UnprocessableException.class)
     ProblemDetail unprocessable(UnprocessableException ex) {
-        return problem(HttpStatusCode.valueOf(422), "business-rule", ex.getMessage());
+        return problem(HttpStatusCode.valueOf(422), ex.type(), ex.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

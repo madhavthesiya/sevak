@@ -3,11 +3,14 @@ package com.sevak.api.customer;
 import com.sevak.api.customer.dto.BookingHeader;
 import com.sevak.api.customer.dto.BookingLine;
 import com.sevak.api.customer.dto.BookingSummary;
+import com.sevak.api.customer.dto.NewAddressRequest;
 import com.sevak.api.customer.dto.PaymentRecord;
 import com.sevak.api.customer.dto.SavedAddress;
 import com.sevak.api.customer.dto.SpendingSummary;
 import com.sevak.api.customer.dto.StatusChange;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -19,13 +22,6 @@ public class CustomerRepository {
 
     public CustomerRepository(JdbcClient jdbc) {
         this.jdbc = jdbc;
-    }
-
-    public boolean exists(int customerId) {
-        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM customers WHERE customer_id = :id)")
-                .param("id", customerId)
-                .query(Boolean.class)
-                .single();
     }
 
     public List<BookingSummary> findBookings(int customerId, int limit, long offset) {
@@ -160,5 +156,45 @@ public class CustomerRepository {
                         WHERE ca.customer_id = :id AND ca.is_active
                         ORDER BY ca.label, loc.location_id
                         """).param("id", customerId).query(SavedAddress.class).list();
+    }
+
+    /** One row per physical point: two flats in one building share it. */
+    public int upsertLocation(NewAddressRequest request) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("area", request.areaId());
+        params.put("street", request.street());
+        params.put("landmark", request.landmark());
+        params.put("lat", request.latitude());
+        params.put("lng", request.longitude());
+        return jdbc.sql("""
+                        INSERT INTO locations (area_id, street, landmark, latitude, longitude)
+                        VALUES (:area, :street, :landmark, :lat, :lng)
+                        ON CONFLICT (latitude, longitude) DO UPDATE SET latitude = EXCLUDED.latitude
+                        RETURNING location_id
+                        """).params(params).query(Integer.class).single();
+    }
+
+    public void upsertAddress(int customerId, int locationId, String label, String houseNo) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("customer", customerId);
+        params.put("location", locationId);
+        params.put("label", label);
+        params.put("house", houseNo);
+        jdbc.sql("""
+                        INSERT INTO customer_addresses (customer_id, location_id, label, house_no)
+                        VALUES (:customer, :location, :label, :house)
+                        ON CONFLICT (customer_id, location_id)
+                        DO UPDATE SET label = EXCLUDED.label, house_no = EXCLUDED.house_no, is_active = TRUE
+                        """).params(params).update();
+    }
+
+    public int deactivateAddress(int customerId, int locationId) {
+        return jdbc.sql("""
+                        UPDATE customer_addresses SET is_active = FALSE
+                        WHERE customer_id = :customer AND location_id = :location AND is_active
+                        """)
+                .param("customer", customerId)
+                .param("location", locationId)
+                .update();
     }
 }
