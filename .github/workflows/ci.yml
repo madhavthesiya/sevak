@@ -18,6 +18,7 @@ jobs:
           cache: maven
 
       - name: Build, test and check formatting
+        working-directory: api
         run: ./mvnw -B verify
 
       - name: Upload coverage report
@@ -25,8 +26,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
-          path: target/site/jacoco/
+          path: api/target/site/jacoco/
           if-no-files-found: ignore
 
       - name: Build Docker image
-        run: docker build -t sevak-api .
+        run: docker build -t sevak-api api

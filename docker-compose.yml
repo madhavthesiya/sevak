@@ -21,7 +21,7 @@ services:
 
   # ── Spring Boot API ─────────────────────────────────────
   api:
-    build: .
+    build: ./api
     container_name: sevak-api
     restart: unless-stopped
     ports:
