@@ -54,7 +54,7 @@ class DataCorrectnessTest extends IntegrationTest {
                         || sql.toUpperCase().startsWith("WITH"))
                 .toList();
 
-        assertThat(queries).hasSize(3);
+        assertThat(queries).hasSize(4);
         for (String sql : queries) {
             assertThat(jdbc.queryForList(sql)).as(sql).isEmpty();
         }
@@ -143,5 +143,57 @@ class DataCorrectnessTest extends IntegrationTest {
         mvc.perform(post("/api/admin/refresh-views").header(API_KEY_HEADER, API_KEY))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void everyShowcaseQueryRunsAgainstTheCurrentSchema() throws Exception {
+        String script = Files.readAllLines(Path.of("sql/sevak_queries.sql")).stream()
+                .filter(line -> !line.startsWith("--"))
+                .collect(Collectors.joining("\n"));
+        List<String> queries = Arrays.stream(script.split(";"))
+                .map(String::trim)
+                .filter(sql -> sql.toUpperCase().startsWith("SELECT"))
+                .toList();
+
+        assertThat(queries).hasSize(15);
+        for (String sql : queries) {
+            jdbc.queryForList(sql);
+        }
+    }
+
+    @Test
+    void aFailedPaymentAttemptIsNotCountedAsPaid() throws Exception {
+        // Booking 1 has a failed attempt and then a successful one for 495.
+        mvc.perform(get("/api/customers/1/spending"))
+                .andExpect(jsonPath("$.total_bookings").value(2))
+                .andExpect(jsonPath("$.paid").value(2495.00));
+    }
+
+    @Test
+    void aBookingWithSeveralPaymentAttemptsAppearsOnceInCompletedJobs() throws Exception {
+        mvc.perform(get("/api/providers/1/completed"))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].payment_status").value("success"));
+    }
+
+    @Test
+    void searchShowsTheProvidersOwnPrice() throws Exception {
+        mvc.perform(get("/api/general/services/search?q=fan"))
+                .andExpect(jsonPath("$[0].base_price").value(200.00))
+                .andExpect(jsonPath("$[0].price").value(220.00));
+    }
+
+    @Test
+    void addressesIncludeTheFlatNumber() throws Exception {
+        mvc.perform(get("/api/customers/1/addresses"))
+                .andExpect(jsonPath("$[0].house_no").exists());
+    }
+
+    @Test
+    void aSoftDeletedAddressIsHidden() throws Exception {
+        jdbc.update("UPDATE customer_addresses SET is_active = FALSE WHERE customer_id = 1 AND location_id = 1");
+
+        mvc.perform(get("/api/customers/1/addresses"))
+                .andExpect(jsonPath("$.length()").value(1));
     }
 }
