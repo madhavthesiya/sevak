@@ -10,7 +10,7 @@
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/)
 [![Swagger](https://img.shields.io/badge/Swagger-API%20Docs-85EA2D?logo=swagger&logoColor=black)](https://sevak.madhavv.me/swagger-ui.html)
 
-[Live Demo](https://sevak.madhavv.me/swagger-ui.html) · [API Docs](https://sevak.madhavv.me/api-docs) · [Health Check](https://sevak.madhavv.me/health) · [Architecture](#architecture)
+[Live Demo](https://sevak.madhavv.me/swagger-ui.html) · [API Docs](https://sevak.madhavv.me/api-docs) · [Health Check](https://sevak.madhavv.me/actuator/health) · [Architecture](#architecture)
 
 </div>
 
@@ -114,66 +114,73 @@ AFTER (BCNF compliant):
 
 ## 🔌 API Endpoints
 
-### 1. General — Browse & Search (Paginated)
-| Method | Endpoint | SQL Technique |
-|:-------|:---------|:-------------|
-| `GET` | `/api/general/services?page=1&limit=10` | JOIN, ORDER BY, LIMIT/OFFSET |
-| `GET` | `/api/general/services/search?q={keyword}&page=1&limit=10` | 5-table JOIN, ILIKE, LIMIT/OFFSET |
-| `GET` | `/api/general/providers/top?top=5` | JOIN, configurable LIMIT, NULLS LAST |
-| `GET` | `/api/general/providers/available?day={day}&page=1&limit=10` | Parameterized JOIN, LIMIT/OFFSET |
+All endpoints are under `/api/v1`. Lists return `{ data, page, limit, total, totalPages }`. Interactive docs are in Swagger UI.
 
-### 2. Customer — Bookings & Addresses (Paginated)
-| Method | Endpoint | SQL Technique |
-|:-------|:---------|:-------------|
-| `GET` | `/api/customers/{id}/bookings?page=1&limit=10` | 3-table JOIN, LIMIT/OFFSET |
-| `GET` | `/api/customers/{id}/bookings/{bid}/items` | LEFT JOIN, computed columns |
-| `GET` | `/api/customers/{id}/payments?page=1&limit=10` | JOIN, NULLS LAST, LIMIT/OFFSET |
-| `GET` | `/api/customers/{id}/spending` | CASE, SUM, COUNT, GROUP BY |
-| `GET` | `/api/customers/{id}/addresses` | **4-table JOIN** (BCNF path) |
+### 1. Services
+| Method | Endpoint | Notes |
+|:-------|:---------|:------|
+| `GET` | `/services?category=&page=&limit=` | The service catalogue |
 
-### 3. Provider — Jobs & Analytics (Paginated)
+### 2. Providers
 | Method | Endpoint | SQL Technique |
-|:-------|:---------|:-------------|
-| `GET` | `/api/providers/{id}/pending?page=1&limit=10` | 3-table JOIN via locations, LIMIT/OFFSET |
-| `GET` | `/api/providers/{id}/completed?page=1&limit=10` | LEFT JOIN, LIMIT/OFFSET |
-| `GET` | `/api/providers/{id}/earnings` | SUM, COUNT, GROUP BY |
-| `GET` | `/api/providers/{id}/reviews?page=1&limit=10` | 3-table JOIN via bookings, LIMIT/OFFSET |
-| `GET` | `/api/providers/{id}/rating` | **Derived Table (Subquery in FROM)** |
+|:-------|:---------|:--------------|
+| `GET` | `/providers?service=&city=&day=&page=&limit=` | Multi-table JOIN, `ILIKE` with a trigram index, `EXISTS` |
+| `GET` | `/providers/top?limit=` | Bayesian weighted rating |
+| `GET` | `/providers/{id}` | **Derived table** (rating vs city average) |
+| `GET` | `/providers/{id}/reviews` | Paginated JOIN |
+| `GET` | `/providers/{id}/jobs?status=` | `LATERAL` join for the latest payment attempt |
+| `GET` | `/providers/{id}/earnings?from=&to=` | `SUM`, `COUNT`, `GROUP BY` |
 
-### 4. Admin — Analytics Dashboard
-| Method | Endpoint | SQL Technique |
-|:-------|:---------|:-------------|
-| `GET` | `/api/admin/revenue` | 5-table JOIN, SUM, GROUP BY |
-| `GET` | `/api/admin/leaderboard?fast=true` | **RANK() Window Function** / **Materialized View** |
-| `GET` | `/api/admin/complaints` | **STRING_AGG**, 5-table JOIN |
-| `GET` | `/api/admin/city-revenue` | **Materialized View** (pre-computed 5-table JOIN) |
-| `POST` | `/api/admin/refresh-views` | Refreshes both Materialized Views |
+### 3. Customers
+| Method | Endpoint | Notes |
+|:-------|:---------|:------|
+| `GET` | `/customers/{id}/bookings` | Newest first |
+| `GET` | `/customers/{id}/bookings/{bookingId}` | Address, price breakdown, items and status timeline |
+| `GET` | `/customers/{id}/payments` | Every attempt, including failures |
+| `GET` | `/customers/{id}/spending` | `FILTER` aggregates: paid, upcoming, refunded |
+| `GET` | `/customers/{id}/addresses` | Saved addresses |
 
-### 5. Booking Actions — Stored Procedures
+### 4. Bookings
 | Method | Endpoint | SQL Technique |
-|:-------|:---------|:-------------|
-| `POST` | `/api/bookings/{id}/cancel` | **Stored Procedure** (sp_cancel_booking) |
-| `POST` | `/api/bookings/{id}/confirm` | **Stored Procedure** (sp_confirm_booking) |
+|:-------|:---------|:--------------|
+| `POST` | `/bookings/{id}/cancel` with `{ "reason": "..." }` | **Stored procedure** with a row lock |
+| `POST` | `/bookings/{id}/accept` | **Stored procedure** checking every item and the whole job duration |
+
+### 5. Admin
+| Method | Endpoint | SQL Technique |
+|:-------|:---------|:--------------|
+| `GET` | `/admin/revenue` | CTE and **window function** splitting each payment across categories |
+| `GET` | `/admin/leaderboard?fast=true` | **RANK()** view, or its **materialized view** |
+| `GET` | `/admin/complaints` | `STRING_AGG` |
+| `GET` | `/admin/city-revenue` | **Materialized view** |
+| `GET` | `/admin/bookings?before=&beforeId=&limit=` | **Keyset pagination** |
+| `POST` | `/admin/refresh-views` | Also runs on a schedule, guarded by an advisory lock |
 
 > 🔑 **All `POST` endpoints need an `X-Api-Key` header** (temporary protection until JWT auth is added).
 > Locally the key is `dev-admin-key` unless you set `SEVAK_ADMIN_KEY`. In Swagger UI, click **Authorize** and paste the key.
 
-### 6. Health Check
-| Method | Endpoint | Description |
-|:-------|:---------|:------------|
-| `GET` | `/health` | `200` with `"database": "connected"`, or `503` when the database is unreachable |
+### Health and monitoring
+| Endpoint | Description |
+|:---------|:------------|
+| `/actuator/health/readiness` | `503` when the database is unreachable |
+| `/actuator/health/liveness` | Whether the app itself is running |
+| `/actuator/info` | Build version |
+| `/actuator/metrics` | Application metrics |
+
+Every response carries an `X-Request-Id`, which also appears on the matching log lines.
 
 ### Error Responses
-Errors use the standard [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457) JSON format:
+Errors use [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457), with a stable `type`:
 
-| Status | When |
-|:-------|:-----|
-| `400` | Invalid parameter (e.g. `page=0`, `limit=500`, `day=Funday`, `id=abc`) |
-| `401` | `POST` request without a valid `X-Api-Key` |
-| `404` | Unknown URL or booking not found |
-| `409` | Booking is in the wrong status for the action (e.g. cancelling a completed booking) |
-| `422` | Business rule broken (e.g. provider not available at the booked time) |
-| `500` | Unexpected error; details are only written to the server log |
+| Status | `type` | When |
+|:-------|:-------|:-----|
+| `400` | `urn:sevak:error:validation-error` | Invalid parameter or body |
+| `401` | | `POST` without a valid `X-Api-Key` |
+| `404` | `urn:sevak:error:not-found` | Unknown URL, or a resource that doesn't exist or isn't yours |
+| `405` | `urn:sevak:error:method-not-allowed` | Wrong HTTP method |
+| `409` | `urn:sevak:error:invalid-state` | Booking is in the wrong status for the action |
+| `422` | `urn:sevak:error:business-rule` | Business rule broken, such as provider unavailable |
+| `500` | `urn:sevak:error:internal` | Unexpected error; details only in the server log |
 
 ---
 
@@ -213,7 +220,7 @@ open http://localhost:8080/swagger-ui.html
 ```bash
 docker compose up --build
 # API:     http://localhost:8080/swagger-ui.html
-# Health:  http://localhost:8080/health
+# Health:  http://localhost:8080/actuator/health
 # POST endpoints: send the header  X-Api-Key: dev-admin-key
 # If you ran an older version: docker compose down -v  (removes the old database volume)
 ```
@@ -252,34 +259,21 @@ Tests run against a real PostgreSQL 16 in Docker (Testcontainers), and Flyway bu
 ```
 sevak-api/
 ├── src/main/java/com/sevak/api/
-│   ├── SevakApiApplication.java          # Entry point
-│   ├── config/
-│   │   ├── OpenApiConfig.java            # Swagger metadata
-│   │   ├── CorsConfig.java              # Cross-origin config
-│   │   └── ApiExceptionHandler.java      # RFC 9457 error responses
-│   ├── controller/
-│   │   ├── GeneralController.java        # 4 browse/search endpoints
-│   │   ├── CustomerController.java       # 5 customer endpoints
-│   │   ├── ProviderController.java       # 5 provider endpoints
-│   │   ├── AdminController.java          # 5 analytics endpoints
-│   │   ├── BookingActionController.java  # 2 stored procedure endpoints
-│   │   └── HealthController.java         # /health check
-│   └── repository/
-│       ├── GeneralRepository.java        # Browse & search queries
-│       ├── CustomerRepository.java       # Customer data queries
-│       ├── ProviderRepository.java       # Provider analytics queries
-│       ├── AdminRepository.java          # Admin dashboard queries
-│       └── BookingActionRepository.java  # Stored procedure calls
+│   ├── common/      # Errors, pagination, request logging, OpenAPI, CORS
+│   ├── catalog/     # Services
+│   ├── provider/    # Search, profiles, jobs, earnings
+│   ├── customer/    # Bookings, payments, spending, addresses
+│   ├── booking/     # Cancel and accept
+│   └── admin/       # Analytics, keyset booking list, scheduled view refresh
+│                    # Each feature: Controller → Service → Repository, with dto/ records
 ├── src/main/resources/
-│   ├── application.properties            # Dev config
-│   ├── application-prod.properties       # Production config
-│   └── db/                               # Flyway: migration/ (schema, procedures, views), seed/ (demo data)
-├── sql/
-│   ├── sevak_queries.sql                 # Top 15 showcase queries
-│   └── checks/data_integrity.sql         # Consistency checks (must return 0 rows)
-├── Dockerfile                            # Multi-stage build
-├── docker-compose.yml                    # Full-stack local setup
-└── pom.xml                               # Dependencies
+│   ├── application*.properties
+│   └── db/          # Flyway: migration/ (schema, procedures, views), seed/ (demo data)
+├── src/test/java/   # Integration tests on a real PostgreSQL
+├── sql/             # Top 15 showcase queries and data integrity checks
+├── docs/            # Normalization proof, DBML, query notes
+├── Dockerfile
+└── docker-compose.yml
 ```
 
 ---
@@ -354,42 +348,42 @@ CALL sp_cancel_booking(booking_id, 'Customer changed mind');
 
 ## 📡 Sample Response
 
-`GET` [`/api/admin/leaderboard`](https://sevak.madhavv.me/api/admin/leaderboard) — uses `RANK()` Window Function:
+`GET` [`/api/v1/admin/leaderboard`](https://sevak.madhavv.me/api/v1/admin/leaderboard) — uses `RANK()` Window Function:
 
 ```json
 [
   {
     "rank": 1,
-    "provider_id": 1,
+    "providerId": 1,
     "email": "ravi.electrician@gmail.com",
-    "city_name": "Ahmedabad",
-    "avg_rating": 5.00,
-    "review_count": 1,
-    "weighted_rating": 4.33,
-    "jobs_completed": 1,
-    "total_revenue": 495.00
+    "cityName": "Ahmedabad",
+    "avgRating": 5.00,
+    "reviewCount": 1,
+    "weightedRating": 4.33,
+    "jobsCompleted": 1,
+    "totalRevenue": 495.00
   },
   {
     "rank": 1,
-    "provider_id": 3,
+    "providerId": 3,
     "email": "amit.plumber@gmail.com",
-    "city_name": "Mumbai",
-    "avg_rating": 5.00,
-    "review_count": 1,
-    "weighted_rating": 4.33,
-    "jobs_completed": 1,
-    "total_revenue": 1400.00
+    "cityName": "Mumbai",
+    "avgRating": 5.00,
+    "reviewCount": 1,
+    "weightedRating": 4.33,
+    "jobsCompleted": 1,
+    "totalRevenue": 1400.00
   },
   {
     "rank": 3,
-    "provider_id": 2,
+    "providerId": 2,
     "email": "sunita.cleaner@gmail.com",
-    "city_name": "Ahmedabad",
-    "avg_rating": 4.00,
-    "review_count": 2,
-    "weighted_rating": 4.14,
-    "jobs_completed": 2,
-    "total_revenue": 4025.00
+    "cityName": "Ahmedabad",
+    "avgRating": 4.00,
+    "reviewCount": 2,
+    "weightedRating": 4.14,
+    "jobsCompleted": 2,
+    "totalRevenue": 4025.00
   }
 ]
 ```
