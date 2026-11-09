@@ -39,3 +39,13 @@ LEFT JOIN bookings b          ON b.provider_id = sp.provider_id
 LEFT JOIN provider_reviews pr ON pr.booking_id = b.booking_id
 GROUP BY sp.provider_id, sp.avg_rating
 HAVING sp.avg_rating IS DISTINCT FROM ROUND(AVG(pr.rating), 2);
+
+-- 4. The newest status-log row matches the booking's current status
+SELECT b.booking_id, b.status, l.new_status
+FROM bookings b
+LEFT JOIN LATERAL (
+    SELECT new_status FROM booking_status_log
+    WHERE booking_id = b.booking_id
+    ORDER BY log_id DESC LIMIT 1
+) l ON TRUE
+WHERE l.new_status IS DISTINCT FROM b.status;

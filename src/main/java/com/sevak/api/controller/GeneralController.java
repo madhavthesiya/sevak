@@ -72,21 +72,18 @@ public class GeneralController {
             @Parameter(description = "Page number (1-indexed)") @RequestParam(defaultValue = "1") @Min(1) int page,
             @Parameter(description = "Results per page") @RequestParam(defaultValue = "10") @Min(1) @Max(100)
                     int limit) {
-        return ResponseEntity.ok(repo.getAvailableProviders(toDbDay(day), page, limit));
+        return ResponseEntity.ok(repo.getAvailableProviders(toIsoDay(day), page, limit));
     }
 
     /**
      * Spring's default String-to-enum conversion is case-sensitive, so we parse the day ourselves.
-     * The database stores days as 'Monday', 'Tuesday', ... (see the CHECK constraint on provider_availability).
+     * The database stores days as ISO numbers (1 = Monday ... 7 = Sunday).
      */
-    private static String toDbDay(String day) {
-        DayOfWeek parsed;
+    private static int toIsoDay(String day) {
         try {
-            parsed = DayOfWeek.valueOf(day.trim().toUpperCase(Locale.ROOT));
+            return DayOfWeek.valueOf(day.trim().toUpperCase(Locale.ROOT)).getValue();
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid day '" + day + "'. Use a day name such as Monday.");
         }
-        String name = parsed.name();
-        return name.charAt(0) + name.substring(1).toLowerCase(Locale.ROOT);
     }
 }

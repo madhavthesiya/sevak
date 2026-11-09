@@ -40,26 +40,57 @@ class BookingProceduresTest extends IntegrationTest {
 
         assertThat(statusOf(PENDING_BOOKING_PROVIDER_UNAVAILABLE)).isEqualTo("cancelled");
         assertThat(jdbc.queryForObject(
-                        "SELECT refund_status FROM cancellations WHERE booking_id = ?",
-                        String.class,
+                        "SELECT COUNT(*) FROM cancellations WHERE booking_id = ?",
+                        Integer.class,
                         PENDING_BOOKING_PROVIDER_UNAVAILABLE))
-                .isEqualTo("not_applicable");
+                .isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM refunds", Integer.class))
+                .isEqualTo(1); // only the seeded one
     }
 
     @Test
     void cancellingAPaidBookingStartsARefund() throws Exception {
-        jdbc.update("UPDATE payments SET status = 'success' WHERE booking_id = ?", IN_PROGRESS_BOOKING);
+        jdbc.update(
+                "INSERT INTO payments (booking_id, payment_method, status, amount) VALUES (?, 'UPI', 'success', 350)",
+                CONFIRMED_BOOKING);
 
-        cancel(IN_PROGRESS_BOOKING).andExpect(status().isOk());
+        cancel(CONFIRMED_BOOKING).andExpect(status().isOk());
 
+        // The money is only returned once the refund is processed, so the payment stays 'success' for now.
         assertThat(jdbc.queryForObject(
-                        "SELECT status FROM payments WHERE booking_id = ?", String.class, IN_PROGRESS_BOOKING))
-                .isEqualTo("refunded");
+                        "SELECT status FROM payments WHERE booking_id = ?", String.class, CONFIRMED_BOOKING))
+                .isEqualTo("success");
         assertThat(jdbc.queryForObject(
-                        "SELECT refund_status FROM cancellations WHERE booking_id = ?",
+                        "SELECT r.status FROM refunds r JOIN payments p ON p.payment_id = r.payment_id"
+                                + " WHERE p.booking_id = ?",
                         String.class,
-                        IN_PROGRESS_BOOKING))
+                        CONFIRMED_BOOKING))
                 .isEqualTo("pending");
+    }
+
+    @Test
+    void cancellingAnInProgressBookingReturns409() throws Exception {
+        cancel(IN_PROGRESS_BOOKING).andExpect(status().isConflict());
+    }
+
+    @Test
+    void confirmingChecksEveryItemNotJustTheFirst() throws Exception {
+        // Booking 10 gets a second item for a service provider 1 doesn't offer.
+        jdbc.update("INSERT INTO booking_items (booking_id, item_no, service_id, quantity, unit_price)"
+                + " VALUES (10, 2, 3, 1, 0)");
+
+        confirm(PENDING_BOOKING)
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.detail", containsString("does not offer service ID 3")));
+    }
+
+    @Test
+    void confirmingFailsWhenTheJobRunsPastTheEndOfTheSlot() throws Exception {
+        jdbc.update("UPDATE bookings SET scheduled_end = scheduled_start + interval '8 hours' WHERE booking_id = 10");
+
+        confirm(PENDING_BOOKING)
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.detail", containsString("is not available")));
     }
 
     @Test

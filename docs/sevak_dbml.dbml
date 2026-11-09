@@ -1,232 +1,263 @@
-// SEVAK — Service Marketplace Database
-// 23-Table BCNF-Normalized Schema
+// SEVAK: 27-table schema. Paste into dbdiagram.io.
+// The source of truth is src/main/resources/db/migration; keep this file in step with it.
 
-// ── AUTH DOMAIN ──────────────────────────────
+Enum booking_status { pending confirmed in_progress completed cancelled }
+Enum user_role { customer provider admin }
 
-Table users {
+TableGroup identity { users customers service_providers admins admin_permissions }
+TableGroup location { cities areas locations customer_addresses provider_service_areas }
+TableGroup catalog { categories services service_variants provider_services }
+TableGroup booking { bookings booking_items booking_status_log booking_status_transitions coupons payments refunds cancellations }
+TableGroup feedback { provider_reviews service_reviews complaints provider_documents provider_availability }
+
+Table users [headercolor: #2563EB] {
   user_id int [pk, increment]
   email varchar(255) [not null, unique]
-  password varchar(255) [not null]
-  role varchar(20) [not null, note: 'customer | provider | admin']
+  password_hash varchar(255) [not null]
+  role user_role [not null]
   status varchar(20) [not null, default: 'active']
-  created_at timestamp [not null]
-}
-
-Table customers {
-  customer_id int [pk, increment]
-  user_id int [not null, unique, ref: > users.user_id]
-  name varchar(100) [not null]
+  full_name varchar(100) [not null]
   phone varchar(20)
+  created_at timestamptz [not null, default: `now()`]
+  indexes { (user_id, role) [unique, name: 'uq_users_id_role'] }
 }
-
-Table admins {
+Table customers [headercolor: #2563EB] {
+  customer_id int [pk, increment]
+  user_id int [not null, unique]
+  role user_role [not null, note: 'always customer']
+}
+Table service_providers [headercolor: #2563EB] {
+  provider_id int [pk, increment]
+  user_id int [not null, unique]
+  role user_role [not null, note: 'always provider']
+  city_id int [not null, ref: > cities.city_id]
+  bio text
+  experience_years int
+  avg_rating decimal(3,2) [note: 'maintained by trigger']
+  review_count int [not null, default: 0, note: 'maintained by trigger']
+  verification_status varchar(20) [not null, default: 'pending']
+  is_active boolean [not null, default: true]
+}
+Table admins [headercolor: #2563EB] {
   admin_id int [pk, increment]
-  user_id int [not null, unique, ref: > users.user_id]
+  user_id int [not null, unique]
+  role user_role [not null, note: 'always admin']
   admin_role varchar(50) [not null]
-  permissions text
   department varchar(100)
 }
+Table admin_permissions [headercolor: #2563EB] {
+  admin_id int [not null, ref: > admins.admin_id]
+  permission varchar(30) [not null]
+  indexes { (admin_id, permission) [pk] }
+}
+Ref: customers.(user_id, role) > users.(user_id, role)
+Ref: service_providers.(user_id, role) > users.(user_id, role)
+Ref: admins.(user_id, role) > users.(user_id, role)
 
-// ── LOCATION DOMAIN ─────────────────────────
-
-Table cities {
+Table cities [headercolor: #059669] {
   city_id int [pk, increment]
   city_name varchar(100) [not null]
   state varchar(100) [not null]
+  indexes { (city_name, state) [unique] }
 }
-
-Table areas {
+Table areas [headercolor: #059669] {
   area_id int [pk, increment]
   city_id int [not null, ref: > cities.city_id]
   area_name varchar(100) [not null]
   pincode varchar(10) [not null]
+  indexes { (city_id, area_name) [unique] }
 }
-
-Table locations {
+Table locations [headercolor: #059669] {
   location_id int [pk, increment]
   area_id int [not null, ref: > areas.area_id]
   street varchar(255) [not null]
   landmark varchar(255)
-  latitude decimal(10,7)
-  longitude decimal(10,7)
-
-  Note: 'BCNF: {lat, lng} → {area, street, landmark}'
+  latitude decimal(10,7) [not null]
+  longitude decimal(10,7) [not null]
+  indexes { (latitude, longitude) [unique] }
 }
-
-Table customer_addresses {
+Table customer_addresses [headercolor: #059669] {
   customer_id int [not null, ref: > customers.customer_id]
   location_id int [not null, ref: > locations.location_id]
   label varchar(50)
-
-  indexes {
-    (customer_id, location_id) [pk]
-  }
-
-  Note: 'BCNF junction table'
-}
-
-// ── PROVIDER DOMAIN ─────────────────────────
-
-Table service_providers {
-  provider_id int [pk, increment]
-  user_id int [not null, unique, ref: > users.user_id]
-  city_id int [not null, ref: > cities.city_id]
-  bio text
-  experience_years int
-  avg_rating decimal(3,2)
-  verification_status varchar(20) [not null, default: 'pending']
-  custom_price decimal(10,2)
+  house_no varchar(50)
   is_active boolean [not null, default: true]
+  indexes { (customer_id, location_id) [pk] }
 }
-
-Table provider_documents {
-  document_id int [pk, increment]
+Table provider_service_areas [headercolor: #059669] {
   provider_id int [not null, ref: > service_providers.provider_id]
-  document_type varchar(100) [not null]
-  file_url varchar(500) [not null]
-  uploaded_at timestamp [not null]
-  description text
+  area_id int [not null, ref: > areas.area_id]
+  indexes { (provider_id, area_id) [pk] }
 }
 
-Table provider_availability {
-  provider_id int [not null, ref: > service_providers.provider_id]
-  day_of_week varchar(10) [not null]
-  start_time time [not null]
-  end_time time [not null]
-
-  indexes {
-    (provider_id, day_of_week) [pk]
-  }
-}
-
-// ── SERVICE DOMAIN ──────────────────────────
-
-Table categories {
+Table categories [headercolor: #D97706] {
   category_id int [pk, increment]
   category_name varchar(100) [not null, unique]
   description text
 }
-
-Table services {
+Table services [headercolor: #D97706] {
   service_id int [pk, increment]
   category_id int [not null, ref: > categories.category_id]
   service_name varchar(150) [not null]
   base_price decimal(10,2) [not null]
   description text
 }
-
-Table service_variants {
+Table service_variants [headercolor: #D97706] {
   variant_id int [pk, increment]
   service_id int [not null, ref: > services.service_id]
   variant_name varchar(100) [not null]
   price decimal(10,2) [not null]
   duration int [note: 'minutes']
-}
-
-Table provider_services {
-  provider_id int [not null, ref: > service_providers.provider_id]
-  service_id int [not null, ref: > services.service_id]
-
   indexes {
-    (provider_id, service_id) [pk]
+    (service_id, variant_name) [unique]
+    (service_id, variant_id) [unique]
   }
 }
+Table provider_services [headercolor: #D97706] {
+  provider_id int [not null, ref: > service_providers.provider_id]
+  service_id int [not null, ref: > services.service_id]
+  price decimal(10,2) [not null]
+  is_active boolean [not null, default: true]
+  indexes { (provider_id, service_id) [pk] }
+}
 
-// ── BOOKING DOMAIN ──────────────────────────
-
-Table coupons {
+Table coupons [headercolor: #C2410C] {
   coupon_id int [pk, increment]
   code varchar(30) [not null, unique]
-  discount_type varchar(20) [not null, note: 'percentage | flat']
-  discount_value decimal(10,2) [not null]
+  discount_type varchar(20) [not null]
+  discount_value decimal(10,2) [not null, note: 'CHECK percentage <= 100']
+  max_discount decimal(10,2)
   min_order decimal(10,2)
   usage_limit int
+  used_count int [not null, default: 0, note: 'CHECK used_count <= usage_limit']
   valid_from date [not null]
   valid_to date [not null]
 }
-
-Table bookings {
+Table bookings [headercolor: #C2410C] {
   booking_id int [pk, increment]
-  customer_id int [not null, ref: > customers.customer_id]
+  customer_id int [not null]
   provider_id int [not null, ref: > service_providers.provider_id]
   location_id int [not null, ref: > locations.location_id]
   coupon_id int [ref: > coupons.coupon_id]
-  scheduled_date date [not null]
-  scheduled_time time [not null]
-  status varchar(30) [not null, default: 'pending']
-  total_amount decimal(10,2) [not null]
+  scheduled_start timestamptz [not null]
+  scheduled_end timestamptz [not null]
+  status booking_status [not null, default: 'pending']
+  subtotal decimal(10,2) [not null, note: 'checked against items at commit']
+  discount decimal(10,2) [not null, default: 0]
+  total_amount decimal(10,2) [not null, note: 'CHECK total_amount = subtotal - discount']
   special_instructions text
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  indexes {
+    (customer_id, scheduled_start)
+    (provider_id, status, scheduled_start)
+    location_id
+  }
+  Note: 'EXCLUDE (provider_id =, tstzrange(scheduled_start, scheduled_end) &&) WHERE status is pending, confirmed or in_progress'
 }
+Ref: bookings.(customer_id, location_id) > customer_addresses.(customer_id, location_id)
 
-Table booking_items {
+Table booking_items [headercolor: #C2410C] {
   booking_id int [not null, ref: > bookings.booking_id]
   item_no int [not null]
   service_id int [not null, ref: > services.service_id]
-  variant_id int [ref: > service_variants.variant_id]
+  variant_id int
   quantity int [not null, default: 1]
-  unit_price decimal(10,2) [not null]
-
-  indexes {
-    (booking_id, item_no) [pk]
-  }
+  unit_price decimal(10,2) [not null, note: 'price at booking time']
+  indexes { (booking_id, item_no) [pk] }
 }
+Ref: booking_items.(service_id, variant_id) > service_variants.(service_id, variant_id)
 
-Table booking_status_log {
+Table booking_status_log [headercolor: #C2410C] {
+  log_id bigint [pk, increment]
   booking_id int [not null, ref: > bookings.booking_id]
-  log_time timestamp [not null]
-  status varchar(30) [not null]
+  old_status booking_status
+  new_status booking_status [not null]
+  changed_by int [ref: > users.user_id]
+  changed_at timestamptz [not null]
   remarks text
-
-  indexes {
-    (booking_id, log_time) [pk]
-  }
 }
-
-// ── PAYMENT DOMAIN ──────────────────────────
-
-Table payments {
+Table booking_status_transitions [headercolor: #C2410C] {
+  from_status booking_status [not null]
+  to_status booking_status [not null]
+  indexes { (from_status, to_status) [pk] }
+  Note: 'the allowed status changes'
+}
+Table payments [headercolor: #C2410C] {
   payment_id int [pk, increment]
-  booking_id int [not null, unique, ref: - bookings.booking_id]
+  booking_id int [not null, ref: > bookings.booking_id]
   payment_method varchar(50) [not null]
   status varchar(20) [not null, default: 'pending']
   amount decimal(10,2) [not null]
   gateway_ref varchar(255)
-  paid_at timestamp
-
-  Note: '1:1 with bookings'
+  paid_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  failure_reason text
+  Note: 'partial unique index: one success per booking'
 }
-
-Table cancellations {
+Table refunds [headercolor: #C2410C] {
+  refund_id int [pk, increment]
+  payment_id int [not null, ref: > payments.payment_id]
+  amount decimal(10,2) [not null]
+  status varchar(20) [not null, default: 'pending']
+  requested_at timestamptz [not null, default: `now()`]
+  processed_at timestamptz
+  Note: 'partial unique index: one non-failed refund per payment'
+}
+Table cancellations [headercolor: #C2410C] {
   cancel_id int [pk, increment]
   booking_id int [not null, unique, ref: - bookings.booking_id]
   reason text [not null]
-  refund_status varchar(20) [not null, default: 'pending']
-
-  Note: '1:1 with bookings'
+  cancelled_by int [ref: > users.user_id]
+  cancelled_at timestamptz [not null, default: `now()`]
 }
 
-// ── REVIEW DOMAIN ───────────────────────────
-
-Table provider_reviews {
+Table provider_reviews [headercolor: #7C3AED] {
   review_id int [pk, increment]
   booking_id int [not null, unique, ref: - bookings.booking_id]
   rating int [not null, note: '1-5']
   comment text
-
-  Note: 'Trigger: auto-updates avg_rating'
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
 }
-
-Table service_reviews {
+Table service_reviews [headercolor: #7C3AED] {
   review_id int [pk, increment]
   service_id int [not null, ref: > services.service_id]
   booking_id int [not null, ref: > bookings.booking_id]
   rating int [not null, note: '1-5']
   comment text
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  indexes { (service_id, booking_id) [unique] }
 }
-
-Table complaints {
+Table complaints [headercolor: #7C3AED] {
   complaint_id int [pk, increment]
   booking_id int [not null, ref: > bookings.booking_id]
   subject varchar(255) [not null]
+  description text
   status varchar(30) [not null, default: 'open']
+  raised_by int [not null, ref: > users.user_id]
+  assigned_admin_id int [ref: > admins.admin_id]
+  created_at timestamptz [not null, default: `now()`]
+  resolved_at timestamptz
+  resolution_notes text
+}
+Table provider_documents [headercolor: #7C3AED] {
+  document_id int [pk, increment]
+  provider_id int [not null, ref: > service_providers.provider_id]
+  document_type varchar(100) [not null]
+  file_url varchar(500) [not null]
+  uploaded_at timestamptz [not null, default: `now()`]
+  description text
+  status varchar(20) [not null, default: 'pending']
+  verified_by int [ref: > admins.admin_id]
+  verified_at timestamptz
+}
+Table provider_availability [headercolor: #7C3AED] {
+  slot_id bigint [pk, increment]
+  provider_id int [not null, ref: > service_providers.provider_id]
+  day_of_week smallint [not null, note: 'ISO: 1 = Monday']
+  start_time time [not null]
+  end_time time [not null]
+  Note: 'EXCLUDE overlapping slots for one provider and day'
 }

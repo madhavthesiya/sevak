@@ -49,7 +49,7 @@ SELECT
     u.email                         AS provider_email,
     sp.experience_years,
     sp.avg_rating,
-    sp.custom_price                 AS provider_rate,
+    ps.price                         AS provider_rate,
     s.service_name,
     s.base_price                    AS catalogue_price
 FROM provider_services ps
@@ -97,16 +97,17 @@ WHERE b.booking_id = 7;
 -- ============================================================
 SELECT
     cu.customer_id,
-    cu.name,
+    u.full_name,
     COUNT(b.booking_id)                                     AS total_bookings,
     COUNT(CASE WHEN b.status = 'completed' THEN 1 END)     AS completed,
     COUNT(CASE WHEN b.status = 'cancelled' THEN 1 END)     AS cancelled,
     COALESCE(SUM(CASE WHEN b.status = 'completed'
                  THEN b.total_amount ELSE 0 END), 0)       AS total_spent
 FROM customers cu
+JOIN users u ON cu.user_id = u.user_id
 JOIN bookings b ON cu.customer_id = b.customer_id
 WHERE cu.customer_id = 1
-GROUP BY cu.customer_id, cu.name;
+GROUP BY cu.customer_id, u.full_name;
 
 
 -- ============================================================
@@ -132,7 +133,7 @@ JOIN services          s  ON ps.service_id  = s.service_id
 JOIN categories        cat ON s.category_id = cat.category_id
 WHERE ci.city_name     = 'Ahmedabad'
   AND cat.category_name = 'Electrical'
-  AND pa.day_of_week   = 'Monday'
+  AND pa.day_of_week   = 1
   AND sp.is_active     = TRUE
 GROUP BY sp.provider_id, u.email, sp.avg_rating,
          sp.experience_years, pa.start_time, pa.end_time
@@ -171,7 +172,7 @@ WHERE b.provider_id = 1
 -- TECHNIQUES: DATE_TRUNC, GROUP BY, SUM, COUNT
 -- ============================================================
 SELECT
-    DATE_TRUNC('month', b.scheduled_date)                   AS month,
+    DATE_TRUNC('month', b.scheduled_start)                   AS month,
     COUNT(b.booking_id)                                     AS jobs_completed,
     SUM(p.amount)                                           AS monthly_earnings
 FROM bookings b
@@ -179,7 +180,7 @@ JOIN payments p ON b.booking_id = p.booking_id
 WHERE b.provider_id = 1
   AND b.status   = 'completed'
   AND p.status   = 'success'
-GROUP BY DATE_TRUNC('month', b.scheduled_date)
+GROUP BY DATE_TRUNC('month', b.scheduled_start)
 ORDER BY month DESC;
 
 
@@ -286,7 +287,7 @@ ORDER BY complaint_count DESC;
 -- QUERY 12: Coupon Usage and Effectiveness Report
 -- Query Text: How many times has each coupon been used?
 --   What is the total discount given and remaining uses?
--- TECHNIQUES: LEFT JOIN, GROUP BY, SUM, CASE
+-- TECHNIQUES: LEFT JOIN, GROUP BY, SUM, COALESCE
 -- ============================================================
 SELECT
     co.code,
@@ -295,11 +296,7 @@ SELECT
     co.usage_limit,
     COUNT(b.booking_id)                              AS times_used,
     (co.usage_limit - COUNT(b.booking_id))           AS remaining_uses,
-    SUM(CASE
-        WHEN co.discount_type = 'flat'       THEN co.discount_value
-        WHEN co.discount_type = 'percentage' THEN ROUND(b.total_amount * co.discount_value / 100, 2)
-        ELSE 0
-    END)                                             AS total_discount_given
+    COALESCE(SUM(b.discount), 0)                     AS total_discount_given
 FROM coupons co
 LEFT JOIN bookings b ON co.coupon_id = b.coupon_id
 GROUP BY co.coupon_id, co.code, co.discount_type, co.discount_value, co.usage_limit
@@ -314,15 +311,15 @@ ORDER BY times_used DESC;
 -- ============================================================
 SELECT
     cu.customer_id,
-    cu.name,
-    cu.phone,
+    u.full_name,
+    u.phone,
     u.email,
     u.status                         AS account_status
 FROM customers cu
 JOIN users u ON cu.user_id = u.user_id
 LEFT JOIN bookings b ON cu.customer_id = b.customer_id
 WHERE b.booking_id IS NULL
-ORDER BY cu.name;
+ORDER BY u.full_name;
 
 
 -- ============================================================
@@ -333,19 +330,19 @@ ORDER BY cu.name;
 -- ============================================================
 SELECT
     bsl1.booking_id,
-    bsl1.status                                       AS from_status,
-    bsl2.status                                       AS to_status,
-    (bsl2.log_time - bsl1.log_time)                   AS time_taken
+    bsl1.new_status                                       AS from_status,
+    bsl2.new_status                                       AS to_status,
+    (bsl2.changed_at - bsl1.changed_at)                   AS time_taken
 FROM booking_status_log bsl1
 JOIN booking_status_log bsl2
     ON  bsl1.booking_id = bsl2.booking_id
-    AND bsl2.log_time = (
-        SELECT MIN(bsl3.log_time)
+    AND bsl2.changed_at = (
+        SELECT MIN(bsl3.changed_at)
         FROM booking_status_log bsl3
         WHERE bsl3.booking_id = bsl1.booking_id
-          AND bsl3.log_time > bsl1.log_time
+          AND bsl3.changed_at > bsl1.changed_at
     )
-ORDER BY bsl1.booking_id, bsl1.log_time;
+ORDER BY bsl1.booking_id, bsl1.changed_at;
 
 
 -- ============================================================
@@ -357,7 +354,7 @@ ORDER BY bsl1.booking_id, bsl1.log_time;
 -- ============================================================
 SELECT
     b.booking_id,
-    cu.name                          AS customer_name,
+    u_cust.full_name                 AS customer_name,
     u_prov.email                     AS provider_email,
     ci.city_name,
     ar.area_name,
@@ -368,12 +365,13 @@ SELECT
     bi.unit_price,
     b.total_amount,
     b.status                         AS booking_status,
-    b.scheduled_date,
+    b.scheduled_start,
     COALESCE(p.status, 'no payment') AS payment_status,
     COALESCE(pr.rating::TEXT, '-')   AS provider_rating,
     COALESCE(co.code, 'none')        AS coupon_used
 FROM bookings b
 JOIN customers          cu     ON b.customer_id  = cu.customer_id
+JOIN users              u_cust ON cu.user_id     = u_cust.user_id
 JOIN service_providers  sp     ON b.provider_id  = sp.provider_id
 JOIN users              u_prov ON sp.user_id     = u_prov.user_id
 JOIN locations          loc    ON b.location_id  = loc.location_id
@@ -382,7 +380,7 @@ JOIN cities             ci     ON ar.city_id     = ci.city_id
 JOIN booking_items      bi     ON b.booking_id   = bi.booking_id
 JOIN services           s      ON bi.service_id  = s.service_id
 JOIN categories         cat    ON s.category_id  = cat.category_id
-LEFT JOIN payments      p      ON b.booking_id   = p.booking_id
+LEFT JOIN payments      p      ON b.booking_id   = p.booking_id AND p.status = 'success'
 LEFT JOIN provider_reviews pr  ON b.booking_id   = pr.booking_id
 LEFT JOIN coupons       co     ON b.coupon_id    = co.coupon_id
 ORDER BY b.booking_id, bi.item_no;

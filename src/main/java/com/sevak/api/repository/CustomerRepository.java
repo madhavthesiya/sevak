@@ -18,13 +18,13 @@ public class CustomerRepository {
     public List<Map<String, Object>> getBookings(int customerId, int page, int limit) {
         int offset = (page - 1) * limit;
         return jdbc.queryForList("""
-                SELECT b.booking_id, u.email AS provider_email, b.scheduled_date,
-                       b.scheduled_time, b.status, b.total_amount
+                SELECT b.booking_id, u.email AS provider_email, b.scheduled_start,
+                       b.scheduled_end, b.status, b.total_amount
                 FROM bookings b
                 JOIN service_providers sp ON b.provider_id = sp.provider_id
                 JOIN users u ON sp.user_id = u.user_id
                 WHERE b.customer_id = ?
-                ORDER BY b.scheduled_date DESC
+                ORDER BY b.scheduled_start DESC, b.booking_id DESC
                 LIMIT ? OFFSET ?
                 """, customerId, limit, offset);
     }
@@ -61,18 +61,25 @@ public class CustomerRepository {
     // ── Spending Summary (CASE, SUM, COUNT) ──────────────────
     public Map<String, Object> getSpendingSummary(int customerId) {
         List<Map<String, Object>> list = jdbc.queryForList("""
+                WITH paid AS (
+                    SELECT booking_id,
+                           COALESCE(SUM(amount) FILTER (WHERE status = 'success'), 0)  AS paid,
+                           COALESCE(SUM(amount) FILTER (WHERE status = 'refunded'), 0) AS refunded
+                    FROM payments
+                    GROUP BY booking_id
+                )
                 SELECT
-                    COUNT(DISTINCT b.booking_id)                                            AS total_bookings,
-                    COUNT(DISTINCT CASE WHEN b.status = 'completed' THEN b.booking_id END)  AS completed,
-                    COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.booking_id END)  AS cancelled,
-                    COUNT(DISTINCT CASE WHEN b.status IN ('pending', 'confirmed', 'in_progress') THEN b.booking_id END) AS pending,
-                    COALESCE(SUM(CASE WHEN p.status = 'success' THEN p.amount ELSE 0 END), 0) AS paid,
-                    COALESCE(SUM(CASE WHEN b.status IN ('pending', 'confirmed', 'in_progress')
-                                       AND (p.status IS NULL OR p.status <> 'success')
-                                      THEN b.total_amount ELSE 0 END), 0)  AS upcoming,
-                    COALESCE(SUM(CASE WHEN p.status = 'refunded' THEN p.amount ELSE 0 END), 0) AS refunded
+                    COUNT(*)                                                     AS total_bookings,
+                    COUNT(*) FILTER (WHERE b.status = 'completed')               AS completed,
+                    COUNT(*) FILTER (WHERE b.status = 'cancelled')               AS cancelled,
+                    COUNT(*) FILTER (WHERE b.status IN ('pending', 'confirmed', 'in_progress')) AS pending,
+                    COALESCE(SUM(p.paid), 0)                                     AS paid,
+                    COALESCE(SUM(b.total_amount) FILTER (
+                        WHERE b.status IN ('pending', 'confirmed', 'in_progress')
+                          AND COALESCE(p.paid, 0) = 0), 0)                       AS upcoming,
+                    COALESCE(SUM(p.refunded), 0)                                 AS refunded
                 FROM bookings b
-                LEFT JOIN payments p ON p.booking_id = b.booking_id
+                LEFT JOIN paid p ON p.booking_id = b.booking_id
                 WHERE b.customer_id = ?
                 """, customerId);
         return list.isEmpty() ? Map.of() : list.get(0);
@@ -81,13 +88,13 @@ public class CustomerRepository {
     // ── Saved Addresses (4-table JOIN via locations) ─────────
     public List<Map<String, Object>> getAddresses(int customerId) {
         return jdbc.queryForList("""
-                SELECT loc.location_id, ca.label, loc.street, loc.landmark,
+                SELECT loc.location_id, ca.label, ca.house_no, loc.street, loc.landmark,
                        ar.area_name, ar.pincode, ci.city_name
                 FROM customer_addresses ca
                 JOIN locations loc ON ca.location_id = loc.location_id
                 JOIN areas ar ON loc.area_id = ar.area_id
                 JOIN cities ci ON ar.city_id = ci.city_id
-                WHERE ca.customer_id = ?
+                WHERE ca.customer_id = ? AND ca.is_active
                 ORDER BY ca.label
                 """, customerId);
     }

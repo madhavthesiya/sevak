@@ -2,7 +2,7 @@
 
 # ⬡ SEVAK — Service Marketplace API
 
-**A REST API built on a BCNF-normalized 23-table PostgreSQL schema**
+**A REST API built on a BCNF-normalized 27-table PostgreSQL schema**
 
 [![CI](https://github.com/madhavthesiya/sevak-api/actions/workflows/ci.yml/badge.svg)](https://github.com/madhavthesiya/sevak-api/actions/workflows/ci.yml)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.4-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
@@ -24,8 +24,10 @@ This project focuses on **database engineering excellence** — featuring a rigo
 
 ### Highlights
 
-- 🏗️ **23-table BCNF-normalized schema** with mathematical proof of compliance
+- 🏗️ **27-table BCNF-normalized schema** with mathematical proof of compliance
 - 📊 **21 REST endpoints** with pagination, showcasing advanced SQL (Window Functions, Derived Tables, STRING_AGG)
+- 🛡️ **Double booking made impossible** by a PostgreSQL exclusion constraint on provider + time range, proven by concurrency tests
+- 🚦 **Booking status rules stored as data** and enforced by a trigger, with a full audit log
 - ⚡ **Stored Procedures** for transactional operations (booking cancellation/confirmation)
 - 🔄 **Database Triggers** for automatic rating recalculation on review INSERT/UPDATE/DELETE
 - 📦 **Materialized Views** for pre-computed analytics (leaderboard, city revenue)
@@ -54,7 +56,7 @@ graph TD
 
     E -->|JDBC| I["PostgreSQL — Supabase"]
 
-    subgraph DB["sevak schema — 23 Tables"]
+    subgraph DB["sevak schema — 27 Tables"]
         I --> J["users · customers · admins"]
         I --> K["bookings · payments · reviews"]
         I --> L["services · categories · variants"]
@@ -76,12 +78,12 @@ graph TD
 
 | Domain | Tables | Description |
 |:-------|:------:|:------------|
-| **Auth** | 3 | `users`, `customers`, `admins` — ISA hierarchy with role-based access |
-| **Providers** | 4 | `service_providers`, `provider_documents`, `provider_availability`, `provider_services` |
+| **Auth** | 4 | `users`, `customers`, `admins`, `admin_permissions` — ISA hierarchy with enforced roles |
+| **Providers** | 5 | `service_providers`, `provider_documents`, `provider_availability`, `provider_services`, `provider_service_areas` |
 | **Services** | 3 | `categories`, `services`, `service_variants` — hierarchical catalog |
 | **Location** | 4 | `cities`, `areas`, `locations`, `customer_addresses` — BCNF-compliant geo data |
-| **Bookings** | 4 | `bookings`, `booking_items`, `booking_status_log`, `coupons` |
-| **Payments** | 2 | `payments`, `cancellations` — 1:1 with bookings |
+| **Bookings** | 5 | `bookings`, `booking_items`, `booking_status_log`, `booking_status_transitions`, `coupons` |
+| **Payments** | 3 | `payments`, `refunds`, `cancellations` — multiple attempts, one success |
 | **Reviews** | 3 | `provider_reviews`, `service_reviews`, `complaints` |
 
 ### BCNF Compliance
@@ -96,13 +98,13 @@ BEFORE (violated BCNF):
 AFTER (BCNF compliant):
   locations(location_id, area_id, street, landmark, latitude, longitude)
     → {latitude, longitude} is now a UNIQUE candidate key ✅
-  customer_addresses(customer_id, location_id, label)
-    → Pure junction table, all-key ✅
+  customer_addresses(customer_id, location_id, label, house_no)
+    → label and house_no depend on the whole key ✅
 ```
 
 📄 Full mathematical proof: [`SEVAK_Normalization_Proof.md`](docs/SEVAK_Normalization_Proof.md)
 
-📊 Relational Schema: [`FINAL_SCHEMA.pdf`](docs/FINAL_SCHEMA.pdf)
+📊 Relational Schema: [`sevak_dbml.dbml`](docs/sevak_dbml.dbml) (paste into dbdiagram.io)
 
 📝 Top 15 SQL Queries: [`sevak_queries.sql`](sql/sevak_queries.sql)
 
@@ -290,23 +292,27 @@ This project intentionally uses **Spring JDBC** instead of JPA/Hibernate to demo
 <summary><b>Window Function — Provider Leaderboard</b></summary>
 
 ```sql
-SELECT
-    RANK() OVER (ORDER BY sp.avg_rating DESC NULLS LAST,
-                 COUNT(DISTINCT b.booking_id) DESC)  AS rank,
-    sp.provider_id, u.email, ci.city_name,
-    sp.avg_rating,
-    COUNT(DISTINCT b.booking_id)                     AS jobs_completed,
-    COALESCE(SUM(p.amount), 0)                       AS total_revenue
-FROM service_providers sp
-JOIN users u ON sp.user_id = u.user_id
-JOIN cities ci ON sp.city_id = ci.city_id
-LEFT JOIN bookings b ON sp.provider_id = b.provider_id
-                    AND b.status = 'completed'
-LEFT JOIN payments p ON b.booking_id = p.booking_id
-                    AND p.status = 'success'
-WHERE sp.is_active = TRUE
-GROUP BY sp.provider_id, u.email, ci.city_name, sp.avg_rating
-ORDER BY rank
+-- v_provider_leaderboard: the live view; mv_provider_leaderboard is its materialized copy
+WITH platform AS (SELECT AVG(rating) AS avg_rating FROM provider_reviews),
+stats AS (
+    SELECT sp.provider_id, u.email, ci.city_name, sp.avg_rating, sp.review_count,
+           -- Bayesian average: one 5-star review can't beat fifty excellent ones
+           CASE WHEN sp.review_count > 0 THEN
+               ROUND((5 * pl.avg_rating + sp.avg_rating * sp.review_count) / (5 + sp.review_count), 2)
+           END                          AS weighted_rating,
+           COUNT(DISTINCT b.booking_id) AS jobs_completed,
+           COALESCE(SUM(p.amount), 0)   AS total_revenue
+    FROM service_providers sp
+    JOIN users u   ON sp.user_id = u.user_id
+    JOIN cities ci ON sp.city_id = ci.city_id
+    CROSS JOIN platform pl
+    LEFT JOIN bookings b ON sp.provider_id = b.provider_id AND b.status = 'completed'
+    LEFT JOIN payments p ON b.booking_id = p.booking_id AND p.status = 'success'
+    WHERE sp.is_active = TRUE
+    GROUP BY sp.provider_id, u.email, ci.city_name, sp.avg_rating, sp.review_count, pl.avg_rating
+)
+SELECT RANK() OVER (ORDER BY weighted_rating DESC NULLS LAST, jobs_completed DESC) AS rank, *
+FROM stats
 ```
 </details>
 
@@ -358,6 +364,8 @@ CALL sp_cancel_booking(booking_id, 'Customer changed mind');
     "email": "ravi.electrician@gmail.com",
     "city_name": "Ahmedabad",
     "avg_rating": 5.00,
+    "review_count": 1,
+    "weighted_rating": 4.33,
     "jobs_completed": 1,
     "total_revenue": 495.00
   },
@@ -367,6 +375,8 @@ CALL sp_cancel_booking(booking_id, 'Customer changed mind');
     "email": "amit.plumber@gmail.com",
     "city_name": "Mumbai",
     "avg_rating": 5.00,
+    "review_count": 1,
+    "weighted_rating": 4.33,
     "jobs_completed": 1,
     "total_revenue": 1400.00
   },
@@ -376,13 +386,15 @@ CALL sp_cancel_booking(booking_id, 'Customer changed mind');
     "email": "sunita.cleaner@gmail.com",
     "city_name": "Ahmedabad",
     "avg_rating": 4.00,
+    "review_count": 2,
+    "weighted_rating": 4.14,
     "jobs_completed": 2,
     "total_revenue": 4025.00
   }
 ]
 ```
 
-> **Note on ranking:** Providers 1 and 3 tie with a 5.00 rating and 1 completed job, so both receive rank 1. Because `RANK()` is used instead of `DENSE_RANK()`, rank 2 is skipped and the next provider receives rank 3.
+> **Note on ranking:** Providers 1 and 3 tie on weighted rating and completed jobs, so both receive rank 1. Because `RANK()` is used instead of `DENSE_RANK()`, rank 2 is skipped and the next provider receives rank 3.
 ---
 
 <div align="center">
