@@ -1,4 +1,4 @@
-// SEVAK: 27-table schema. Paste into dbdiagram.io.
+// SEVAK: 29-table schema. Paste into dbdiagram.io.
 // The source of truth is src/main/resources/db/migration; keep this file in step with it.
 
 Enum booking_status { pending confirmed in_progress completed cancelled }
@@ -7,7 +7,7 @@ Enum user_role { customer provider admin }
 TableGroup identity { users customers service_providers admins admin_permissions }
 TableGroup location { cities areas locations customer_addresses provider_service_areas }
 TableGroup catalog { categories services service_variants provider_services }
-TableGroup booking { bookings booking_items booking_status_log booking_status_transitions coupons payments refunds cancellations }
+TableGroup booking { bookings booking_items booking_status_log booking_status_transitions coupons coupon_redemptions idempotency_keys payments refunds cancellations }
 TableGroup feedback { provider_reviews service_reviews complaints provider_documents provider_availability }
 
 Table users [headercolor: #2563EB] {
@@ -260,4 +260,20 @@ Table provider_availability [headercolor: #7C3AED] {
   start_time time [not null]
   end_time time [not null]
   Note: 'EXCLUDE overlapping slots for one provider and day'
+}
+
+Table coupon_redemptions [headercolor: #C2410C] {
+  coupon_id int [not null, ref: > coupons.coupon_id]
+  customer_id int [not null, ref: > customers.customer_id]
+  booking_id int [not null, unique, ref: - bookings.booking_id]
+  redeemed_at timestamptz [not null, default: `now()`]
+  indexes { (coupon_id, customer_id) [pk] }
+}
+Table idempotency_keys [headercolor: #C2410C] {
+  user_id int [not null, ref: > users.user_id]
+  idempotency_key varchar(100) [not null]
+  request_hash varchar(64) [not null]
+  booking_id int [ref: > bookings.booking_id]
+  created_at timestamptz [not null, default: `now()`]
+  indexes { (user_id, idempotency_key) [pk] }
 }

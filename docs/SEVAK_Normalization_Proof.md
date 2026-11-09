@@ -1,6 +1,6 @@
 # SEVAK: Normalization Proof
 
-This document shows that the 27 base tables in the `sevak` schema are in BCNF, under the functional-dependency (FD) assumptions stated below.
+This document shows that the 29 base tables in the `sevak` schema are in BCNF, under the functional-dependency (FD) assumptions stated below.
 
 **BCNF rule:** for every non-trivial FD `X → Y`, `X` is a superkey. BCNF implies 3NF, 2NF and 1NF.
 
@@ -63,6 +63,8 @@ Unless noted, the only determinants are the listed keys, so every table is in BC
 | Table | Candidate keys | Notes |
 |---|---|---|
 | `coupons` | `coupon_id`; `code` | `used_count` is controlled redundancy (section 3). |
+| `coupon_redemptions` | `(coupon_id, customer_id)`; `booking_id` | One use of a coupon per customer. |
+| `idempotency_keys` | `(user_id, idempotency_key)` | `request_hash` and `booking_id` depend on the whole key. |
 | `bookings` | `booking_id` | Only foreign keys to people and places. `scheduled_end`, `subtotal` and `total_amount` are discussed in section 3. |
 | `booking_items` | `(booking_id, item_no)` | `service_id`, `variant_id`, `quantity` and `unit_price` all depend on the whole key. |
 | `booking_status_log` | `log_id` | `(booking_id, changed_at)` is deliberately not a key: two changes can happen at the same moment. |

@@ -2,7 +2,7 @@
 
 # ⬡ SEVAK — Service Marketplace API
 
-**A REST API built on a BCNF-normalized 27-table PostgreSQL schema**
+**A REST API built on a BCNF-normalized 29-table PostgreSQL schema**
 
 [![CI](https://github.com/madhavthesiya/sevak-api/actions/workflows/ci.yml/badge.svg)](https://github.com/madhavthesiya/sevak-api/actions/workflows/ci.yml)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.4-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
@@ -24,9 +24,11 @@ This project focuses on **database engineering excellence** — featuring a rigo
 
 ### Highlights
 
-- 🏗️ **27-table BCNF-normalized schema** with mathematical proof of compliance
+- 🏗️ **29-table BCNF-normalized schema** with mathematical proof of compliance
 - 📊 **21 REST endpoints** with pagination, showcasing advanced SQL (Window Functions, Derived Tables, STRING_AGG)
 - 🛡️ **Double booking made impossible** by a PostgreSQL exclusion constraint on provider + time range, proven by concurrency tests
+- 🔐 **JWT login with roles**, where every `/me` route takes the user from the token, so one user can't ask for another's data
+- ♻️ **Safe retries** with `Idempotency-Key`, and a coupon limit that holds under concurrent requests
 - 🚦 **Booking status rules stored as data** and enforced by a trigger, with a full audit log
 - ⚡ **Stored Procedures** for transactional operations (booking cancellation/confirmation)
 - 🔄 **Database Triggers** for automatic rating recalculation on review INSERT/UPDATE/DELETE
@@ -56,7 +58,7 @@ graph TD
 
     E -->|JDBC| I["PostgreSQL — Supabase"]
 
-    subgraph DB["sevak schema — 27 Tables"]
+    subgraph DB["sevak schema — 29 Tables"]
         I --> J["users · customers · admins"]
         I --> K["bookings · payments · reviews"]
         I --> L["services · categories · variants"]
@@ -82,7 +84,7 @@ graph TD
 | **Providers** | 5 | `service_providers`, `provider_documents`, `provider_availability`, `provider_services`, `provider_service_areas` |
 | **Services** | 3 | `categories`, `services`, `service_variants` — hierarchical catalog |
 | **Location** | 4 | `cities`, `areas`, `locations`, `customer_addresses` — BCNF-compliant geo data |
-| **Bookings** | 5 | `bookings`, `booking_items`, `booking_status_log`, `booking_status_transitions`, `coupons` |
+| **Bookings** | 7 | `bookings`, `booking_items`, `booking_status_log`, `booking_status_transitions`, `coupons`, `coupon_redemptions`, `idempotency_keys` |
 | **Payments** | 3 | `payments`, `refunds`, `cancellations` — multiple attempts, one success |
 | **Reviews** | 3 | `provider_reviews`, `service_reviews`, `complaints` |
 
@@ -131,20 +133,25 @@ All endpoints are under `/api/v1`. Lists return `{ data, page, limit, total, tot
 | `GET` | `/providers/{id}/jobs?status=` | `LATERAL` join for the latest payment attempt |
 | `GET` | `/providers/{id}/earnings?from=&to=` | `SUM`, `COUNT`, `GROUP BY` |
 
-### 3. Customers
-| Method | Endpoint | Notes |
-|:-------|:---------|:------|
-| `GET` | `/customers/{id}/bookings` | Newest first |
-| `GET` | `/customers/{id}/bookings/{bookingId}` | Address, price breakdown, items and status timeline |
-| `GET` | `/customers/{id}/payments` | Every attempt, including failures |
-| `GET` | `/customers/{id}/spending` | `FILTER` aggregates: paid, upcoming, refunded |
-| `GET` | `/customers/{id}/addresses` | Saved addresses |
+### 3. My account
+| Method | Endpoint | Role | Notes |
+|:-------|:---------|:-----|:------|
+| `POST` | `/auth/register`, `/auth/login` | Public | Returns a 24-hour JWT |
+| `GET` | `/me` | Any | The logged-in account |
+| `GET` | `/me/bookings`, `/me/bookings/{id}` | Customer | Includes the price breakdown and status timeline |
+| `GET` | `/me/payments`, `/me/spending` | Customer | `FILTER` aggregates: paid, upcoming, refunded |
+| `GET` `POST` `DELETE` | `/me/addresses` | Customer | Removing is a soft delete; past bookings are unaffected |
+| `GET` | `/provider/jobs?status=`, `/provider/earnings?from=&to=` | Provider | Street address shown only after accepting |
 
 ### 4. Bookings
-| Method | Endpoint | SQL Technique |
-|:-------|:---------|:--------------|
-| `POST` | `/bookings/{id}/cancel` with `{ "reason": "..." }` | **Stored procedure** with a row lock |
-| `POST` | `/bookings/{id}/accept` | **Stored procedure** checking every item and the whole job duration |
+| Method | Endpoint | Role | What it does |
+|:-------|:---------|:-----|:-------------|
+| `POST` | `/bookings` | Customer | One transaction: checks, price snapshot, coupon, no double booking. Supports `Idempotency-Key` |
+| `POST` | `/bookings/{id}/accept`, `/decline`, `/start`, `/complete` | Provider | Moves through the status rules |
+| `POST` | `/bookings/{id}/cancel` | Customer or provider | Customers until 2 hours before; providers until the start |
+| `POST` | `/bookings/{id}/payments` | Customer | Mock gateway; `simulate` chooses success or failure |
+| `POST` | `/bookings/{id}/review` | Customer | Only after completion, once |
+| `POST` | `/bookings/{id}/complaints` | Customer or provider | |
 
 ### 5. Admin
 | Method | Endpoint | SQL Technique |
@@ -155,9 +162,17 @@ All endpoints are under `/api/v1`. Lists return `{ data, page, limit, total, tot
 | `GET` | `/admin/city-revenue` | **Materialized view** |
 | `GET` | `/admin/bookings?before=&beforeId=&limit=` | **Keyset pagination** |
 | `POST` | `/admin/refresh-views` | Also runs on a schedule, guarded by an advisory lock |
+| `PATCH` | `/admin/providers/{id}/verification`, `/admin/complaints/{id}` | Verify providers, resolve complaints |
+| `POST` | `/admin/refunds/{id}/process` | Completes a refund |
 
-> 🔑 **All `POST` endpoints need an `X-Api-Key` header** (temporary protection until JWT auth is added).
-> Locally the key is `dev-admin-key` unless you set `SEVAK_ADMIN_KEY`. In Swagger UI, click **Authorize** and paste the key.
+### Demo accounts
+Every demo account uses the password `Demo@1234`. In Swagger UI, log in with `POST /auth/login`, click **Authorize**, and paste the `accessToken`.
+
+| Role | Email |
+|:-----|:------|
+| Customer | `aarav.sharma@gmail.com` |
+| Provider | `ravi.electrician@gmail.com` |
+| Admin | `admin.raj@sevak.com` |
 
 ### Health and monitoring
 | Endpoint | Description |
@@ -175,11 +190,16 @@ Errors use [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457), w
 | Status | `type` | When |
 |:-------|:-------|:-----|
 | `400` | `urn:sevak:error:validation-error` | Invalid parameter or body |
-| `401` | | `POST` without a valid `X-Api-Key` |
+| `401` | `urn:sevak:error:unauthenticated` | Missing, expired or invalid login token |
+| `403` | `urn:sevak:error:forbidden` | Your role can't do this |
 | `404` | `urn:sevak:error:not-found` | Unknown URL, or a resource that doesn't exist or isn't yours |
 | `405` | `urn:sevak:error:method-not-allowed` | Wrong HTTP method |
 | `409` | `urn:sevak:error:invalid-state` | Booking is in the wrong status for the action |
+| `409` | `urn:sevak:error:slot-taken` | Someone else just booked that time |
+| `409` | `urn:sevak:error:idempotency-conflict` | An `Idempotency-Key` was reused for a different request |
 | `422` | `urn:sevak:error:business-rule` | Business rule broken, such as provider unavailable |
+| `422` | `urn:sevak:error:coupon-invalid` | Coupon expired, used up, already used by you, or below its minimum |
+| `429` | `urn:sevak:error:rate-limited` | Too many requests; see `Retry-After` |
 | `500` | `urn:sevak:error:internal` | Unexpected error; details only in the server log |
 
 ---
@@ -221,7 +241,6 @@ open http://localhost:8080/swagger-ui.html
 docker compose up --build
 # API:     http://localhost:8080/swagger-ui.html
 # Health:  http://localhost:8080/actuator/health
-# POST endpoints: send the header  X-Api-Key: dev-admin-key
 # If you ran an older version: docker compose down -v  (removes the old database volume)
 ```
 
@@ -245,6 +264,8 @@ Tests run against a real PostgreSQL 16 in Docker (Testcontainers), and Flyway bu
 | Framework | Spring Boot 4.0.4 | REST API + dependency injection |
 | Database | PostgreSQL (Supabase) | Managed cloud PostgreSQL |
 | DB Access | Spring JDBC (JdbcTemplate) | Raw SQL execution — intentionally chosen over JPA to showcase SQL proficiency |
+| Security | Spring Security, JWT, BCrypt | Roles, ownership checks and hashed passwords |
+| Rate limiting | Bucket4j | Per-IP limits on login, booking and general traffic |
 | Migrations | Flyway | Versioned schema changes; the app builds its own database |
 | Testing | JUnit 5, MockMvc, Testcontainers | Integration tests on a real PostgreSQL |
 | API Docs | springdoc-openapi 3.0.2 | Auto-generated Swagger UI |
