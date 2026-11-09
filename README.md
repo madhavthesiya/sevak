@@ -4,6 +4,7 @@
 
 **A REST API built on a BCNF-normalized 23-table PostgreSQL schema**
 
+[![CI](https://github.com/madhavthesiya/sevak-api/actions/workflows/ci.yml/badge.svg)](https://github.com/madhavthesiya/sevak-api/actions/workflows/ci.yml)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.4-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/)
@@ -194,8 +195,7 @@ cp .env.example .env
 
 # 3. Set up database
 psql -U postgres -c "CREATE DATABASE sevak_db"
-psql -U postgres -d sevak_db -f sql/sevak_ddl.sql
-psql -U postgres -d sevak_db -f sql/sevak_data.sql
+# The tables and demo data are created by Flyway when the app first starts.
 
 # 4. Run the API
 export DB_PASSWORD=your_password   # Linux/Mac
@@ -213,7 +213,18 @@ docker compose up --build
 # API:     http://localhost:8080/swagger-ui.html
 # Health:  http://localhost:8080/health
 # POST endpoints: send the header  X-Api-Key: dev-admin-key
+# If you ran an older version: docker compose down -v  (removes the old database volume)
 ```
+
+---
+
+## ✅ Testing
+
+```bash
+./mvnw verify   # needs Docker running
+```
+
+Tests run against a real PostgreSQL 16 in Docker (Testcontainers), and Flyway builds the database from scratch for every run. Each test is rolled back, so tests can't affect each other. They cover every read endpoint, error responses, stored procedures, triggers, revenue totals, data integrity and customer data isolation. CI runs them on every push, along with a formatting check (Spotless); the coverage report is written to `target/site/jacoco`.
 
 ---
 
@@ -225,6 +236,8 @@ docker compose up --build
 | Framework | Spring Boot 4.0.4 | REST API + dependency injection |
 | Database | PostgreSQL (Supabase) | Managed cloud PostgreSQL |
 | DB Access | Spring JDBC (JdbcTemplate) | Raw SQL execution — intentionally chosen over JPA to showcase SQL proficiency |
+| Migrations | Flyway | Versioned schema changes; the app builds its own database |
+| Testing | JUnit 5, MockMvc, Testcontainers | Integration tests on a real PostgreSQL |
 | API Docs | springdoc-openapi 3.0.2 | Auto-generated Swagger UI |
 | Container | Docker + Docker Compose | Reproducible deployments |
 | API Hosting | DigitalOcean App Platform | Production API deployment |
@@ -241,7 +254,7 @@ sevak-api/
 │   ├── config/
 │   │   ├── OpenApiConfig.java            # Swagger metadata
 │   │   ├── CorsConfig.java              # Cross-origin config
-│   │   └── GlobalExceptionHandler.java   # JSON error responses
+│   │   └── ApiExceptionHandler.java      # RFC 9457 error responses
 │   ├── controller/
 │   │   ├── GeneralController.java        # 4 browse/search endpoints
 │   │   ├── CustomerController.java       # 5 customer endpoints
@@ -257,10 +270,11 @@ sevak-api/
 │       └── BookingActionRepository.java  # Stored procedure calls
 ├── src/main/resources/
 │   ├── application.properties            # Dev config
-│   └── application-prod.properties       # Production config
+│   ├── application-prod.properties       # Production config
+│   └── db/                               # Flyway: migration/ (schema, procedures, views), seed/ (demo data)
 ├── sql/
-│   ├── sevak_ddl.sql                     # Schema (23 tables)
-│   └── sevak_data.sql                    # Seed data
+│   ├── sevak_queries.sql                 # Top 15 showcase queries
+│   └── checks/data_integrity.sql         # Consistency checks (must return 0 rows)
 ├── Dockerfile                            # Multi-stage build
 ├── docker-compose.yml                    # Full-stack local setup
 └── pom.xml                               # Dependencies
