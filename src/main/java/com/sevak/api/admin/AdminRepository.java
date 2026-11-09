@@ -8,7 +8,9 @@ import com.sevak.api.admin.dto.LeaderboardEntry;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -146,5 +148,55 @@ public class AdminRepository {
                 }
             }
         }));
+    }
+
+    public int setProviderVerification(int providerId, String status) {
+        return jdbc.sql("UPDATE service_providers SET verification_status = :status WHERE provider_id = :id")
+                .param("status", status)
+                .param("id", providerId)
+                .update();
+    }
+
+    public void reviewProviderDocuments(int providerId, String status, int adminId) {
+        jdbc.sql("""
+                        UPDATE provider_documents
+                        SET status = :status, verified_by = :admin, verified_at = now()
+                        WHERE provider_id = :id AND status = 'pending'
+                        """)
+                .param("status", status)
+                .param("admin", adminId)
+                .param("id", providerId)
+                .update();
+    }
+
+    public int updateComplaint(int complaintId, String status, Integer assignedAdminId, String notes) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("id", complaintId);
+        params.put("status", status);
+        params.put("admin", assignedAdminId);
+        params.put("notes", notes);
+        return jdbc.sql("""
+                        UPDATE complaints
+                        SET status = :status,
+                            assigned_admin_id = COALESCE(CAST(:admin AS int), assigned_admin_id),
+                            resolution_notes = COALESCE(CAST(:notes AS text), resolution_notes),
+                            resolved_at = CASE WHEN CAST(:status AS text) IN ('resolved', 'closed')
+                                               THEN COALESCE(resolved_at, now()) END
+                        WHERE complaint_id = :id
+                        """).params(params).update();
+    }
+
+    public int processRefund(int refundId) {
+        return jdbc.sql("""
+                        UPDATE refunds SET status = 'processed', processed_at = now()
+                        WHERE refund_id = :id AND status = 'pending'
+                        """).param("id", refundId).update();
+    }
+
+    public boolean refundExists(int refundId) {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM refunds WHERE refund_id = :id)")
+                .param("id", refundId)
+                .query(Boolean.class)
+                .single();
     }
 }

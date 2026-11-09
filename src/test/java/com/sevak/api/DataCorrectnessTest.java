@@ -98,7 +98,7 @@ class DataCorrectnessTest extends IntegrationTest {
 
     @Test
     void spendingSeparatesPaidUpcomingAndRefunded() throws Exception {
-        mvc.perform(get("/api/v1/customers/3/spending"))
+        mvc.perform(get("/api/v1/me/spending").header(AUTH, customer(3)))
                 .andExpect(jsonPath("$.paid").value(0))
                 .andExpect(jsonPath("$.upcoming").value(350.00))
                 .andExpect(jsonPath("$.refunded").value(350.00));
@@ -109,7 +109,7 @@ class DataCorrectnessTest extends IntegrationTest {
         jdbc.update(
                 "INSERT INTO payments (booking_id, payment_method, status, amount) VALUES (4, 'UPI', 'success', 350)");
 
-        mvc.perform(get("/api/v1/customers/3/spending"))
+        mvc.perform(get("/api/v1/me/spending").header(AUTH, customer(3)))
                 .andExpect(jsonPath("$.paid").value(350.00))
                 .andExpect(jsonPath("$.upcoming").value(0));
     }
@@ -127,12 +127,12 @@ class DataCorrectnessTest extends IntegrationTest {
 
     @Test
     void aCustomerCannotReadAnotherCustomersBooking() throws Exception {
-        mvc.perform(get("/api/v1/customers/2/bookings/1")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/me/bookings/1").header(AUTH, customer(2))).andExpect(status().isNotFound());
     }
 
     @Test
     void theOwnerSeesTheItemsPriceBreakdownAndTimeline() throws Exception {
-        mvc.perform(get("/api/v1/customers/1/bookings/1"))
+        mvc.perform(get("/api/v1/me/bookings/1").header(AUTH, customer(1)))
                 .andExpect(jsonPath("$.items.length()").value(2))
                 .andExpect(jsonPath("$.timeline.length()").value(4))
                 .andExpect(jsonPath("$.booking.subtotal").value(550.00))
@@ -142,7 +142,7 @@ class DataCorrectnessTest extends IntegrationTest {
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED) // the refresh commits on its own connection
     void refreshViewsSucceedsWithTheApiKey() throws Exception {
-        mvc.perform(post("/api/v1/admin/refresh-views").header(API_KEY_HEADER, API_KEY))
+        mvc.perform(post("/api/v1/admin/refresh-views").header(AUTH, admin()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.refreshed").value(true));
     }
@@ -166,14 +166,14 @@ class DataCorrectnessTest extends IntegrationTest {
     @Test
     void aFailedPaymentAttemptIsNotCountedAsPaid() throws Exception {
         // Booking 1 has a failed attempt and then a successful one for 495.
-        mvc.perform(get("/api/v1/customers/1/spending"))
+        mvc.perform(get("/api/v1/me/spending").header(AUTH, customer(1)))
                 .andExpect(jsonPath("$.totalBookings").value(2))
                 .andExpect(jsonPath("$.paid").value(2495.00));
     }
 
     @Test
     void aBookingWithSeveralPaymentAttemptsAppearsOnceInCompletedJobs() throws Exception {
-        mvc.perform(get("/api/v1/providers/1/jobs?status=completed"))
+        mvc.perform(get("/api/v1/provider/jobs?status=completed").header(AUTH, provider(1)))
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].paymentStatus").value("success"));
     }
@@ -187,7 +187,7 @@ class DataCorrectnessTest extends IntegrationTest {
 
     @Test
     void addressesIncludeTheFlatNumber() throws Exception {
-        mvc.perform(get("/api/v1/customers/1/addresses"))
+        mvc.perform(get("/api/v1/me/addresses").header(AUTH, customer(1)))
                 .andExpect(jsonPath("$[0].houseNo").exists());
     }
 
@@ -195,7 +195,7 @@ class DataCorrectnessTest extends IntegrationTest {
     void aSoftDeletedAddressIsHidden() throws Exception {
         jdbc.update("UPDATE customer_addresses SET is_active = FALSE WHERE customer_id = 1 AND location_id = 1");
 
-        mvc.perform(get("/api/v1/customers/1/addresses"))
+        mvc.perform(get("/api/v1/me/addresses").header(AUTH, customer(1)))
                 .andExpect(jsonPath("$.length()").value(1));
     }
 }

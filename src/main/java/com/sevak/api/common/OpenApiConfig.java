@@ -2,7 +2,6 @@ package com.sevak.api.common;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.media.Content;
@@ -24,8 +23,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenApiConfig {
 
-    /** Name of the Swagger security scheme; used by @SecurityRequirement on write endpoints. */
-    public static final String API_KEY_SCHEME = "apiKey";
+    /** Name of the Swagger security scheme; used by @SecurityRequirement on protected endpoints. */
+    public static final String BEARER_SCHEME = "bearerAuth";
 
     private static final String PROBLEM_SCHEMA = "Problem";
 
@@ -37,39 +36,39 @@ public class OpenApiConfig {
                         .title("SEVAK — Service Marketplace API")
                         .description("""
                                 REST API for the SEVAK home-services marketplace, built on a BCNF-normalized
-                                27-table PostgreSQL schema. Errors follow RFC 9457 Problem Details.
+                                PostgreSQL schema. Log in with POST /api/v1/auth/login, then click Authorize
+                                and paste the token. Errors follow RFC 9457 Problem Details.
                                 """)
                         .version(properties == null ? "dev" : properties.getVersion())
                         .contact(new Contact().name("Madhav").url("https://github.com/madhavthesiya")))
-                // Write endpoints (POST) need the X-Api-Key header until JWT auth is added.
-                // This adds an "Authorize" button in Swagger UI so "Try it out" can send the key.
                 .components(new Components()
                         .addSecuritySchemes(
-                                API_KEY_SCHEME,
+                                BEARER_SCHEME,
                                 new SecurityScheme()
-                                        .type(SecurityScheme.Type.APIKEY)
-                                        .in(SecurityScheme.In.HEADER)
-                                        .name("X-Api-Key")
-                                        .description("Required for POST endpoints. Locally the key is 'dev-admin-key' "
-                                                + "unless SEVAK_ADMIN_KEY is set."))
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT"))
                         .addSchemas(PROBLEM_SCHEMA, problemSchema()));
     }
 
-    /** Documents the error responses every endpoint can return, in one place. */
+    /** Documents the error responses endpoints can return, in one place. */
     @Bean
     public GlobalOpenApiCustomizer standardErrorResponses() {
         return api -> api.getPaths()
-                .forEach((path, item) -> item.readOperationsMap().forEach((method, operation) -> {
+                .forEach((path, item) -> item.readOperations().forEach(operation -> {
                     ApiResponses responses = operation.getResponses();
                     if (path.startsWith("/api/")) {
                         addError(responses, "400", "Invalid input");
+                        addError(responses, "429", "Too many requests");
                         addError(responses, "500", "Unexpected error");
                     }
                     if (path.contains("{")) {
                         addError(responses, "404", "Not found");
                     }
-                    if (method == PathItem.HttpMethod.POST) {
-                        addError(responses, "401", "Missing or invalid X-Api-Key");
+                    if (operation.getSecurity() != null
+                            && !operation.getSecurity().isEmpty()) {
+                        addError(responses, "401", "Missing or invalid login token");
+                        addError(responses, "403", "Your account can't do this");
                     }
                 }));
     }

@@ -177,7 +177,9 @@ public class ProviderRepository {
         String order = status.equals("completed") || status.equals("cancelled") ? "DESC" : "ASC";
         return jdbc.sql("""
                         SELECT b.booking_id, cu_u.full_name AS customer_name, b.scheduled_start, b.scheduled_end,
-                               b.status, b.total_amount, loc.street, ar.area_name, p.status AS payment_status
+                               b.status, b.total_amount,
+                               CASE WHEN b.status IN ('confirmed', 'in_progress', 'completed') THEN loc.street END AS street,
+                               ar.area_name, p.status AS payment_status
                         FROM bookings b
                         JOIN customers cu ON cu.customer_id = b.customer_id
                         JOIN users cu_u   ON cu_u.user_id = cu.user_id

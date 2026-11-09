@@ -224,6 +224,13 @@ BEGIN
     INSERT INTO refunds (payment_id, amount)
     SELECT payment_id, amount FROM payments
     WHERE booking_id = p_booking_id AND status = 'success';
+
+    -- A cancelled booking gives its coupon use back.
+    WITH released AS (
+        DELETE FROM coupon_redemptions WHERE booking_id = p_booking_id RETURNING coupon_id
+    )
+    UPDATE coupons c SET used_count = c.used_count - 1
+    FROM released r WHERE c.coupon_id = r.coupon_id;
 END;
 $$;
 
@@ -272,19 +279,47 @@ BEGIN
     END IF;
 
     -- The whole job must fit inside one availability slot.
-    IF NOT EXISTS (
-        SELECT 1 FROM provider_availability pa
-        WHERE pa.provider_id = v_provider_id
-          AND pa.day_of_week = EXTRACT(ISODOW FROM v_start)
-          AND pa.start_time <= v_start::time
-          AND pa.end_time   >= v_end::time
-          AND v_start::date = v_end::date
-    ) THEN
+    IF NOT fn_provider_available(v_provider_id, v_start, v_end) THEN
         RAISE EXCEPTION USING ERRCODE = 'SV422',
             MESSAGE = format('Provider %s is not available on %s from %s to %s.', v_provider_id,
                              trim(to_char(v_start, 'Day')), to_char(v_start, 'HH24:MI'), to_char(v_end, 'HH24:MI'));
     END IF;
 
     UPDATE bookings SET status = 'confirmed' WHERE booking_id = p_booking_id;
+END;
+$$;
+
+-- ── Does the whole job fit inside one of the provider's slots? ─
+-- Takes local (IST) wall-clock times.
+CREATE OR REPLACE FUNCTION fn_provider_available(p_provider_id INT, p_start TIMESTAMP, p_end TIMESTAMP)
+RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
+    SELECT p_start::date = p_end::date AND EXISTS (
+        SELECT 1 FROM provider_availability pa
+        WHERE pa.provider_id = p_provider_id
+          AND pa.day_of_week = EXTRACT(ISODOW FROM p_start)
+          AND pa.start_time <= p_start::time
+          AND pa.end_time   >= p_end::time
+    );
+$$;
+
+-- ── Release the slot of a request the provider never answered ─
+-- SKIP LOCKED leaves alone any booking someone is working on right now.
+CREATE OR REPLACE FUNCTION fn_expire_pending_bookings() RETURNS INT
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_booking_id INT;
+    v_expired    INT := 0;
+BEGIN
+    FOR v_booking_id IN
+        SELECT booking_id FROM bookings
+        WHERE status = 'pending'
+          AND (created_at < now() - interval '24 hours' OR scheduled_start <= now())
+        ORDER BY booking_id
+        FOR UPDATE SKIP LOCKED
+    LOOP
+        CALL sp_cancel_booking(v_booking_id, 'Expired: the provider did not respond in time');
+        v_expired := v_expired + 1;
+    END LOOP;
+    RETURN v_expired;
 END;
 $$;

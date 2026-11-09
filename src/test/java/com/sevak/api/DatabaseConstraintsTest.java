@@ -26,10 +26,13 @@ class DatabaseConstraintsTest extends IntegrationTest {
                 .hasMessageContaining(expectedReason);
     }
 
-    /** A pending booking for provider 1 on 8 April; provider 1 is already booked 14:00-14:45 that day. */
-    private String bookingOnApril8(int providerId, String start, String end, String status) {
-        return BOOKING_COLUMNS + "VALUES (1, " + providerId + ", 1, '2026-04-08 " + start + "+05:30', '2026-04-08 "
-                + end + "+05:30', '" + status + "', 0, 0, 0)";
+    /** A booking on the day of seeded booking 4, when provider 1 is already booked 14:00-14:45. */
+    private String bookingOnBooking4Day(int providerId, String start, String end, String status) {
+        String day =
+                "(SELECT CAST(scheduled_start AT TIME ZONE 'Asia/Kolkata' AS date) FROM bookings WHERE booking_id = 4)";
+        return BOOKING_COLUMNS + "VALUES (1, " + providerId + ", 1, (" + day + " + time '" + start
+                + "') AT TIME ZONE 'Asia/Kolkata', (" + day + " + time '" + end + "') AT TIME ZONE 'Asia/Kolkata', '"
+                + status + "', 0, 0, 0)";
     }
 
     @Test
@@ -77,29 +80,32 @@ class DatabaseConstraintsTest extends IntegrationTest {
 
     @Test
     void overlappingBookingsForOneProviderAreRejected() {
-        assertRejected(bookingOnApril8(1, "14:30", "15:00", "pending"), "ex_provider_no_double_booking");
+        assertRejected(bookingOnBooking4Day(1, "14:30", "15:00", "pending"), "ex_provider_no_double_booking");
     }
 
     @Test
     void theSameTimeWithADifferentProviderIsFine() {
-        assertThat(jdbc.update(bookingOnApril8(2, "14:30", "15:00", "pending"))).isEqualTo(1);
+        assertThat(jdbc.update(bookingOnBooking4Day(2, "14:30", "15:00", "pending")))
+                .isEqualTo(1);
     }
 
     @Test
     void aBookingMayStartExactlyWhenTheLastOneEnds() {
-        assertThat(jdbc.update(bookingOnApril8(1, "14:45", "15:30", "pending"))).isEqualTo(1);
+        assertThat(jdbc.update(bookingOnBooking4Day(1, "14:45", "15:30", "pending")))
+                .isEqualTo(1);
     }
 
     @Test
     void aCancelledBookingFreesItsSlot() {
         jdbc.update("UPDATE bookings SET status = 'cancelled' WHERE booking_id = 4");
 
-        assertThat(jdbc.update(bookingOnApril8(1, "14:30", "15:00", "pending"))).isEqualTo(1);
+        assertThat(jdbc.update(bookingOnBooking4Day(1, "14:30", "15:00", "pending")))
+                .isEqualTo(1);
     }
 
     @Test
     void aBookingMustEndAfterItStarts() {
-        assertRejected(bookingOnApril8(1, "16:00", "15:00", "pending"), "chk_booking_time");
+        assertRejected(bookingOnBooking4Day(1, "16:00", "15:00", "pending"), "chk_booking_time");
     }
 
     @Test

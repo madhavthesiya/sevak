@@ -1,8 +1,6 @@
 package com.sevak.api.provider;
 
 import com.sevak.api.common.PageResponse;
-import com.sevak.api.provider.dto.EarningsByMethod;
-import com.sevak.api.provider.dto.JobSummary;
 import com.sevak.api.provider.dto.ProviderOffering;
 import com.sevak.api.provider.dto.ProviderProfile;
 import com.sevak.api.provider.dto.ProviderReview;
@@ -12,9 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import java.time.LocalDate;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/providers")
-@Tag(name = "2. Providers", description = "Find providers, see their profiles, jobs and earnings")
+@Tag(name = "2. Providers", description = "Find providers and see their profiles")
 public class ProviderController {
 
     private final ProviderService service;
@@ -73,29 +69,5 @@ public class ProviderController {
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
         return service.reviews(id, page, limit);
-    }
-
-    @GetMapping("/{id}/jobs")
-    @Operation(summary = "Provider jobs", description = "The provider's bookings with one status.")
-    public PageResponse<JobSummary> jobs(
-            @Parameter(example = "1") @PathVariable int id,
-            @Parameter(example = "pending")
-                    @RequestParam(defaultValue = "pending")
-                    @Pattern(regexp = "pending|confirmed|in_progress|completed|cancelled")
-                    String status,
-            @RequestParam(defaultValue = "1") @Min(1) int page,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
-        return service.jobs(id, status, page, limit);
-    }
-
-    @GetMapping("/{id}/earnings")
-    @Operation(
-            summary = "Provider earnings",
-            description = "Successful payments by method, optionally between two dates.")
-    public List<EarningsByMethod> earnings(
-            @Parameter(example = "1") @PathVariable int id,
-            @Parameter(example = "2026-04-01") @RequestParam(required = false) LocalDate from,
-            @Parameter(example = "2026-04-30") @RequestParam(required = false) LocalDate to) {
-        return service.earnings(id, from, to);
     }
 }

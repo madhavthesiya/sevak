@@ -56,7 +56,6 @@ public class ProviderService {
     }
 
     public PageResponse<JobSummary> jobs(int providerId, String status, int page, int limit) {
-        requireProvider(providerId);
         return PageResponse.of(
                 repo.findJobs(providerId, status, limit, PageResponse.offset(page, limit)),
                 page,
@@ -65,7 +64,6 @@ public class ProviderService {
     }
 
     public List<EarningsByMethod> earnings(int providerId, LocalDate from, LocalDate to) {
-        requireProvider(providerId);
         if (from != null && to != null && from.isAfter(to)) {
             throw new IllegalArgumentException("'from' must not be after 'to'");
         }
