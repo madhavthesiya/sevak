@@ -3,7 +3,8 @@ package com.sevak.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.sevak.api.repository.AdminRepository;
+import com.sevak.api.admin.AdminRepository;
+import com.sevak.api.admin.dto.LeaderboardEntry;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -204,8 +205,8 @@ class DatabaseConstraintsTest extends IntegrationTest {
     void manyGoodReviewsBeatOnePerfectReview() {
         jdbc.update("UPDATE service_providers SET avg_rating = 4.80, review_count = 40 WHERE provider_id = 5");
 
-        List<Object> ranking = admin.getLeaderboard().stream()
-                .map(row -> row.get("provider_id"))
+        List<Integer> ranking = admin.findLeaderboard().stream()
+                .map(LeaderboardEntry::providerId)
                 .toList();
 
         assertThat(ranking.get(0)).isEqualTo(5); // 40 reviews at 4.8 outrank 1 review at 5.0
@@ -213,8 +214,8 @@ class DatabaseConstraintsTest extends IntegrationTest {
 
     @Test
     void aProviderWithNoReviewsRanksLast() {
-        List<Object> ranking = admin.getLeaderboard().stream()
-                .map(row -> row.get("provider_id"))
+        List<Integer> ranking = admin.findLeaderboard().stream()
+                .map(LeaderboardEntry::providerId)
                 .toList();
 
         assertThat(ranking.get(ranking.size() - 1)).isEqualTo(5);

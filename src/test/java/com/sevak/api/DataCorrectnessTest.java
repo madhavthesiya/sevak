@@ -6,13 +6,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.sevak.api.repository.AdminRepository;
+import com.sevak.api.admin.AdminRepository;
+import com.sevak.api.admin.dto.CategoryRevenue;
+import com.sevak.api.admin.dto.LeaderboardEntry;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +27,8 @@ class DataCorrectnessTest extends IntegrationTest {
     private AdminRepository admin;
 
     private BigDecimal totalCategoryRevenue() {
-        return admin.getRevenueByCat().stream()
-                .map(row -> (BigDecimal) row.get("total_revenue"))
+        return admin.findRevenueByCategory().stream()
+                .map(CategoryRevenue::totalRevenue)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
@@ -36,9 +37,9 @@ class DataCorrectnessTest extends IntegrationTest {
     }
 
     private BigDecimal revenueOf(String category) {
-        return admin.getRevenueByCat().stream()
-                .filter(row -> category.equals(row.get("category_name")))
-                .map(row -> (BigDecimal) row.get("total_revenue"))
+        return admin.findRevenueByCategory().stream()
+                .filter(row -> category.equals(row.categoryName()))
+                .map(CategoryRevenue::totalRevenue)
                 .findFirst()
                 .orElseThrow();
     }
@@ -82,10 +83,10 @@ class DataCorrectnessTest extends IntegrationTest {
 
     @Test
     void liveLeaderboardMatchesTheMaterializedView() {
-        List<Map<String, Object>> live = admin.getLeaderboard();
+        List<LeaderboardEntry> live = admin.findLeaderboard();
 
         assertThat(live).isNotEmpty();
-        assertThat(admin.getLeaderboardFast()).isEqualTo(live);
+        assertThat(admin.findLeaderboardFromView()).isEqualTo(live);
     }
 
     @Test
@@ -97,7 +98,7 @@ class DataCorrectnessTest extends IntegrationTest {
 
     @Test
     void spendingSeparatesPaidUpcomingAndRefunded() throws Exception {
-        mvc.perform(get("/api/customers/3/spending"))
+        mvc.perform(get("/api/v1/customers/3/spending"))
                 .andExpect(jsonPath("$.paid").value(0))
                 .andExpect(jsonPath("$.upcoming").value(350.00))
                 .andExpect(jsonPath("$.refunded").value(350.00));
@@ -108,41 +109,42 @@ class DataCorrectnessTest extends IntegrationTest {
         jdbc.update(
                 "INSERT INTO payments (booking_id, payment_method, status, amount) VALUES (4, 'UPI', 'success', 350)");
 
-        mvc.perform(get("/api/customers/3/spending"))
+        mvc.perform(get("/api/v1/customers/3/spending"))
                 .andExpect(jsonPath("$.paid").value(350.00))
                 .andExpect(jsonPath("$.upcoming").value(0));
     }
 
     @Test
     void searchHidesProvidersWhoAreNotVerified() throws Exception {
-        mvc.perform(get("/api/general/services/search?q=fan"))
-                .andExpect(jsonPath("$.length()").value(1));
+        mvc.perform(get("/api/v1/providers?service=fan"))
+                .andExpect(jsonPath("$.total").value(1));
 
         jdbc.update("UPDATE service_providers SET verification_status = 'pending' WHERE provider_id = 1");
 
-        mvc.perform(get("/api/general/services/search?q=fan"))
-                .andExpect(jsonPath("$.length()").value(0));
+        mvc.perform(get("/api/v1/providers?service=fan"))
+                .andExpect(jsonPath("$.total").value(0));
     }
 
     @Test
-    void aCustomerCannotReadAnotherCustomersBookingItems() throws Exception {
-        mvc.perform(get("/api/customers/2/bookings/1/items"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+    void aCustomerCannotReadAnotherCustomersBooking() throws Exception {
+        mvc.perform(get("/api/v1/customers/2/bookings/1")).andExpect(status().isNotFound());
     }
 
     @Test
-    void theOwnerCanReadTheirBookingItems() throws Exception {
-        mvc.perform(get("/api/customers/1/bookings/1/items"))
-                .andExpect(jsonPath("$.length()").value(2));
+    void theOwnerSeesTheItemsPriceBreakdownAndTimeline() throws Exception {
+        mvc.perform(get("/api/v1/customers/1/bookings/1"))
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andExpect(jsonPath("$.timeline.length()").value(4))
+                .andExpect(jsonPath("$.booking.subtotal").value(550.00))
+                .andExpect(jsonPath("$.booking.couponCode").value("WELCOME10"));
     }
 
     @Test
-    @Transactional(propagation = Propagation.NOT_SUPPORTED) // REFRESH ... CONCURRENTLY can't run in a transaction
+    @Transactional(propagation = Propagation.NOT_SUPPORTED) // the refresh commits on its own connection
     void refreshViewsSucceedsWithTheApiKey() throws Exception {
-        mvc.perform(post("/api/admin/refresh-views").header(API_KEY_HEADER, API_KEY))
+        mvc.perform(post("/api/v1/admin/refresh-views").header(API_KEY_HEADER, API_KEY))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath("$.refreshed").value(true));
     }
 
     @Test
@@ -164,36 +166,36 @@ class DataCorrectnessTest extends IntegrationTest {
     @Test
     void aFailedPaymentAttemptIsNotCountedAsPaid() throws Exception {
         // Booking 1 has a failed attempt and then a successful one for 495.
-        mvc.perform(get("/api/customers/1/spending"))
-                .andExpect(jsonPath("$.total_bookings").value(2))
+        mvc.perform(get("/api/v1/customers/1/spending"))
+                .andExpect(jsonPath("$.totalBookings").value(2))
                 .andExpect(jsonPath("$.paid").value(2495.00));
     }
 
     @Test
     void aBookingWithSeveralPaymentAttemptsAppearsOnceInCompletedJobs() throws Exception {
-        mvc.perform(get("/api/providers/1/completed"))
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].payment_status").value("success"));
+        mvc.perform(get("/api/v1/providers/1/jobs?status=completed"))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].paymentStatus").value("success"));
     }
 
     @Test
     void searchShowsTheProvidersOwnPrice() throws Exception {
-        mvc.perform(get("/api/general/services/search?q=fan"))
-                .andExpect(jsonPath("$[0].base_price").value(200.00))
-                .andExpect(jsonPath("$[0].price").value(220.00));
+        mvc.perform(get("/api/v1/providers?service=fan"))
+                .andExpect(jsonPath("$.data[0].basePrice").value(200.00))
+                .andExpect(jsonPath("$.data[0].price").value(220.00));
     }
 
     @Test
     void addressesIncludeTheFlatNumber() throws Exception {
-        mvc.perform(get("/api/customers/1/addresses"))
-                .andExpect(jsonPath("$[0].house_no").exists());
+        mvc.perform(get("/api/v1/customers/1/addresses"))
+                .andExpect(jsonPath("$[0].houseNo").exists());
     }
 
     @Test
     void aSoftDeletedAddressIsHidden() throws Exception {
         jdbc.update("UPDATE customer_addresses SET is_active = FALSE WHERE customer_id = 1 AND location_id = 1");
 
-        mvc.perform(get("/api/customers/1/addresses"))
+        mvc.perform(get("/api/v1/customers/1/addresses"))
                 .andExpect(jsonPath("$.length()").value(1));
     }
 }
