@@ -1,0 +1,194 @@
+@import "tailwindcss";
+@import "@fontsource-variable/anek-latin/wdth.css";
+@import "@fontsource/hind/400.css";
+@import "@fontsource/hind/500.css";
+@import "@fontsource/hind/600.css";
+@import "@fontsource-variable/jetbrains-mono/wght.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* The identity comes from the green and yellow of a CNG auto-rickshaw and from a tradesman's job
+   tickets and rate cards. Colour lives in a few strong fields; working screens stay quiet. */
+:root {
+  --ink: #12261e;
+  --ink-soft: #4d5f56;
+  --paper: #f1f5f1;
+  --card: #ffffff;
+  --line: #cfdad2;
+  --auto-yellow: #ffcb2e;
+  --auto-yellow-deep: #f2b705;
+  --auto-green: #0a6b46;
+  --auto-green-deep: #084f35;
+  --bottle: #0e3327;
+  --bottle-soft: #a9c4b6;
+  --danger: #b3261e;
+
+  --radius: 3px;
+
+  /* shadcn tokens, mapped onto the palette above */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card-foreground: var(--ink);
+  --popover: var(--card);
+  --popover-foreground: var(--ink);
+  --primary: var(--auto-green);
+  --primary-foreground: #ffffff;
+  --secondary: #e2eae4;
+  --secondary-foreground: var(--ink);
+  --muted: #e2eae4;
+  --muted-foreground: var(--ink-soft);
+  --accent: #e2eae4;
+  --accent-foreground: var(--ink);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: #8fa397;
+  --ring: var(--ink);
+}
+
+@theme inline {
+  --font-display: "Anek Latin Variable", "Arial Narrow", sans-serif;
+  --font-sans: "Hind", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --radius-sm: 2px;
+  --radius-md: var(--radius);
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-paper: var(--paper);
+  --color-line: var(--line);
+  --color-auto-yellow: var(--auto-yellow);
+  --color-auto-yellow-deep: var(--auto-yellow-deep);
+  --color-auto-green: var(--auto-green);
+  --color-auto-green-deep: var(--auto-green-deep);
+  --color-bottle: var(--bottle);
+  --color-bottle-soft: var(--bottle-soft);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-stretch: 78%;
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .on-dark :focus-visible {
+    outline-color: var(--auto-yellow);
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .wrap {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding-inline: max(1rem, env(safe-area-inset-left, 0px)) max(1rem, env(safe-area-inset-right, 0px));
+  }
+  @media (min-width: 768px) {
+    .wrap {
+      padding-inline: 2rem;
+    }
+  }
+  .label-caps {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  /* Money and times line up in columns. Mono is kept for serial numbers and SQL, where it means something. */
+  .figures {
+    font-variant-numeric: tabular-nums;
+  }
+  .serial {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .amount-hero {
+    font-family: var(--font-display);
+    font-stretch: 78%;
+    font-weight: 700;
+    line-height: 1.1;
+    font-size: 3.25rem;
+  }
+
+  /* A job ticket: two notches where the stub tears off. */
+  .ticket {
+    --notch: 9px;
+    position: relative;
+    background: var(--card);
+    -webkit-mask:
+      radial-gradient(circle var(--notch) at left var(--tear, 50%), transparent 98%, #000) left / 51% 100% no-repeat,
+      radial-gradient(circle var(--notch) at right var(--tear, 50%), transparent 98%, #000) right / 51% 100% no-repeat;
+    mask:
+      radial-gradient(circle var(--notch) at left var(--tear, 50%), transparent 98%, #000) left / 51% 100% no-repeat,
+      radial-gradient(circle var(--notch) at right var(--tear, 50%), transparent 98%, #000) right / 51% 100% no-repeat;
+  }
+
+  /* Rate-card rows: the service name and price joined by a dotted leader. */
+  .leader {
+    flex: 1;
+    min-width: 1rem;
+    align-self: end;
+    margin-bottom: 0.4rem;
+    border-bottom: 2px dotted var(--input);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
