@@ -14,6 +14,7 @@ import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import java.util.Map;
+import java.util.TreeMap;
 import org.springdoc.core.customizers.GlobalOpenApiCustomizer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.info.BuildProperties;
@@ -92,12 +93,13 @@ public class OpenApiConfig {
 
     @SuppressWarnings("rawtypes")
     private static Schema problemSchema() {
-        Map<String, Schema> properties = Map.of(
+        // Sorted because Map.of has no fixed order, which would make the published document differ per run.
+        Map<String, Schema> properties = new TreeMap<>(Map.of(
                 "type", new StringSchema().example("urn:sevak:error:not-found"),
                 "title", new StringSchema().example("Not Found"),
                 "status", new IntegerSchema().example(404),
                 "detail", new StringSchema().example("Booking 9999 not found"),
-                "instance", new StringSchema().example("/api/v1/bookings/9999/cancel"));
+                "instance", new StringSchema().example("/api/v1/bookings/9999/cancel")));
         return new ObjectSchema().properties(properties);
     }
 }

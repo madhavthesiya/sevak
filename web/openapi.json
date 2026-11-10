@@ -5597,26 +5597,26 @@
       "Problem": {
         "type": "object",
         "properties": {
-          "status": {
-            "type": "integer",
-            "format": "int32",
-            "example": 404
-          },
-          "type": {
+          "detail": {
             "type": "string",
-            "example": "urn:sevak:error:not-found"
+            "example": "Booking 9999 not found"
           },
           "instance": {
             "type": "string",
             "example": "/api/v1/bookings/9999/cancel"
           },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "example": 404
+          },
           "title": {
             "type": "string",
             "example": "Not Found"
           },
-          "detail": {
+          "type": {
             "type": "string",
-            "example": "Booking 9999 not found"
+            "example": "urn:sevak:error:not-found"
           }
         }
       },

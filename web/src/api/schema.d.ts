@@ -1317,19 +1317,19 @@ export interface components {
             gatewayRef?: string;
         };
         Problem: {
+            /** @example Booking 9999 not found */
+            detail?: string;
+            /** @example /api/v1/bookings/9999/cancel */
+            instance?: string;
             /**
              * Format: int32
              * @example 404
              */
             status?: number;
-            /** @example urn:sevak:error:not-found */
-            type?: string;
-            /** @example /api/v1/bookings/9999/cancel */
-            instance?: string;
             /** @example Not Found */
             title?: string;
-            /** @example Booking 9999 not found */
-            detail?: string;
+            /** @example urn:sevak:error:not-found */
+            type?: string;
         };
         ProviderBasics: {
             /** Format: int32 */
