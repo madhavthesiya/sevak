@@ -1,6 +1,7 @@
 package com.sevak.api.auth;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.sevak.api.meta.QueryHeaderConfig;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -55,7 +56,10 @@ public class SecurityConfig {
                                 "/api/v1/providers",
                                 "/api/v1/providers/top",
                                 "/api/v1/providers/*",
-                                "/api/v1/providers/*/reviews")
+                                "/api/v1/providers/*/reviews",
+                                "/api/v1/providers/*/slots",
+                                "/api/v1/areas",
+                                "/api/v1/meta/queries/*")
                         .permitAll()
                         .requestMatchers("/api/v1/admin/**", "/actuator/**")
                         .hasRole("ADMIN")
@@ -71,11 +75,14 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/v1/bookings",
+                                "/api/v1/bookings/quote",
                                 "/api/v1/bookings/*/payments",
                                 "/api/v1/bookings/*/review")
                         .hasRole("CUSTOMER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/cancel", "/api/v1/bookings/*/complaints")
                         .hasAnyRole("CUSTOMER", "PROVIDER")
+                        .requestMatchers("/api/v1/me")
+                        .authenticated()
                         .requestMatchers("/api/v1/me/**")
                         .hasRole("CUSTOMER")
                         .anyRequest()
@@ -148,7 +155,7 @@ public class SecurityConfig {
         cors.setAllowedOrigins(origins);
         cors.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
         cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key", "X-Request-Id"));
-        cors.setExposedHeaders(List.of("X-Request-Id", "Retry-After"));
+        cors.setExposedHeaders(List.of("X-Request-Id", "Retry-After", QueryHeaderConfig.HEADER));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", cors);
         return source;

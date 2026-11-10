@@ -9,6 +9,7 @@ import com.sevak.api.customer.dto.NewAddressRequest;
 import com.sevak.api.customer.dto.PaymentRecord;
 import com.sevak.api.customer.dto.SavedAddress;
 import com.sevak.api.customer.dto.SpendingSummary;
+import com.sevak.api.meta.ShowsQuery;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,6 +48,7 @@ public class CustomerController {
     }
 
     @GetMapping("/bookings")
+    @ShowsQuery("me.bookings")
     @Operation(summary = "My bookings", description = "Newest first.")
     public PageResponse<BookingSummary> bookings(
             @AuthenticationPrincipal Jwt jwt,
@@ -56,6 +58,7 @@ public class CustomerController {
     }
 
     @GetMapping("/bookings/{bookingId}")
+    @ShowsQuery("me.booking")
     @Operation(summary = "Booking detail", description = "Address, price breakdown, items and status timeline.")
     public BookingDetail booking(@AuthenticationPrincipal Jwt jwt, @PathVariable int bookingId) {
         return service.booking(customerId(jwt), bookingId);
@@ -77,12 +80,14 @@ public class CustomerController {
     }
 
     @GetMapping("/addresses")
+    @ShowsQuery("me.addresses")
     @Operation(summary = "My saved addresses")
     public List<SavedAddress> addresses(@AuthenticationPrincipal Jwt jwt) {
         return service.addresses(customerId(jwt));
     }
 
     @PostMapping("/addresses")
+    @ShowsQuery("me.addresses")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Add an address", description = "Returns all saved addresses.")
     public List<SavedAddress> addAddress(

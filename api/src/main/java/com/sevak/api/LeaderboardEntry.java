@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 public record LeaderboardEntry(
         long rank,
         int providerId,
-        String email,
+        String providerName,
         String cityName,
         BigDecimal avgRating,
         int reviewCount,

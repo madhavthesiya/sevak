@@ -3,15 +3,18 @@ package com.sevak.api.booking;
 import com.sevak.api.auth.CurrentUser;
 import com.sevak.api.booking.dto.BookingActionResult;
 import com.sevak.api.booking.dto.BookingCreated;
+import com.sevak.api.booking.dto.BookingQuote;
 import com.sevak.api.booking.dto.CancelRequest;
 import com.sevak.api.booking.dto.ComplaintCreated;
 import com.sevak.api.booking.dto.ComplaintRequest;
 import com.sevak.api.booking.dto.CreateBookingRequest;
 import com.sevak.api.booking.dto.PaymentRequest;
 import com.sevak.api.booking.dto.PaymentResult;
+import com.sevak.api.booking.dto.QuoteRequest;
 import com.sevak.api.booking.dto.ReviewRequest;
 import com.sevak.api.booking.dto.ReviewResult;
 import com.sevak.api.common.OpenApiConfig;
+import com.sevak.api.meta.ShowsQuery;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -44,7 +47,15 @@ public class BookingController {
         this.service = service;
     }
 
+    @PostMapping("/quote")
+    @ShowsQuery("bookings.price")
+    @Operation(summary = "Price a booking", description = "Customer only. Checks a coupon without using it up.")
+    public BookingQuote quote(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody QuoteRequest request) {
+        return creation.quote(CurrentUser.from(jwt), request);
+    }
+
     @PostMapping
+    @ShowsQuery("bookings.create")
     @Operation(
             summary = "Create a booking",
             description =

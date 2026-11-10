@@ -1,8 +1,8 @@
 <div align="center">
 
-# ⬡ SEVAK — Service Marketplace API
+# ⬡ SEVAK — Service Marketplace
 
-**A REST API built on a BCNF-normalized 29-table PostgreSQL schema**
+**A React app and REST API built on a BCNF-normalized 29-table PostgreSQL schema**
 
 [![CI](https://github.com/madhavthesiya/sevak/actions/workflows/ci.yml/badge.svg)](https://github.com/madhavthesiya/sevak/actions/workflows/ci.yml)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.4-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
@@ -20,12 +20,14 @@
 
 **SEVAK** is a hyperlocal home-services marketplace (similar to Urban Company) where customers can discover, book, and review service providers for tasks like electrical work, plumbing, cleaning, and painting.
 
-This project focuses on **database engineering excellence** — featuring a rigorously normalized schema, advanced SQL analytics, and a clean REST API layer that exposes the full power of PostgreSQL.
+This project focuses on **database engineering excellence** — featuring a rigorously normalized schema, advanced SQL analytics, a clean REST API, and a web app for customers, providers and admins where **every screen can show the SQL that built it**.
 
 ### Highlights
 
 - 🏗️ **29-table BCNF-normalized schema** with mathematical proof of compliance
-- 📊 **21 REST endpoints** with pagination, showcasing advanced SQL (Window Functions, Derived Tables, STRING_AGG)
+- 🖥️ **React frontend** with types generated from the API's OpenAPI document, and a CI check that fails if they drift
+- 🔎 **"Show the SQL" drawer**: the exact query behind each screen, with an allow-listed `EXPLAIN ANALYZE` for admins
+- 📊 **Paginated REST API** showcasing advanced SQL (Window Functions, Derived Tables, STRING_AGG, `generate_series`)
 - 🛡️ **Double booking made impossible** by a PostgreSQL exclusion constraint on provider + time range, proven by concurrency tests
 - 🔐 **JWT login with roles**, where every `/me` route takes the user from the token, so one user can't ask for another's data
 - ♻️ **Safe retries** with `Idempotency-Key`, and a coupon limit that holds under concurrent requests
@@ -122,6 +124,7 @@ All endpoints are under `/api/v1`. Lists return `{ data, page, limit, total, tot
 | Method | Endpoint | Notes |
 |:-------|:---------|:------|
 | `GET` | `/services?category=&page=&limit=` | The service catalogue |
+| `GET` | `/areas` | Every area with its city |
 
 ### 2. Providers
 | Method | Endpoint | SQL Technique |
@@ -130,6 +133,7 @@ All endpoints are under `/api/v1`. Lists return `{ data, page, limit, total, tot
 | `GET` | `/providers/top?limit=` | Bayesian weighted rating |
 | `GET` | `/providers/{id}` | **Derived table** (rating vs city average) |
 | `GET` | `/providers/{id}/reviews` | Paginated JOIN |
+| `GET` | `/providers/{id}/slots?from=&days=&minutes=` | `generate_series`, `LATERAL`, range overlap |
 | `GET` | `/providers/{id}/jobs?status=` | `LATERAL` join for the latest payment attempt |
 | `GET` | `/providers/{id}/earnings?from=&to=` | `SUM`, `COUNT`, `GROUP BY` |
 
@@ -141,11 +145,13 @@ All endpoints are under `/api/v1`. Lists return `{ data, page, limit, total, tot
 | `GET` | `/me/bookings`, `/me/bookings/{id}` | Customer | Includes the price breakdown and status timeline |
 | `GET` | `/me/payments`, `/me/spending` | Customer | `FILTER` aggregates: paid, upcoming, refunded |
 | `GET` `POST` `DELETE` | `/me/addresses` | Customer | Removing is a soft delete; past bookings are unaffected |
-| `GET` | `/provider/jobs?status=`, `/provider/earnings?from=&to=` | Provider | Street address shown only after accepting |
+| `GET` | `/provider/jobs?status=`, `/provider/earnings?from=&to=`, `/provider/earnings/monthly`, `/provider/profile` | Provider | Street address shown only after accepting |
+| `GET` `POST` `DELETE` | `/provider/availability`, `/provider/services` | Provider | Overlapping hours return `409 slot-overlap` |
 
 ### 4. Bookings
 | Method | Endpoint | Role | What it does |
 |:-------|:---------|:-----|:-------------|
+| `POST` | `/bookings/quote` | Customer | Live price; checks a coupon without using it up |
 | `POST` | `/bookings` | Customer | One transaction: checks, price snapshot, coupon, no double booking. Supports `Idempotency-Key` |
 | `POST` | `/bookings/{id}/accept`, `/decline`, `/start`, `/complete` | Provider | Moves through the status rules |
 | `POST` | `/bookings/{id}/cancel` | Customer or provider | Customers until 2 hours before; providers until the start |
@@ -159,11 +165,19 @@ All endpoints are under `/api/v1`. Lists return `{ data, page, limit, total, tot
 | `GET` | `/admin/revenue` | CTE and **window function** splitting each payment across categories |
 | `GET` | `/admin/leaderboard?fast=true` | **RANK()** view, or its **materialized view** |
 | `GET` | `/admin/complaints` | `STRING_AGG` |
+| `GET` | `/admin/complaints/board` | Every complaint, open ones first |
+| `GET` | `/admin/providers?status=` | Verification queue, with `STRING_AGG` of documents |
 | `GET` | `/admin/city-revenue` | **Materialized view** |
 | `GET` | `/admin/bookings?before=&beforeId=&limit=` | **Keyset pagination** |
 | `POST` | `/admin/refresh-views` | Also runs on a schedule, guarded by an advisory lock |
 | `PATCH` | `/admin/providers/{id}/verification`, `/admin/complaints/{id}` | Verify providers, resolve complaints |
 | `POST` | `/admin/refunds/{id}/process` | Completes a refund |
+| `POST` | `/admin/queries/{key}/explain` | `EXPLAIN ANALYZE` of an allow-listed read query, with fixed sample values |
+
+### 6. Under the hood
+| Method | Endpoint | Notes |
+|:-------|:---------|:------|
+| `GET` | `/meta/queries/{key}` | The SQL behind a screen. Responses name their query in the `X-Sevak-Query` header |
 
 ### Demo accounts
 Every demo account uses the password `Demo@1234`. In Swagger UI, log in with `POST /auth/login`, click **Authorize**, and paste the `accessToken`.
@@ -197,6 +211,7 @@ Errors use [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457), w
 | `409` | `urn:sevak:error:invalid-state` | Booking is in the wrong status for the action |
 | `409` | `urn:sevak:error:slot-taken` | Someone else just booked that time |
 | `409` | `urn:sevak:error:idempotency-conflict` | An `Idempotency-Key` was reused for a different request |
+| `409` | `urn:sevak:error:slot-overlap` | New working hours overlap hours already set for that day |
 | `422` | `urn:sevak:error:business-rule` | Business rule broken, such as provider unavailable |
 | `422` | `urn:sevak:error:coupon-invalid` | Coupon expired, used up, already used by you, or below its minimum |
 | `429` | `urn:sevak:error:rate-limited` | Too many requests; see `Retry-After` |
@@ -244,6 +259,18 @@ docker compose up --build
 # If you ran an older version: docker compose down -v  (removes the old database volume)
 ```
 
+### Web app
+
+```bash
+# With the API running on http://localhost:8080
+cd web
+cp .env.example .env
+npm ci
+npm run dev          # http://localhost:5173
+```
+
+Use the one-click **Customer**, **Provider** or **Admin** login on the home page. After changing the API, run `npm run api:sync` to regenerate the TypeScript types.
+
 ---
 
 ## ✅ Testing
@@ -253,6 +280,16 @@ cd api && ./mvnw verify   # needs Docker running
 ```
 
 Tests run against a real PostgreSQL 16 in Docker (Testcontainers), and Flyway builds the database from scratch for every run. Each test is rolled back, so tests can't affect each other. They cover every read endpoint, error responses, stored procedures, triggers, revenue totals, data integrity and customer data isolation. CI runs them on every push, along with a formatting check (Spotless); the coverage report is written to `api/target/site/jacoco`.
+
+```bash
+cd web
+npm test                # unit tests (Vitest)
+npx playwright test     # end-to-end tests; needs the API running
+```
+
+The end-to-end tests drive a real browser against the real API: a customer books, the provider accepts, a coupon reprices the bill, overlapping hours are refused, and a full booking works at phone width. CI also fails if the generated API types no longer match the backend.
+
+The login token is kept in `localStorage` so a refresh or new tab stays signed in. Any script on the page could read it, so the app renders no user-supplied HTML and loads no third-party scripts. Address coordinates are placeholders, because the app has no maps service.
 
 ---
 
@@ -269,6 +306,10 @@ Tests run against a real PostgreSQL 16 in Docker (Testcontainers), and Flyway bu
 | Migrations | Flyway | Versioned schema changes; the app builds its own database |
 | Testing | JUnit 5, MockMvc, Testcontainers | Integration tests on a real PostgreSQL |
 | API Docs | springdoc-openapi 3.0.2 | Auto-generated Swagger UI |
+| Frontend | React, TypeScript, Vite | The web app in `web/` |
+| Frontend data | TanStack Query, openapi-fetch, openapi-typescript | Server state and generated API types |
+| Frontend UI | Tailwind CSS, shadcn/ui, Recharts | Components and charts |
+| Frontend tests | Vitest, Playwright | Unit and end-to-end tests |
 | Container | Docker + Docker Compose | Reproducible deployments |
 | API Hosting | DigitalOcean App Platform | Production API deployment |
 | DB Hosting | Supabase | Free-tier managed PostgreSQL |
@@ -292,6 +333,11 @@ sevak/
 │   ├── src/main/resources/db/  # Flyway: migration/ (schema, procedures, views), seed/ (demo data)
 │   ├── src/test/java/   # Integration tests on a real PostgreSQL
 │   └── sql/             # Top 15 showcase queries and data integrity checks
+├── web/                 # React frontend
+│   ├── src/api/         # Generated types and one typed function per API call
+│   ├── src/pages/       # Screens for customers, providers and admins
+│   ├── src/sql/         # The "Show the SQL" drawer
+│   └── e2e/             # Playwright tests
 ├── docs/                # Normalization proof, DBML, query notes
 └── docker-compose.yml   # Runs the database and the API
 ```
@@ -375,7 +421,7 @@ CALL sp_cancel_booking(booking_id, 'Customer changed mind');
   {
     "rank": 1,
     "providerId": 1,
-    "email": "ravi.electrician@gmail.com",
+    "providerName": "Ravi Kumar",
     "cityName": "Ahmedabad",
     "avgRating": 5.00,
     "reviewCount": 1,
@@ -386,7 +432,7 @@ CALL sp_cancel_booking(booking_id, 'Customer changed mind');
   {
     "rank": 1,
     "providerId": 3,
-    "email": "amit.plumber@gmail.com",
+    "providerName": "Amit Joshi",
     "cityName": "Mumbai",
     "avgRating": 5.00,
     "reviewCount": 1,
@@ -397,7 +443,7 @@ CALL sp_cancel_booking(booking_id, 'Customer changed mind');
   {
     "rank": 3,
     "providerId": 2,
-    "email": "sunita.cleaner@gmail.com",
+    "providerName": "Sunita Devi",
     "cityName": "Ahmedabad",
     "avgRating": 4.00,
     "reviewCount": 2,

@@ -4,10 +4,12 @@ import com.sevak.api.admin.dto.AdminActionResult;
 import com.sevak.api.admin.dto.AdminBooking;
 import com.sevak.api.admin.dto.CategoryRevenue;
 import com.sevak.api.admin.dto.CityRevenue;
+import com.sevak.api.admin.dto.ComplaintBoardItem;
 import com.sevak.api.admin.dto.ComplaintSummary;
 import com.sevak.api.admin.dto.ComplaintUpdateRequest;
 import com.sevak.api.admin.dto.LeaderboardEntry;
 import com.sevak.api.admin.dto.RefreshResult;
+import com.sevak.api.admin.dto.VerificationCandidate;
 import com.sevak.api.common.ConflictException;
 import com.sevak.api.common.KeysetPage;
 import com.sevak.api.common.NotFoundException;
@@ -41,6 +43,16 @@ public class AdminService {
     @Transactional(readOnly = true)
     public List<ComplaintSummary> complaintSummary() {
         return repo.findComplaintSummary();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ComplaintBoardItem> complaintBoard() {
+        return repo.findComplaintBoard();
+    }
+
+    @Transactional(readOnly = true)
+    public List<VerificationCandidate> providersByVerification(String status) {
+        return repo.findProvidersByVerification(status);
     }
 
     @Transactional(readOnly = true)

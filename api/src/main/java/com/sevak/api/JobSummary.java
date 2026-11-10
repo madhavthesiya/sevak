@@ -12,4 +12,5 @@ public record JobSummary(
         BigDecimal totalAmount,
         String street,
         String areaName,
-        String paymentStatus) {}
+        String paymentStatus,
+        String services) {}

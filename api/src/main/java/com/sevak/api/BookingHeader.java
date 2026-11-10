@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 
 public record BookingHeader(
         int bookingId,
+        int providerId,
         String providerName,
         OffsetDateTime scheduledStart,
         OffsetDateTime scheduledEnd,
@@ -17,4 +18,6 @@ public record BookingHeader(
         String houseNo,
         String street,
         String areaName,
-        String cityName) {}
+        String cityName,
+        String paymentStatus,
+        boolean reviewed) {}

@@ -3,9 +3,11 @@ package com.sevak.api.booking;
 import com.sevak.api.auth.CurrentUser;
 import com.sevak.api.booking.dto.BookingCreated;
 import com.sevak.api.booking.dto.BookingItemRequest;
+import com.sevak.api.booking.dto.BookingQuote;
 import com.sevak.api.booking.dto.CreateBookingRequest;
 import com.sevak.api.booking.dto.IdempotencyRecord;
 import com.sevak.api.booking.dto.PricedItem;
+import com.sevak.api.booking.dto.QuoteRequest;
 import com.sevak.api.booking.dto.RedeemedCoupon;
 import com.sevak.api.common.ConflictException;
 import com.sevak.api.common.PgErrors;
@@ -62,7 +64,7 @@ public class BookingCreationService {
 
         repo.lockProviderBookings(request.providerId());
 
-        List<Line> lines = priceItems(request);
+        List<Line> lines = priceItems(request.providerId(), request.items());
         BigDecimal subtotal = BigDecimal.ZERO;
         int minutes = 0;
         for (Line line : lines) {
@@ -102,6 +104,29 @@ public class BookingCreationService {
         return new Outcome(repo.findCreated(bookingId), false);
     }
 
+    /** What a booking would cost right now. Reads only, so a coupon is checked but not used up. */
+    @Transactional(readOnly = true)
+    public BookingQuote quote(CurrentUser customer, QuoteRequest request) {
+        BigDecimal subtotal = BigDecimal.ZERO;
+        int minutes = 0;
+        for (Line line : priceItems(request.providerId(), request.items())) {
+            BigDecimal quantity = BigDecimal.valueOf(line.item().quantity());
+            subtotal = subtotal.add(line.price().unitPrice().multiply(quantity));
+            minutes += line.price().duration() * line.item().quantity();
+        }
+        String code = request.couponCode() == null ? "" : request.couponCode().trim();
+        if (code.isEmpty()) {
+            return new BookingQuote(subtotal, BigDecimal.ZERO, subtotal, minutes, null);
+        }
+        RedeemedCoupon coupon = repo.previewCoupon(code, subtotal, customer.profileId())
+                .orElseThrow(() -> new UnprocessableException(
+                        "coupon-invalid",
+                        "This coupon is invalid, used up, already used by you, or below its minimum order"));
+        BigDecimal discount = discountFor(coupon, subtotal);
+        return new BookingQuote(
+                subtotal, discount, subtotal.subtract(discount), minutes, code.toUpperCase(java.util.Locale.ROOT));
+    }
+
     private Outcome replay(CurrentUser customer, String key, String hash) {
         IdempotencyRecord earlier = repo.findIdempotencyKey(customer.userId(), key);
         if (!earlier.requestHash().equals(hash)) {
@@ -111,10 +136,10 @@ public class BookingCreationService {
         return new Outcome(repo.findCreated(earlier.bookingId()), true);
     }
 
-    private List<Line> priceItems(CreateBookingRequest request) {
+    private List<Line> priceItems(int providerId, List<BookingItemRequest> items) {
         List<Line> lines = new ArrayList<>();
-        for (BookingItemRequest item : request.items()) {
-            PricedItem price = repo.priceItem(request.providerId(), item.serviceId(), item.variantId())
+        for (BookingItemRequest item : items) {
+            PricedItem price = repo.priceItem(providerId, item.serviceId(), item.variantId())
                     .orElseThrow(() -> new UnprocessableException(
                             "This provider does not offer service " + item.serviceId() + " with that option"));
             lines.add(new Line(item, price));
