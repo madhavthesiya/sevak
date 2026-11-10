@@ -46,6 +46,12 @@ class FrontendApiTest extends IntegrationTest {
     // ── Accounts ────────────────────────────────────────────
 
     @Test
+    void theApiDocsDefineTheErrorSchemaTheyPointAt() throws Exception {
+        mvc.perform(get("/api-docs"))
+                .andExpect(jsonPath("$.components.schemas.Problem").exists());
+    }
+
+    @Test
     void everyRoleCanReadItsOwnAccount() throws Exception {
         mvc.perform(get("/api/v1/me").header(AUTH, customer(1))).andExpect(status().isOk());
         mvc.perform(get("/api/v1/me").header(AUTH, provider(1)))
@@ -205,7 +211,7 @@ class FrontendApiTest extends IntegrationTest {
     @Test
     void servicesCanBeAddedPricedAndRemoved() throws Exception {
         postJson("/api/v1/provider/services", provider(1), "{\"serviceId\":5,\"price\":450}")
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
         mvc.perform(get("/api/v1/providers/1"))
                 .andExpect(jsonPath("$.services[?(@.serviceId == 5)].price", hasItem(450.00)));
 

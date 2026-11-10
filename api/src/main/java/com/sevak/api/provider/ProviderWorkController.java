@@ -63,6 +63,7 @@ public class ProviderWorkController {
     }
 
     @PostMapping("/services")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @ShowsQuery("provider.services")
     @Operation(
             summary = "Offer a service or change its price",

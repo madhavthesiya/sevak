@@ -54,23 +54,27 @@ public class OpenApiConfig {
     /** Documents the error responses endpoints can return, in one place. */
     @Bean
     public GlobalOpenApiCustomizer standardErrorResponses() {
-        return api -> api.getPaths()
-                .forEach((path, item) -> item.readOperations().forEach(operation -> {
-                    ApiResponses responses = operation.getResponses();
-                    if (path.startsWith("/api/")) {
-                        addError(responses, "400", "Invalid input");
-                        addError(responses, "429", "Too many requests");
-                        addError(responses, "500", "Unexpected error");
-                    }
-                    if (path.contains("{")) {
-                        addError(responses, "404", "Not found");
-                    }
-                    if (operation.getSecurity() != null
-                            && !operation.getSecurity().isEmpty()) {
-                        addError(responses, "401", "Missing or invalid login token");
-                        addError(responses, "403", "Your account can't do this");
-                    }
-                }));
+        return api -> {
+            // Added here because springdoc drops component schemas nothing referenced when it built them.
+            api.getComponents().addSchemas(PROBLEM_SCHEMA, problemSchema());
+            api.getPaths()
+                    .forEach((path, item) -> item.readOperations().forEach(operation -> {
+                        ApiResponses responses = operation.getResponses();
+                        if (path.startsWith("/api/")) {
+                            addError(responses, "400", "Invalid input");
+                            addError(responses, "429", "Too many requests");
+                            addError(responses, "500", "Unexpected error");
+                        }
+                        if (path.contains("{")) {
+                            addError(responses, "404", "Not found");
+                        }
+                        if (operation.getSecurity() != null
+                                && !operation.getSecurity().isEmpty()) {
+                            addError(responses, "401", "Missing or invalid login token");
+                            addError(responses, "403", "Your account can't do this");
+                        }
+                    }));
+        };
     }
 
     private static void addError(ApiResponses responses, String code, String description) {
