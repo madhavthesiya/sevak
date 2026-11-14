@@ -329,4 +329,4 @@ docs/       Schema diagrams, ADRs, benchmarks, normalization proof
 
 **Madhav Thesiya** · [LinkedIn](https://www.linkedin.com/in/madhavthesiya/) · [GitHub](https://github.com/madhavthesiya)
 
-© 2026 Madhav Thesiya. All rights reserved.
+© 2026 Madhav Thesiya. All rights reserved; see [LICENSE](LICENSE).

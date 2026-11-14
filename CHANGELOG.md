@@ -9,7 +9,7 @@ Notable changes to SEVAK, newest first. Each release links to its pull request, 
 - The conceptual ER model (`docs/schema/CONCEPTUAL_MODEL.md`): entities, relationships, cardinalities and participation, checked against the schema.
 - Seven Architecture Decision Records in `docs/adr/`.
 - `docker compose up` also starts the web app, on port 5173.
-- This changelog.
+- This changelog, and a `LICENSE` file: all rights reserved.
 
 ### Changed
 - The README is rewritten: what it does, architecture, data model, engineering highlights with proof, benchmarks, API, setup, testing and known limits.
