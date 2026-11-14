@@ -7,6 +7,8 @@ Notable changes to SEVAK, newest first. Each release links to its pull request, 
 ### Added
 - Schema documents generated from the database that the migrations build: a one-page diagram of all 29 tables (`docs/schema/sevak-schema.svg`), a text relational schema with every key, CHECK, index and trigger, a DBML file, and the README's Mermaid diagram. `SchemaDocsTest` fails the build if any of them drifts from the database.
 - The conceptual ER model (`docs/schema/CONCEPTUAL_MODEL.md`): entities, relationships, cardinalities and participation, checked against the schema.
+- The conceptual ER diagram in Chen/EER notation (`docs/schema/conceptual-er.svg`, with a PNG and an editable draw.io file).
+- The physical diagram is restyled: rounded table cards, colour-coded key badges, nullable types marked with `?`, a built-in legend and lines tinted by domain.
 - Seven Architecture Decision Records in `docs/adr/`.
 - `docker compose up` also starts the web app, on port 5173.
 - This changelog, and a `LICENSE` file: all rights reserved.

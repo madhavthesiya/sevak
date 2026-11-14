@@ -41,6 +41,6 @@ On Git Bash for Windows, put `MSYS_NO_PATHCONV=1` in front of `docker run` and u
 ## Reading the diagram
 
 - **PK** primary key, **FK** foreign key, **UK** unique on its own, `*` NOT NULL.
-- Lines run from the foreign key column to the column it references. The end at the referencing table is a crow's foot (many) or a bar (at most one, when the foreign key is also unique). A circle means "zero is allowed".
+- Lines run from the referencing table to the table it references; the `FK` badges show which columns hold the key. The end at the referencing table is a crow's foot (many) or a bar (at most one, when the foreign key is also unique). A circle means "zero is allowed".
 - When a table has a composite foreign key and a single-column one to the same table (for example `booking_items` → `service_variants`), one line is drawn.
 - The grey footer of each table lists its multi-column UNIQUE constraints, exclusion constraints, partial or unique indexes, and how many CHECKs and triggers it has. `RELATIONAL_SCHEMA.md` spells each one out.

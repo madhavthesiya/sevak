@@ -586,25 +586,24 @@ final class SchemaDocs {
     /** The graph id carries a hash of the rest of the file, so a stale SVG can be detected. */
     static String dot(Schema schema) {
         StringBuilder body = new StringBuilder();
-        body.append("  graph [rankdir=LR, fontname=\"Helvetica\", fontsize=22, labelloc=t, nodesep=0.25,")
-                .append(" ranksep=1.1, pad=0.4, bgcolor=\"white\",\n")
-                .append("         label=<<b>SEVAK physical schema</b><br/><font point-size=\"13\">")
-                .append(schema.tables().size())
-                .append(" tables, generated from the Flyway-built database. PK primary key, FK foreign key,")
-                .append(" UK unique, * NOT NULL</font>>]\n")
-                .append("  node [shape=plain, fontname=\"Helvetica\", fontsize=11]\n")
-                .append("  edge [color=\"#64748B\", penwidth=1.1, dir=both]\n");
+        body.append("  graph [rankdir=TB, fontname=\"Helvetica\", labelloc=t, labeljust=l, nodesep=0.3,")
+                .append(" ranksep=1.3, pad=0.6, bgcolor=\"#F8FAFC\", newrank=true,\n")
+                .append("         label=<")
+                .append(dotTitle(schema))
+                .append(">]\n")
+                .append("  node [shape=plain, fontname=\"Helvetica\", fontsize=12]\n")
+                .append("  edge [penwidth=1.4, dir=both, arrowsize=0.9]\n");
         for (Domain d : DOMAINS) {
             body.append("\n  subgraph cluster_")
                     .append(d.key())
                     .append(" {\n")
-                    .append("    label=<<b>")
-                    .append(d.title())
-                    .append("</b>>; fontsize=16; fontcolor=\"")
+                    .append("    label=<<font point-size=\"17\" color=\"")
                     .append(d.colour())
-                    .append("\"; style=\"rounded,filled\"; color=\"")
+                    .append("\"><b>")
+                    .append(d.title().toUpperCase())
+                    .append("</b></font>>; labeljust=l; margin=18; penwidth=1.5; style=\"rounded,filled\"; color=\"")
                     .append(d.colour())
-                    .append("\"; fillcolor=\"")
+                    .append("66\"; fillcolor=\"")
                     .append(d.fill())
                     .append("\"\n");
             for (String name : d.tables()) {
@@ -621,6 +620,7 @@ final class SchemaDocs {
             Set<String> drawn = new LinkedHashSet<>();
             for (ForeignKey fk : t.foreignKeys()) {
                 // One line per pair of tables: a composite key and its single-column twin are one link.
+                // Lines join tables, not columns, which keeps them short; the FK badges show the columns.
                 if (!drawn.add(fk.refTable())) {
                     continue;
                 }
@@ -628,13 +628,11 @@ final class SchemaDocs {
                         fk.columns().stream().anyMatch(c -> !t.column(c).notNull());
                 body.append("  ")
                         .append(t.name())
-                        .append(':')
-                        .append(fk.columns().get(0))
                         .append(" -> ")
                         .append(fk.refTable())
-                        .append(':')
-                        .append(fk.refColumns().get(0))
-                        .append(" [arrowtail=")
+                        .append(" [color=\"")
+                        .append(domainOf(t.name()).colour())
+                        .append("B3\", arrowtail=")
                         .append(t.isKey(fk.columns()) ? "teeodot" : "crowodot")
                         .append(", arrowhead=")
                         .append(optional ? "teeodot" : "teetee")
@@ -645,37 +643,66 @@ final class SchemaDocs {
         return "digraph sevak {\n  id=\"schema_" + sha256(text).substring(0, 16) + "\"\n" + text + "}\n";
     }
 
+    // Key badges keep one colour in every domain, so PK/FK/UK read the same everywhere.
+    private static final String PK = "<font color=\"#B45309\"><b>PK</b></font>";
+    private static final String FK = "<font color=\"#2563EB\"><b>FK</b></font>";
+    private static final String UK = "<font color=\"#7C3AED\"><b>UK</b></font>";
+
+    /** The title block, with the legend built in. */
+    private static String dotTitle(Schema schema) {
+        return "<table border=\"0\" cellspacing=\"0\" cellpadding=\"4\">"
+                + "<tr><td align=\"left\"><font point-size=\"30\" color=\"#0F172A\"><b>SEVAK · Physical schema</b></font></td></tr>"
+                + "<tr><td align=\"left\"><font point-size=\"14\" color=\"#475569\">"
+                + schema.tables().size()
+                + " tables, generated from the database the Flyway migrations build. A test fails the build if this"
+                + " picture drifts from the migrations.</font></td></tr>"
+                + "<tr><td align=\"left\"><font point-size=\"13\" color=\"#334155\">"
+                + PK + " primary key    " + FK + " foreign key    " + UK + " unique    "
+                + "<b>type?</b> nullable    "
+                + "<b>crow's foot</b> many    <b>bar</b> exactly one    <b>circle</b> zero allowed    "
+                + "lines take the colour of the referencing table</font></td></tr></table>";
+    }
+
     private static String dotTable(Table t, Domain d) {
-        StringBuilder html = new StringBuilder(
-                "<table border=\"0\" cellborder=\"1\" cellspacing=\"0\" cellpadding=\"3\" bgcolor=\"white\">");
-        html.append("<tr><td colspan=\"3\" bgcolor=\"")
+        StringBuilder html = new StringBuilder("<table border=\"1\" color=\"")
                 .append(d.colour())
-                .append("\"><font color=\"white\"><b>")
+                .append("\" style=\"rounded\" cellborder=\"0\" cellspacing=\"0\" cellpadding=\"5\" bgcolor=\"white\">");
+        html.append("<tr><td colspan=\"3\" align=\"left\" bgcolor=\"")
+                .append(d.colour())
+                .append("\"><font color=\"white\" point-size=\"14\"><b> ")
                 .append(t.name())
                 .append("</b></font></td></tr>");
+        int row = 0;
         for (Column c : t.columns()) {
             List<String> keys = new ArrayList<>();
             if (t.isPrimaryKey(c.name())) {
-                keys.add("PK");
+                keys.add(PK);
             }
             if (t.isForeignKey(c.name())) {
-                keys.add("FK");
+                keys.add(FK);
             }
             if (t.isUniqueAlone(c.name())) {
-                keys.add("UK");
+                keys.add(UK);
             }
+            String stripe = row++ % 2 == 1 ? " bgcolor=\"#F8FAFC\"" : "";
             html.append("<tr><td port=\"")
                     .append(c.name())
-                    .append("\" align=\"left\">")
-                    .append(t.isPrimaryKey(c.name()) ? "<b>" + c.name() + "</b>" : c.name())
-                    .append(c.notNull() ? " *" : "")
-                    .append("</td><td align=\"left\"><font color=\"#475569\">")
-                    .append(escape(shortType(c.type())))
-                    .append("</font></td><td>")
+                    .append("\" align=\"left\"")
+                    .append(stripe)
+                    .append(">")
                     .append(
-                            keys.isEmpty()
-                                    ? " "
-                                    : "<font color=\"" + d.colour() + "\">" + String.join(" ", keys) + "</font>")
+                            t.isPrimaryKey(c.name())
+                                    ? "<b>" + c.name() + "</b>"
+                                    : "<font color=\"#1E293B\">" + c.name() + "</font>")
+                    .append("</td><td align=\"left\"")
+                    .append(stripe)
+                    .append("><font color=\"#64748B\">")
+                    .append(escape(shortType(c.type())))
+                    .append(c.notNull() ? "" : "?")
+                    .append("</font></td><td align=\"right\"")
+                    .append(stripe)
+                    .append(">")
+                    .append(keys.isEmpty() ? " " : String.join(" ", keys))
                     .append("</td></tr>");
         }
         List<String> rules = new ArrayList<>();
@@ -693,8 +720,9 @@ final class SchemaDocs {
             rules.add(t.triggers().size() + (t.triggers().size() == 1 ? " trigger" : " triggers"));
         }
         if (!rules.isEmpty()) {
-            html.append("<tr><td colspan=\"3\" align=\"left\" bgcolor=\"#F8FAFC\"><font point-size=\"9\""
-                            + " color=\"#475569\">")
+            html.append("<tr><td colspan=\"3\" align=\"left\" bgcolor=\"")
+                    .append(d.fill())
+                    .append("\"><font point-size=\"10\" color=\"#475569\">")
                     .append(escape(String.join(" · ", rules)))
                     .append("</font></td></tr>");
         }
