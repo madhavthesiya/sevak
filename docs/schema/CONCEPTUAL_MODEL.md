@@ -1,10 +1,14 @@
 # SEVAK: conceptual model (Chen / EER)
 
-This is the conceptual ER model behind the 29 tables. It is the input for drawing the diagram in draw.io; every entity, attribute, relationship and cardinality below was checked against the generated [relational schema](RELATIONAL_SCHEMA.md), which comes straight from the migrations.
+This is the conceptual ER model behind the 29 tables. Every entity, attribute, relationship and cardinality below was checked against the generated [relational schema](RELATIONAL_SCHEMA.md), which comes straight from the migrations.
+
+[![SEVAK conceptual ER diagram](conceptual-er.png)](conceptual-er.svg)
+
+The diagram is also available as an [SVG](conceptual-er.svg) to zoom into and as an editable [draw.io file](conceptual-er.drawio).
 
 **Conventions.** Cardinality is written 1:1, 1:N or M:N. *Total* participation (double line) means every row of that entity takes part, because the foreign key is `NOT NULL` or the row is created with the other side. Foreign keys are never drawn as attributes; the relationship replaces them. Derived attributes (drawn dashed) are values the database keeps in sync for speed; the normalization proof lists them as controlled redundancy.
 
-**Layout for the drawing:** Booking cluster in the centre, Identity top-left, Catalog top-right, Geography bottom-left, Feedback bottom-right, with relationship lines running towards the centre. The [physical diagram](sevak-schema.svg) uses the same five groups and colours.
+**Layout of the drawing:** Booking cluster in the centre, Identity top-left, Catalog top-right, Geography bottom-left, Feedback bottom-right, with relationship lines running towards the centre. The [physical diagram](sevak-schema.svg) uses the same five groups and colours.
 
 ---
 

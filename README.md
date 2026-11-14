@@ -136,7 +136,7 @@ The 12 central tables with their key columns. This diagram, like every schema do
 
 - [Full physical diagram](docs/schema/sevak-schema.svg): all 29 tables, coloured by domain
 - [Relational schema](docs/schema/RELATIONAL_SCHEMA.md): every key, CHECK, exclusion constraint, index and trigger
-- [Conceptual ER model](docs/schema/CONCEPTUAL_MODEL.md): entities, relationships and cardinalities
+- [Conceptual ER diagram](docs/schema/conceptual-er.svg) in Chen/EER notation, with the [model behind it](docs/schema/CONCEPTUAL_MODEL.md): entities, relationships and cardinalities
 - [Normalization proof](docs/SEVAK_Normalization_Proof.md): why every table is in BCNF, and which derived values are kept on purpose
 
 ## Engineering highlights

@@ -1,6 +1,6 @@
 # Schema diagrams
 
-Every file in this folder except this README is **generated from the real database**. A test builds a fresh PostgreSQL with the Flyway migrations, reads the system catalog (`pg_class`, `pg_constraint`, `pg_index`, `information_schema.triggers`) and writes the files. Nothing is drawn by hand, so the diagrams can't fall behind the migrations.
+The physical schema files here are **generated from the real database**. A test builds a fresh PostgreSQL with the Flyway migrations, reads the system catalog (`pg_class`, `pg_constraint`, `pg_index`, `information_schema.triggers`) and writes the files. Nothing is drawn by hand, so the diagrams can't fall behind the migrations.
 
 | File | What it is |
 |---|---|
@@ -9,8 +9,11 @@ Every file in this folder except this README is **generated from the real databa
 | [`sevak.dbml`](sevak.dbml) | The same schema in DBML. Paste it into [dbdiagram.io](https://dbdiagram.io) to move tables around |
 | [`sevak-schema.dot`](sevak-schema.dot) | The Graphviz source of the SVG |
 | [`CONCEPTUAL_MODEL.md`](CONCEPTUAL_MODEL.md) | The conceptual (Chen/EER) model: entities, relationships and cardinalities, checked against this schema |
+| [`conceptual-er.svg`](conceptual-er.svg) | That model drawn in Chen/EER notation, also as [`conceptual-er.png`](conceptual-er.png) and an editable draw.io file, [`conceptual-er.drawio`](conceptual-er.drawio) |
 
 The README's Mermaid diagram is generated the same way.
+
+The conceptual diagram is the one exception. Its model is checked against the schema, but its layout is placed by hand in [`conceptual-er.mjs`](conceptual-er.mjs), so CI doesn't check it. After changing the model, run `node docs/schema/conceptual-er.mjs --png` (it uses Playwright from `web/node_modules` for the PNG).
 
 ## How CI keeps them honest
 
