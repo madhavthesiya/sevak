@@ -109,7 +109,7 @@ AFTER (BCNF compliant):
 
 📄 Full mathematical proof: [`SEVAK_Normalization_Proof.md`](docs/SEVAK_Normalization_Proof.md)
 
-📊 Relational Schema: [`sevak_dbml.dbml`](docs/sevak_dbml.dbml) (paste into dbdiagram.io)
+📊 Schema diagrams, generated from the database: [`docs/schema`](docs/schema/README.md)
 
 📝 Top 15 SQL Queries: [`sevak_queries.sql`](api/sql/sevak_queries.sql)
 
