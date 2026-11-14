@@ -1,6 +1,9 @@
 <div align="center">
 
-# SEVAK
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.png">
+  <img src="docs/images/logo-light.png" alt="SEVAK" width="300">
+</picture>
 
 **A home-services marketplace where the database enforces the business rules.**
 
