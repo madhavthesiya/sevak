@@ -1,0 +1,517 @@
+// Generated from the database that the Flyway migrations build. Don't edit by hand.
+// Regenerate: see docs/schema/README.md
+// Paste into https://dbdiagram.io to explore it.
+
+TableGroup identity [color: #2563EB] {
+  users
+  customers
+  service_providers
+  admins
+  admin_permissions
+}
+TableGroup location [color: #059669] {
+  cities
+  areas
+  locations
+  customer_addresses
+  provider_service_areas
+}
+TableGroup catalog [color: #D97706] {
+  categories
+  services
+  service_variants
+  provider_services
+}
+TableGroup booking [color: #C2410C] {
+  bookings
+  booking_items
+  booking_status_log
+  booking_status_transitions
+  coupons
+  coupon_redemptions
+  idempotency_keys
+  payments
+  refunds
+  cancellations
+}
+TableGroup feedback [color: #7C3AED] {
+  provider_reviews
+  service_reviews
+  complaints
+  provider_documents
+  provider_availability
+}
+
+Table users [headercolor: #2563EB] {
+  user_id int [pk, increment]
+  email varchar(255) [not null, unique]
+  password_hash varchar(255) [not null]
+  role varchar(20) [not null]
+  status varchar(20) [not null, default: 'active']
+  created_at timestamptz [not null, default: `now()`]
+  full_name varchar(100) [not null]
+  phone varchar(20)
+  indexes {
+    (user_id, role) [unique, name: 'uq_users_id_role']
+  }
+  Note: '''
+  CHECK users_role_check: role IN ('customer', 'provider', 'admin')
+  CHECK users_status_check: status IN ('active', 'inactive', 'banned')
+  '''
+}
+
+Table customers [headercolor: #2563EB] {
+  customer_id int [pk, increment]
+  user_id int [not null, unique]
+  role varchar(20) [not null, default: 'customer']
+  Note: '''
+  CHECK customers_role_check: role = 'customer'
+  '''
+}
+
+Table service_providers [headercolor: #2563EB] {
+  provider_id int [pk, increment]
+  user_id int [not null, unique]
+  city_id int [not null]
+  bio text
+  experience_years int
+  avg_rating decimal(3,2)
+  verification_status varchar(20) [not null, default: 'pending']
+  is_active boolean [not null, default: true]
+  role varchar(20) [not null, default: 'provider']
+  review_count int [not null, default: 0]
+  indexes {
+    (city_id) [name: 'idx_providers_city']
+  }
+  Note: '''
+  CHECK service_providers_avg_rating_check: (avg_rating >= 0) AND (avg_rating <= 5)
+  CHECK service_providers_experience_years_check: experience_years >= 0
+  CHECK service_providers_review_count_check: review_count >= 0
+  CHECK service_providers_role_check: role = 'provider'
+  CHECK service_providers_verification_status_check: verification_status IN ('pending', 'verified', 'rejected')
+  '''
+}
+
+Table admins [headercolor: #2563EB] {
+  admin_id int [pk, increment]
+  user_id int [not null, unique]
+  admin_role varchar(50) [not null]
+  department varchar(100)
+  role varchar(20) [not null, default: 'admin']
+  Note: '''
+  CHECK admins_role_check: role = 'admin'
+  '''
+}
+
+Table admin_permissions [headercolor: #2563EB] {
+  admin_id int [not null]
+  permission varchar(30) [not null]
+  indexes {
+    (admin_id, permission) [pk]
+  }
+  Note: '''
+  CHECK admin_permissions_permission_check: permission IN ('ALL', 'READ', 'RESOLVE_TICKET', 'VERIFY_PROVIDER', 'MANAGE_COUPONS')
+  '''
+}
+
+Table cities [headercolor: #059669] {
+  city_id int [pk, increment]
+  city_name varchar(100) [not null]
+  state varchar(100) [not null]
+  indexes {
+    (city_name, state) [unique, name: 'uq_cities_name_state']
+  }
+}
+
+Table areas [headercolor: #059669] {
+  area_id int [pk, increment]
+  city_id int [not null]
+  area_name varchar(100) [not null]
+  pincode varchar(10) [not null]
+  indexes {
+    (city_id, area_name) [unique, name: 'uq_areas_city_name']
+    (city_id) [name: 'idx_areas_city']
+  }
+}
+
+Table locations [headercolor: #059669] {
+  location_id int [pk, increment]
+  area_id int [not null]
+  street varchar(255) [not null]
+  landmark varchar(255)
+  latitude decimal(10,7) [not null]
+  longitude decimal(10,7) [not null]
+  indexes {
+    (latitude, longitude) [unique, name: 'locations_latitude_longitude_key']
+    (area_id) [name: 'idx_locations_area']
+  }
+}
+
+Table customer_addresses [headercolor: #059669] {
+  customer_id int [not null]
+  location_id int [not null]
+  label varchar(50)
+  house_no varchar(50)
+  is_active boolean [not null, default: true]
+  indexes {
+    (customer_id, location_id) [pk]
+  }
+}
+
+Table provider_service_areas [headercolor: #059669] {
+  provider_id int [not null]
+  area_id int [not null]
+  indexes {
+    (provider_id, area_id) [pk]
+    (area_id) [name: 'idx_provider_areas_area']
+  }
+}
+
+Table categories [headercolor: #D97706] {
+  category_id int [pk, increment]
+  category_name varchar(100) [not null, unique]
+  description text
+}
+
+Table services [headercolor: #D97706] {
+  service_id int [pk, increment]
+  category_id int [not null]
+  service_name varchar(150) [not null]
+  base_price decimal(10,2) [not null]
+  description text
+  indexes {
+    (category_id) [name: 'idx_services_category']
+    (`service_name gin_trgm_ops`) [name: 'idx_services_name_trgm', note: 'using gin']
+  }
+  Note: '''
+  CHECK services_base_price_check: base_price >= 0
+  '''
+}
+
+Table service_variants [headercolor: #D97706] {
+  variant_id int [pk, increment]
+  service_id int [not null]
+  variant_name varchar(100) [not null]
+  price decimal(10,2) [not null]
+  duration int
+  indexes {
+    (service_id, variant_name) [unique, name: 'service_variants_service_id_variant_name_key']
+    (service_id, variant_id) [unique, name: 'uq_variant_service']
+  }
+  Note: '''
+  CHECK service_variants_duration_check: duration > 0
+  CHECK service_variants_price_check: price >= 0
+  '''
+}
+
+Table provider_services [headercolor: #D97706] {
+  provider_id int [not null]
+  service_id int [not null]
+  price decimal(10,2) [not null]
+  is_active boolean [not null, default: true]
+  indexes {
+    (provider_id, service_id) [pk]
+    (service_id) [name: 'idx_provider_services_service']
+  }
+  Note: '''
+  CHECK provider_services_price_check: price >= 0
+  '''
+}
+
+Table bookings [headercolor: #C2410C] {
+  booking_id int [pk, increment]
+  customer_id int [not null]
+  provider_id int [not null]
+  location_id int [not null]
+  coupon_id int
+  status varchar(30) [not null, default: 'pending']
+  total_amount decimal(10,2) [not null]
+  special_instructions text
+  scheduled_start timestamptz [not null]
+  scheduled_end timestamptz [not null]
+  subtotal decimal(10,2) [not null]
+  discount decimal(10,2) [not null, default: 0]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  indexes {
+    (customer_id, `scheduled_start DESC`) [name: 'idx_bookings_customer_start']
+    (location_id) [name: 'idx_bookings_location']
+    (provider_id, scheduled_start) [name: 'idx_bookings_pending', note: 'where status = \'pending\'']
+    (provider_id, status, scheduled_start) [name: 'idx_bookings_provider_status']
+    (`scheduled_start DESC`, `booking_id DESC`) [name: 'idx_bookings_start_id']
+  }
+  Note: '''
+  CHECK bookings_status_check: status IN ('pending', 'confirmed', 'in_progress', 'completed', 'cancelled')
+  CHECK bookings_total_amount_check: total_amount >= 0
+  CHECK chk_booking_discount: discount >= 0
+  CHECK chk_booking_time: scheduled_end > scheduled_start
+  CHECK chk_booking_total: total_amount = (subtotal - discount)
+  ex_provider_no_double_booking: EXCLUDE USING gist (provider_id WITH =, tstzrange(scheduled_start, scheduled_end, '[)') WITH &&) WHERE status IN ('pending', 'confirmed', 'in_progress')
+  TRIGGER trg_after_booking_status_update: AFTER INSERT or UPDATE -> fn_log_booking_status_change()
+  TRIGGER trg_booking_status_transition: BEFORE UPDATE -> fn_check_status_transition()
+  TRIGGER trg_booking_subtotal: AFTER INSERT or UPDATE -> fn_check_booking_subtotal()
+  TRIGGER trg_bookings_touch: BEFORE UPDATE -> fn_touch_updated_at()
+  '''
+}
+
+Table booking_items [headercolor: #C2410C] {
+  booking_id int [not null]
+  item_no int [not null]
+  service_id int [not null]
+  variant_id int
+  quantity int [not null, default: 1]
+  unit_price decimal(10,2) [not null]
+  indexes {
+    (booking_id, item_no) [pk]
+    (service_id) [name: 'idx_booking_items_service']
+  }
+  Note: '''
+  CHECK booking_items_quantity_check: quantity > 0
+  CHECK booking_items_unit_price_check: unit_price >= 0
+  TRIGGER trg_booking_items_subtotal: AFTER DELETE or INSERT or UPDATE -> fn_check_booking_subtotal()
+  '''
+}
+
+Table booking_status_log [headercolor: #C2410C] {
+  log_id bigint [pk, increment]
+  booking_id int [not null]
+  old_status varchar(30)
+  new_status varchar(30) [not null]
+  changed_by int
+  changed_at timestamptz [not null, default: `clock_timestamp()`]
+  remarks text
+  indexes {
+    (booking_id, changed_at) [name: 'idx_status_log_booking']
+  }
+}
+
+Table booking_status_transitions [headercolor: #C2410C] {
+  from_status varchar(30) [not null]
+  to_status varchar(30) [not null]
+  indexes {
+    (from_status, to_status) [pk]
+  }
+}
+
+Table coupons [headercolor: #C2410C] {
+  coupon_id int [pk, increment]
+  code varchar(30) [not null, unique]
+  discount_type varchar(20) [not null]
+  discount_value decimal(10,2) [not null]
+  min_order decimal(10,2) [default: 0]
+  usage_limit int
+  valid_from date [not null]
+  valid_to date [not null]
+  max_discount decimal(10,2)
+  used_count int [not null, default: 0]
+  Note: '''
+  CHECK chk_coupon_percentage: (discount_type <> 'percentage') OR (discount_value <= 100)
+  CHECK chk_coupon_usage_limit: (usage_limit IS NULL) OR (used_count <= usage_limit)
+  CHECK coupons_check: valid_to >= valid_from
+  CHECK coupons_discount_type_check: discount_type IN ('percentage', 'flat')
+  CHECK coupons_discount_value_check: discount_value > 0
+  CHECK coupons_max_discount_check: max_discount > 0
+  CHECK coupons_used_count_check: used_count >= 0
+  '''
+}
+
+Table coupon_redemptions [headercolor: #C2410C] {
+  coupon_id int [not null]
+  customer_id int [not null]
+  booking_id int [not null, unique]
+  redeemed_at timestamptz [not null, default: `now()`]
+  indexes {
+    (coupon_id, customer_id) [pk]
+  }
+}
+
+Table idempotency_keys [headercolor: #C2410C] {
+  user_id int [not null]
+  idempotency_key varchar(100) [not null]
+  request_hash varchar(64) [not null]
+  booking_id int
+  created_at timestamptz [not null, default: `now()`]
+  indexes {
+    (user_id, idempotency_key) [pk]
+  }
+}
+
+Table payments [headercolor: #C2410C] {
+  payment_id int [pk, increment]
+  booking_id int [not null]
+  payment_method varchar(50) [not null]
+  status varchar(20) [not null, default: 'pending']
+  amount decimal(10,2) [not null]
+  gateway_ref varchar(255)
+  paid_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  failure_reason text
+  indexes {
+    (booking_id) [name: 'idx_payments_booking']
+    (booking_id) [unique, name: 'uq_one_successful_payment', note: 'where status = \'success\'']
+  }
+  Note: '''
+  CHECK payments_amount_check: amount >= 0
+  CHECK payments_status_check: status IN ('pending', 'success', 'failed', 'refunded')
+  '''
+}
+
+Table refunds [headercolor: #C2410C] {
+  refund_id int [pk, increment]
+  payment_id int [not null]
+  amount decimal(10,2) [not null]
+  status varchar(20) [not null, default: 'pending']
+  requested_at timestamptz [not null, default: `now()`]
+  processed_at timestamptz
+  indexes {
+    (payment_id) [name: 'idx_refunds_payment']
+    (payment_id) [unique, name: 'uq_one_active_refund', note: 'where status <> \'failed\'']
+  }
+  Note: '''
+  CHECK refunds_amount_check: amount > 0
+  CHECK refunds_status_check: status IN ('pending', 'processed', 'failed')
+  TRIGGER trg_refund_processed: AFTER INSERT or UPDATE -> fn_mark_payment_refunded()
+  '''
+}
+
+Table cancellations [headercolor: #C2410C] {
+  cancel_id int [pk, increment]
+  booking_id int [not null, unique]
+  reason text [not null]
+  cancelled_at timestamptz [not null, default: `now()`]
+  cancelled_by int
+}
+
+Table provider_reviews [headercolor: #7C3AED] {
+  review_id int [pk, increment]
+  booking_id int [not null, unique]
+  rating int [not null]
+  comment text
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  Note: '''
+  CHECK provider_reviews_rating_check: (rating >= 1) AND (rating <= 5)
+  TRIGGER trg_after_review_change: AFTER DELETE or INSERT or UPDATE -> fn_update_provider_avg_rating()
+  TRIGGER trg_provider_review_allowed: BEFORE INSERT -> fn_check_review_allowed()
+  TRIGGER trg_provider_reviews_touch: BEFORE UPDATE -> fn_touch_updated_at()
+  '''
+}
+
+Table service_reviews [headercolor: #7C3AED] {
+  review_id int [pk, increment]
+  service_id int [not null]
+  booking_id int [not null]
+  rating int [not null]
+  comment text
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  indexes {
+    (service_id, booking_id) [unique, name: 'service_reviews_service_id_booking_id_key']
+    (service_id) [name: 'idx_svc_reviews_svc']
+  }
+  Note: '''
+  CHECK service_reviews_rating_check: (rating >= 1) AND (rating <= 5)
+  TRIGGER trg_service_in_booking: BEFORE INSERT or UPDATE -> fn_check_service_in_booking()
+  TRIGGER trg_service_review_allowed: BEFORE INSERT -> fn_check_review_allowed()
+  TRIGGER trg_service_reviews_touch: BEFORE UPDATE -> fn_touch_updated_at()
+  '''
+}
+
+Table complaints [headercolor: #7C3AED] {
+  complaint_id int [pk, increment]
+  booking_id int [not null]
+  subject varchar(255) [not null]
+  status varchar(30) [not null, default: 'open']
+  description text
+  raised_by int [not null]
+  assigned_admin_id int
+  created_at timestamptz [not null, default: `now()`]
+  resolved_at timestamptz
+  resolution_notes text
+  indexes {
+    (booking_id) [name: 'idx_complaints_booking']
+    (status) [name: 'idx_complaints_status']
+  }
+  Note: '''
+  CHECK complaints_status_check: status IN ('open', 'in_progress', 'resolved', 'closed')
+  '''
+}
+
+Table provider_documents [headercolor: #7C3AED] {
+  document_id int [pk, increment]
+  provider_id int [not null]
+  document_type varchar(100) [not null]
+  file_url varchar(500) [not null]
+  uploaded_at timestamptz [not null, default: `now()`]
+  description text
+  status varchar(20) [not null, default: 'pending']
+  verified_by int
+  verified_at timestamptz
+  indexes {
+    (provider_id) [name: 'idx_prov_docs_provider']
+  }
+  Note: '''
+  CHECK provider_documents_status_check: status IN ('pending', 'verified', 'rejected')
+  '''
+}
+
+Table provider_availability [headercolor: #7C3AED] {
+  slot_id bigint [pk, increment]
+  provider_id int [not null]
+  day_of_week smallint [not null]
+  start_time time [not null]
+  end_time time [not null]
+  indexes {
+    (day_of_week) [name: 'idx_availability_day']
+  }
+  Note: '''
+  CHECK provider_availability_check1: end_time > start_time
+  CHECK provider_availability_day_of_week_check1: (day_of_week >= 1) AND (day_of_week <= 7)
+  ex_availability_no_overlap: EXCLUDE USING gist (provider_id WITH =, day_of_week WITH =, timerange(start_time, end_time) WITH &&)
+  '''
+}
+
+Ref fk_customers_user_role: customers.(user_id, role) > users.(user_id, role) [delete: cascade]
+Ref fk_providers_user_role: service_providers.(user_id, role) > users.(user_id, role) [delete: cascade]
+Ref service_providers_city_id_fkey: service_providers.city_id > cities.city_id
+Ref fk_admins_user_role: admins.(user_id, role) > users.(user_id, role) [delete: cascade]
+Ref admin_permissions_admin_id_fkey: admin_permissions.admin_id > admins.admin_id [delete: cascade]
+Ref areas_city_id_fkey: areas.city_id > cities.city_id
+Ref locations_area_id_fkey: locations.area_id > areas.area_id
+Ref customer_addresses_customer_id_fkey: customer_addresses.customer_id > customers.customer_id [delete: cascade]
+Ref customer_addresses_location_id_fkey: customer_addresses.location_id > locations.location_id [delete: cascade]
+Ref provider_service_areas_area_id_fkey: provider_service_areas.area_id > areas.area_id [delete: cascade]
+Ref provider_service_areas_provider_id_fkey: provider_service_areas.provider_id > service_providers.provider_id [delete: cascade]
+Ref services_category_id_fkey: services.category_id > categories.category_id
+Ref service_variants_service_id_fkey: service_variants.service_id > services.service_id [delete: cascade]
+Ref provider_services_provider_id_fkey: provider_services.provider_id > service_providers.provider_id [delete: cascade]
+Ref provider_services_service_id_fkey: provider_services.service_id > services.service_id [delete: cascade]
+Ref bookings_coupon_id_fkey: bookings.coupon_id > coupons.coupon_id
+Ref bookings_customer_id_fkey: bookings.customer_id > customers.customer_id
+Ref bookings_location_id_fkey: bookings.location_id > locations.location_id
+Ref bookings_provider_id_fkey: bookings.provider_id > service_providers.provider_id
+Ref fk_booking_customer_address: bookings.(customer_id, location_id) > customer_addresses.(customer_id, location_id)
+Ref booking_items_booking_id_fkey: booking_items.booking_id > bookings.booking_id [delete: cascade]
+Ref booking_items_service_id_fkey: booking_items.service_id > services.service_id
+Ref booking_items_variant_id_fkey: booking_items.variant_id > service_variants.variant_id
+Ref fk_item_variant_matches_service: booking_items.(service_id, variant_id) > service_variants.(service_id, variant_id)
+Ref booking_status_log_v2_booking_id_fkey: booking_status_log.booking_id > bookings.booking_id [delete: cascade]
+Ref booking_status_log_v2_changed_by_fkey: booking_status_log.changed_by > users.user_id
+Ref coupon_redemptions_booking_id_fkey: coupon_redemptions.booking_id > bookings.booking_id [delete: cascade]
+Ref coupon_redemptions_coupon_id_fkey: coupon_redemptions.coupon_id > coupons.coupon_id [delete: cascade]
+Ref coupon_redemptions_customer_id_fkey: coupon_redemptions.customer_id > customers.customer_id [delete: cascade]
+Ref idempotency_keys_booking_id_fkey: idempotency_keys.booking_id > bookings.booking_id [delete: cascade]
+Ref idempotency_keys_user_id_fkey: idempotency_keys.user_id > users.user_id [delete: cascade]
+Ref payments_booking_id_fkey: payments.booking_id > bookings.booking_id
+Ref refunds_payment_id_fkey: refunds.payment_id > payments.payment_id
+Ref cancellations_booking_id_fkey: cancellations.booking_id > bookings.booking_id
+Ref cancellations_cancelled_by_fkey: cancellations.cancelled_by > users.user_id
+Ref provider_reviews_booking_id_fkey: provider_reviews.booking_id > bookings.booking_id
+Ref service_reviews_booking_id_fkey: service_reviews.booking_id > bookings.booking_id
+Ref service_reviews_service_id_fkey: service_reviews.service_id > services.service_id
+Ref complaints_assigned_admin_id_fkey: complaints.assigned_admin_id > admins.admin_id
+Ref complaints_booking_id_fkey: complaints.booking_id > bookings.booking_id
+Ref complaints_raised_by_fkey: complaints.raised_by > users.user_id
+Ref provider_documents_provider_id_fkey: provider_documents.provider_id > service_providers.provider_id [delete: cascade]
+Ref provider_documents_verified_by_fkey: provider_documents.verified_by > admins.admin_id
+Ref provider_availability_provider_id_fkey1: provider_availability.provider_id > service_providers.provider_id [delete: cascade]

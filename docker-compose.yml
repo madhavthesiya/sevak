@@ -34,5 +34,16 @@ services:
       db:
         condition: service_healthy
 
+  # ── React web app ───────────────────────────────────────
+  # Port 5173 is the origin the API allows by default (sevak.cors.allowed-origins).
+  web:
+    build: ./web
+    container_name: sevak-web
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
 volumes:
   pgdata:

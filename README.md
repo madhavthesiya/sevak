@@ -1,483 +1,332 @@
 <div align="center">
 
-# ⬡ SEVAK — Service Marketplace
+# SEVAK
 
-**A React app and REST API built on a BCNF-normalized 29-table PostgreSQL schema**
+**A home-services marketplace where the database enforces the business rules.**
+
+Customers book electricians, plumbers and cleaners; providers accept and complete jobs; admins verify providers and watch revenue. Built on a 29-table PostgreSQL schema in BCNF, a Spring Boot API that writes its own SQL, and a React app that can show the SQL behind every screen.
 
 [![CI](https://github.com/madhavthesiya/sevak/actions/workflows/ci.yml/badge.svg)](https://github.com/madhavthesiya/sevak/actions/workflows/ci.yml)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.4-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/)
-[![Swagger](https://img.shields.io/badge/Swagger-API%20Docs-85EA2D?logo=swagger&logoColor=black)](https://sevak.madhavv.me/swagger-ui.html)
-
-[Live Demo](https://sevak.madhavv.me/swagger-ui.html) · [API Docs](https://sevak.madhavv.me/api-docs) · [Health Check](https://sevak.madhavv.me/actuator/health) · [Architecture](#architecture)
+![Java 21](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)
+![Spring Boot 4](https://img.shields.io/badge/Spring%20Boot-4.0-6DB33F?logo=springboot&logoColor=white)
+![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![React](https://img.shields.io/badge/React-TypeScript-61DAFB?logo=react&logoColor=black)
 
 </div>
 
 ---
 
-## 📋 Overview
+## Demo
 
-**SEVAK** is a hyperlocal home-services marketplace (similar to Urban Company) where customers can discover, book, and review service providers for tasks like electrical work, plumbing, cleaning, and painting.
+| Booking with a live price | The SQL behind the screen | Admin revenue |
+|---|---|---|
+| ![Booking screen](docs/images/booking.png) | ![The Show the SQL drawer](docs/images/sql-drawer.png) | ![Admin revenue dashboard](docs/images/admin-revenue.png) |
 
-This project focuses on **database engineering excellence** — featuring a rigorously normalized schema, advanced SQL analytics, a clean REST API, and a web app for customers, providers and admins where **every screen can show the SQL that built it**.
+**Try it:** `docker compose up --build`, open <http://localhost:5173> and click **Customer**, **Provider** or **Admin** on the home page to log in as a demo account. The hosted demo is offline until the project's final deployment.
 
-### Highlights
+## What it does
 
-- 🏗️ **29-table BCNF-normalized schema** with mathematical proof of compliance
-- 🖥️ **React frontend** with types generated from the API's OpenAPI document, and a CI check that fails if they drift
-- 🔎 **"Show the SQL" drawer**: the exact query behind each screen, with an allow-listed `EXPLAIN ANALYZE` for admins
-- 📊 **Paginated REST API** showcasing advanced SQL (Window Functions, Derived Tables, STRING_AGG, `generate_series`)
-- 🛡️ **Double booking made impossible** by a PostgreSQL exclusion constraint on provider + time range, proven by concurrency tests
-- 🔐 **JWT login with roles**, where every `/me` route takes the user from the token, so one user can't ask for another's data
-- ♻️ **Safe retries** with `Idempotency-Key`, and a coupon limit that holds under concurrent requests
-- 🚦 **Booking status rules stored as data** and enforced by a trigger, with a full audit log
-- ⚡ **Stored Procedures** for transactional operations (booking cancellation/confirmation)
-- 🔄 **Database Triggers** for automatic rating recalculation on review INSERT/UPDATE/DELETE
-- 📦 **Materialized Views** for pre-computed analytics (leaderboard, revenue by city and by category), refreshed in the background
-- ⚡ **Measured on 1 million bookings** ([benchmarks](docs/BENCHMARKS.md)): home page 2,334 ms → 8 ms, admin bookings page 514 ms → 2.4 ms, live leaderboard 3,041 ms → 452 ms, with every rewrite checked to return identical rows
-- 📖 **Interactive Swagger UI** for live API exploration
-- 🌐 **Live deployment** at [`sevak.madhavv.me`](https://sevak.madhavv.me/swagger-ui.html)
+| Role | Can |
+|---|---|
+| **Customer** | Search providers by service, city and day; see only times that can really be booked; get a live price with a coupon; book; pay (mock gateway); cancel until 2 hours before; review after the job; manage saved addresses |
+| **Provider** | Accept or decline requests, start and complete jobs; set working hours and the services they offer, with their own prices; see earnings by month and payment method, and their reviews. A street address is shown only after accepting |
+| **Admin** | Revenue by category and city, the provider leaderboard, the complaints board and the provider verification queue |
+| **Everyone** | A **"Show the SQL"** drawer on every screen with the exact query behind it; admins can run an allow-listed `EXPLAIN ANALYZE` |
 
----
-
-## 🏛️ Architecture
+## Architecture
 
 ```mermaid
-graph TD
-    A["🌐 Swagger UI — Browser"] -->|HTTP JSON| B["Spring Boot 4.0.4"]
-
-    subgraph API["API Layer"]
-        B --> C["Controllers — REST URLs"]
-        C --> D["Repositories — Raw SQL"]
-        D --> E["JdbcTemplate"]
+flowchart LR
+    browser["React + TypeScript<br/>web/"] -- "JSON, JWT in the Authorization header" --> filters
+    subgraph api["Spring Boot API (api/)"]
+        filters["Filters: rate limit, request ID, JWT"] --> controllers["Controllers"]
+        controllers --> services["Services: rules, ownership, transactions"]
+        services --> repos["Repositories: hand-written SQL via JdbcClient"]
+        jobs["Scheduled jobs: refresh summaries and expire ignored requests (every 15 min), nightly demo reset (off by default)"]
     end
-
-    subgraph Config["Configuration"]
-        F["CORS"]
-        G["Error Handler"]
-        H["OpenAPI Docs"]
-    end
-
-    E -->|JDBC| I["PostgreSQL — Supabase"]
-
-    subgraph DB["sevak schema — 29 Tables"]
-        I --> J["users · customers · admins"]
-        I --> K["bookings · payments · reviews"]
-        I --> L["services · categories · variants"]
-        I --> M["locations · areas · cities"]
-    end
-
-    subgraph DBFeatures["DB Features"]
-        N["Triggers"]
-        O["Stored Procedures"]
-        P["Indexes"]
-    end
+    repos -- "JDBC, HikariCP" --> db[("PostgreSQL 16<br/>29 tables, constraints, triggers,<br/>procedures, materialized views")]
+    jobs --> db
+    flyway["Flyway migrations"] -. "build and version the schema" .-> db
 ```
 
----
+- The frontend's TypeScript types are generated from the API's OpenAPI document, and CI fails if they drift.
+- Every rule that the schema can express lives in the database, with Java checking first to give friendly errors ([ADR 0002](docs/adr/0002-enforce-business-rules-in-the-database.md)).
 
-## 🗄️ Database Design
+## Data model
 
-### Entity-Relationship Summary
-
-| Domain | Tables | Description |
-|:-------|:------:|:------------|
-| **Auth** | 4 | `users`, `customers`, `admins`, `admin_permissions` — ISA hierarchy with enforced roles |
-| **Providers** | 5 | `service_providers`, `provider_documents`, `provider_availability`, `provider_services`, `provider_service_areas` |
-| **Services** | 3 | `categories`, `services`, `service_variants` — hierarchical catalog |
-| **Location** | 4 | `cities`, `areas`, `locations`, `customer_addresses` — BCNF-compliant geo data |
-| **Bookings** | 7 | `bookings`, `booking_items`, `booking_status_log`, `booking_status_transitions`, `coupons`, `coupon_redemptions`, `idempotency_keys` |
-| **Payments** | 3 | `payments`, `refunds`, `cancellations` — multiple attempts, one success |
-| **Reviews** | 3 | `provider_reviews`, `service_reviews`, `complaints` |
-
-### BCNF Compliance
-
-The schema underwent a targeted normalization refactor to resolve a hidden dependency:
-
+<!-- schema:mermaid:start -->
+```mermaid
+erDiagram
+    USERS ||--o| CUSTOMERS : "is a"
+    USERS ||--o| SERVICE_PROVIDERS : "is a"
+    CUSTOMERS ||--o{ CUSTOMER_ADDRESSES : "saves"
+    LOCATIONS ||--o{ CUSTOMER_ADDRESSES : "saved as"
+    CUSTOMERS ||--o{ BOOKINGS : "books"
+    LOCATIONS ||--o{ BOOKINGS : "hosts"
+    SERVICE_PROVIDERS ||--o{ BOOKINGS : "fulfils"
+    CUSTOMER_ADDRESSES ||--o{ BOOKINGS : "happens at"
+    SERVICE_PROVIDERS ||--o{ PROVIDER_SERVICES : "offers"
+    SERVICES ||--o{ PROVIDER_SERVICES : "offered by"
+    SERVICES ||--o{ SERVICE_VARIANTS : "has"
+    BOOKINGS ||--o{ BOOKING_ITEMS : "contains"
+    SERVICES ||--o{ BOOKING_ITEMS : "booked as"
+    SERVICE_VARIANTS |o--o{ BOOKING_ITEMS : "chosen as"
+    BOOKINGS ||--o{ PAYMENTS : "paid by"
+    BOOKINGS ||--o| PROVIDER_REVIEWS : "reviewed in"
+    USERS {
+        int user_id PK
+        varchar email UK
+    }
+    CUSTOMERS {
+        int customer_id PK
+        int user_id FK, UK
+        varchar role FK
+    }
+    SERVICE_PROVIDERS {
+        int provider_id PK
+        int user_id FK, UK
+        int city_id FK
+        varchar role FK
+    }
+    CUSTOMER_ADDRESSES {
+        int customer_id PK, FK
+        int location_id PK, FK
+    }
+    LOCATIONS {
+        int location_id PK
+        int area_id FK
+    }
+    BOOKINGS {
+        int booking_id PK
+        int customer_id FK
+        int provider_id FK
+        int location_id FK
+        int coupon_id FK
+    }
+    PROVIDER_SERVICES {
+        int provider_id PK, FK
+        int service_id PK, FK
+    }
+    SERVICES {
+        int service_id PK
+        int category_id FK
+    }
+    SERVICE_VARIANTS {
+        int variant_id PK
+        int service_id FK
+    }
+    BOOKING_ITEMS {
+        int booking_id PK, FK
+        int item_no PK
+        int service_id FK
+        int variant_id FK
+    }
+    PAYMENTS {
+        int payment_id PK
+        int booking_id FK
+    }
+    PROVIDER_REVIEWS {
+        int review_id PK
+        int booking_id FK, UK
+    }
 ```
-BEFORE (violated BCNF):
-  addresses(address_id, customer_id, area_id, street, landmark, label, latitude, longitude)
-  FD: {latitude, longitude} → {area_id, street, landmark}  ← NOT a superkey!
+<!-- schema:mermaid:end -->
 
-AFTER (BCNF compliant):
-  locations(location_id, area_id, street, landmark, latitude, longitude)
-    → {latitude, longitude} is now a UNIQUE candidate key ✅
-  customer_addresses(customer_id, location_id, label, house_no)
-    → label and house_no depend on the whole key ✅
+The 12 central tables with their key columns. This diagram, like every schema document in the repo, is **generated from the database the migrations build**, and a test fails the build if any of them drifts.
+
+- [Full physical diagram](docs/schema/sevak-schema.svg): all 29 tables, coloured by domain
+- [Relational schema](docs/schema/RELATIONAL_SCHEMA.md): every key, CHECK, exclusion constraint, index and trigger
+- [Conceptual ER diagram](docs/schema/conceptual-er.svg) in Chen/EER notation, with the [model behind it](docs/schema/CONCEPTUAL_MODEL.md): entities, relationships and cardinalities
+- [Normalization proof](docs/SEVAK_Normalization_Proof.md): why every table is in BCNF, and which derived values are kept on purpose
+
+## Engineering highlights
+
+**1. Double booking is impossible, not just unlikely.**
+*Problem:* checking "is this slot free?" in Java and then inserting races; two requests can both see the slot free.
+*Solution:* a GiST exclusion constraint: no two active bookings for one provider may have overlapping `tstzrange`s. Cancelled bookings free the slot.
+*Proof:* concurrent tests send two requests for the same slot and check exactly one wins ([`BookingConcurrencyTest`](api/src/test/java/com/sevak/api/BookingConcurrencyTest.java), [`ApiConcurrencyTest`](api/src/test/java/com/sevak/api/ApiConcurrencyTest.java)); in the load test, 216 attempts were correctly refused with `409 slot-taken`. [ADR 0003](docs/adr/0003-exclusion-constraint-for-double-booking.md)
+
+**2. Cancel and confirm can't corrupt each other.**
+*Problem:* the procedures read the status, then updated it, so a confirm racing a cancel could leave a confirmed booking with a refund.
+*Solution:* `SELECT ... FOR UPDATE` in `sp_cancel_booking` and `sp_confirm_booking`, plus the status trigger below.
+*Proof:* `cancelAndConfirmAtTheSameTimeLeaveAConsistentBooking` runs them concurrently. Removing only the lock, or only the trigger, still passed; removing both failed, so each protects on its own. [ADR 0005](docs/adr/0005-stored-procedures-vs-service-layer.md)
+
+**3. Booking status rules are data.**
+*Problem:* any status could change to any other, such as `completed` back to `pending`.
+*Solution:* the allowed moves are rows in `booking_status_transitions`; a trigger rejects anything else, and another writes every change to an audit log.
+*Proof:* [`DatabaseConstraintsTest.anIllegalStatusChangeIsRejected`](api/src/test/java/com/sevak/api/DatabaseConstraintsTest.java), and [`DatabaseTriggersTest`](api/src/test/java/com/sevak/api/DatabaseTriggersTest.java) for the log, including two changes in one transaction.
+
+**4. A revenue bug I found in my own code.**
+*Problem:* revenue by category joined payments to booking items, so a booking with two items counted its payment twice. On the demo data it reported ₹11,010 instead of ₹8,005, 37% too high. `COUNT(DISTINCT)` looked right, which hid it.
+*Solution:* total each booking's items per category first, then split each payment in proportion with a window function, which also handles bookings that span categories.
+*Proof:* [`DataCorrectnessTest`](api/src/test/java/com/sevak/api/DataCorrectnessTest.java) checks category revenue adds up to total payments, and covers a two-category booking.
+
+**5. Stored summaries where live queries were too slow.**
+*Problem:* on 1M bookings the revenue chart took 4.7 s against a 5-second query limit, and the home page's top providers 2.3 s.
+*Solution:* materialized views refreshed every 15 minutes, under an advisory lock so only one app instance refreshes. The trade-off is up to 15 minutes of staleness.
+*Proof:* 4,682 ms → 0.019 ms and 2,334 ms → 8.0 ms, and tests check that the stored category revenue and leaderboard equal their live queries. [ADR 0004](docs/adr/0004-materialized-views-for-dashboards.md)
+
+**6. BCNF, with redundancy only on purpose.**
+*Problem:* the original `addresses` table had `{latitude, longitude} → street, area`, where the coordinates weren't a key.
+*Solution:* split into `locations` (coordinates are a candidate key) and `customer_addresses` (`label` and `house_no` depend on the customer and the location together). The few derived values kept for speed (`avg_rating`, `subtotal`, `total_amount`, `used_count`) are each kept correct by a trigger or a CHECK.
+*Proof:* the [normalization proof](docs/SEVAK_Normalization_Proof.md), and rating-trigger and subtotal tests.
+
+Also: `Idempotency-Key` makes a retried booking return the first result; the last use of a coupon goes to exactly one of two concurrent customers; one user can't read another's data (`/me` routes, and `404` instead of `403` for other people's IDs).
+
+## Benchmarks
+
+Measured with `EXPLAIN (ANALYZE, BUFFERS)` on about **1 million bookings**, with every rewrite checked to return exactly the same rows as the query it replaced:
+
+| What | Before | After | How |
+|---|---:|---:|---|
+| Home page "highest rated" | 2,334 ms | 8.0 ms | Read the stored leaderboard |
+| Admin bookings, page 5,000 | 514 ms | 2.4 ms | An index on the keyset's sort columns ([ADR 0006](docs/adr/0006-offset-vs-keyset-pagination.md)) |
+| Admin revenue chart | 4,682 ms | 0.019 ms | Stored summary, refreshed every 15 minutes |
+
+Method, all eight experiments, query plans and a k6 load test: [BENCHMARKS.md](docs/BENCHMARKS.md). All numbers come from one laptop.
+
+## API
+
+Swagger UI is at <http://localhost:8080/swagger-ui.html> once the API is running. Everything is under `/api/v1`; lists return `{ data, page, limit, total, totalPages }`.
+
+```bash
+# 1. Log in as the demo customer (every demo account uses Demo@1234)
+TOKEN=$(curl -s -X POST localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' \
+  -d '{"email":"aarav.sharma@gmail.com","password":"Demo@1234"}' | sed 's/.*"accessToken":"\([^"]*\)".*/\1/')
+
+# 2. Price a job with a coupon, without using the coupon up
+curl -s -X POST localhost:8080/api/v1/bookings/quote -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"providerId":1,"couponCode":"NEWUSER25","items":[{"serviceId":2,"quantity":1}]}'
+# {"subtotal":2600.00,"discount":650.00,"totalAmount":1950.00,"minutes":60,"couponCode":"NEWUSER25"}
+
+# 3. Another customer's booking looks like it doesn't exist
+curl -s -o /dev/null -w '%{http_code}\n' localhost:8080/api/v1/me/bookings/999999 -H "Authorization: Bearer $TOKEN"
+# 404
 ```
 
-📄 Full mathematical proof: [`SEVAK_Normalization_Proof.md`](docs/SEVAK_Normalization_Proof.md)
+Errors use [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457) with a stable `type`:
 
-📊 Relational Schema: [`sevak_dbml.dbml`](docs/sevak_dbml.dbml) (paste into dbdiagram.io)
+| Status | `type` (after `urn:sevak:error:`) | When |
+|:--|:--|:--|
+| 400 | `validation-error` | Invalid parameter or body |
+| 401 | `unauthenticated` | Missing, expired or invalid login token |
+| 403 | `forbidden` | Your role can't do this |
+| 404 | `not-found` | Unknown URL, or a resource that doesn't exist or isn't yours |
+| 405 | `method-not-allowed` | Wrong HTTP method |
+| 409 | `invalid-state` | The booking's status doesn't allow this action |
+| 409 | `slot-taken` | Someone else just booked that time |
+| 409 | `idempotency-conflict` | An `Idempotency-Key` was reused for a different request |
+| 409 | `slot-overlap` | New working hours overlap existing ones |
+| 422 | `business-rule` | A business rule was broken, such as the provider not covering that area |
+| 422 | `coupon-invalid` | Coupon expired, used up, already used by you, or below its minimum |
+| 429 | `rate-limited` | Too many requests; see `Retry-After` |
+| 500 | `internal` | Unexpected error; details only in the server log |
 
-📝 Top 15 SQL Queries: [`sevak_queries.sql`](api/sql/sevak_queries.sql)
+<details>
+<summary><b>All endpoints</b></summary>
 
-⚡ Benchmarks on 1 million bookings: [`BENCHMARKS.md`](docs/BENCHMARKS.md)
-
----
-
-## 🔌 API Endpoints
-
-All endpoints are under `/api/v1`. Lists return `{ data, page, limit, total, totalPages }`. Interactive docs are in Swagger UI.
-
-### 1. Services
-| Method | Endpoint | Notes |
-|:-------|:---------|:------|
-| `GET` | `/services?category=&page=&limit=` | The service catalogue |
-| `GET` | `/areas` | Every area with its city |
-
-### 2. Providers
-| Method | Endpoint | SQL Technique |
-|:-------|:---------|:--------------|
-| `GET` | `/providers?service=&city=&day=&page=&limit=` | Multi-table JOIN, `ILIKE`, `EXISTS`, ranked by the stored leaderboard score |
-| `GET` | `/providers/top?limit=` | Bayesian weighted rating, read from a **materialized view** |
-| `GET` | `/providers/{id}` | **Derived table** (rating vs city average) |
-| `GET` | `/providers/{id}/reviews` | Paginated JOIN |
-| `GET` | `/providers/{id}/slots?from=&days=&minutes=` | `generate_series`, `LATERAL`, range overlap |
-| `GET` | `/providers/{id}/jobs?status=` | `LATERAL` join for the latest payment attempt |
-| `GET` | `/providers/{id}/earnings?from=&to=` | `SUM`, `COUNT`, `GROUP BY` |
-
-### 3. My account
-| Method | Endpoint | Role | Notes |
-|:-------|:---------|:-----|:------|
-| `POST` | `/auth/register`, `/auth/login` | Public | Returns a 24-hour JWT |
-| `GET` | `/me` | Any | The logged-in account |
-| `GET` | `/me/bookings`, `/me/bookings/{id}` | Customer | Includes the price breakdown and status timeline |
-| `GET` | `/me/payments`, `/me/spending` | Customer | `FILTER` aggregates: paid, upcoming, refunded |
-| `GET` `POST` `DELETE` | `/me/addresses` | Customer | Removing is a soft delete; past bookings are unaffected |
-| `GET` | `/provider/jobs?status=`, `/provider/earnings?from=&to=`, `/provider/earnings/monthly`, `/provider/profile` | Provider | Street address shown only after accepting |
-| `GET` `POST` `DELETE` | `/provider/availability`, `/provider/services` | Provider | Overlapping hours return `409 slot-overlap` |
-
-### 4. Bookings
-| Method | Endpoint | Role | What it does |
-|:-------|:---------|:-----|:-------------|
-| `POST` | `/bookings/quote` | Customer | Live price; checks a coupon without using it up |
-| `POST` | `/bookings` | Customer | One transaction: checks, price snapshot, coupon, no double booking. Supports `Idempotency-Key` |
-| `POST` | `/bookings/{id}/accept`, `/decline`, `/start`, `/complete` | Provider | Moves through the status rules |
-| `POST` | `/bookings/{id}/cancel` | Customer or provider | Customers until 2 hours before; providers until the start |
-| `POST` | `/bookings/{id}/payments` | Customer | Mock gateway; `simulate` chooses success or failure |
-| `POST` | `/bookings/{id}/review` | Customer | Only after completion, once |
-| `POST` | `/bookings/{id}/complaints` | Customer or provider | |
-
-### 5. Admin
-| Method | Endpoint | SQL Technique |
-|:-------|:---------|:--------------|
-| `GET` | `/admin/revenue` | **Materialized view** of a CTE whose **window function** splits each payment across categories |
-| `GET` | `/admin/leaderboard?fast=true` | **RANK()** view, or its **materialized view** |
-| `GET` | `/admin/complaints` | `STRING_AGG` |
-| `GET` | `/admin/complaints/board` | Every complaint, open ones first |
-| `GET` | `/admin/providers?status=` | Verification queue, with `STRING_AGG` of documents |
-| `GET` | `/admin/city-revenue` | **Materialized view** |
-| `GET` | `/admin/bookings?before=&beforeId=&limit=` | **Keyset pagination** |
-| `POST` | `/admin/refresh-views` | Also runs on a schedule, guarded by an advisory lock |
-| `PATCH` | `/admin/providers/{id}/verification`, `/admin/complaints/{id}` | Verify providers, resolve complaints |
-| `POST` | `/admin/refunds/{id}/process` | Completes a refund |
-| `POST` | `/admin/queries/{key}/explain` | `EXPLAIN ANALYZE` of an allow-listed read query, with fixed sample values |
-
-### 6. Under the hood
-| Method | Endpoint | Notes |
-|:-------|:---------|:------|
-| `GET` | `/meta/queries/{key}` | The SQL behind a screen. Responses name their query in the `X-Sevak-Query` header |
-
-### Demo accounts
-Every demo account uses the password `Demo@1234`. In Swagger UI, log in with `POST /auth/login`, click **Authorize**, and paste the `accessToken`.
-
-| Role | Email |
-|:-----|:------|
-| Customer | `aarav.sharma@gmail.com` |
-| Provider | `ravi.electrician@gmail.com` |
-| Admin | `admin.raj@sevak.com` |
-
-### Health and monitoring
-| Endpoint | Description |
-|:---------|:------------|
-| `/actuator/health/readiness` | `503` when the database is unreachable |
-| `/actuator/health/liveness` | Whether the app itself is running |
-| `/actuator/info` | Build version |
-| `/actuator/metrics` | Application metrics |
+| Area | Endpoints |
+|---|---|
+| Public | `GET /services`, `/areas`, `/providers` (search), `/providers/top`, `/providers/{id}`, `/providers/{id}/reviews`, `/providers/{id}/slots` |
+| Auth | `POST /auth/register`, `/auth/login` (a 24-hour JWT); `GET /me` |
+| Customer | `GET /me/bookings`, `/me/bookings/{id}`, `/me/payments`, `/me/spending`; `GET` `POST` `DELETE` `/me/addresses` |
+| Bookings | `POST /bookings/quote`, `/bookings` (supports `Idempotency-Key`), `/bookings/{id}/accept`, `/decline`, `/start`, `/complete`, `/cancel`, `/payments`, `/review`, `/complaints` |
+| Provider | `GET /provider/jobs`, `/provider/earnings`, `/provider/earnings/monthly`, `/provider/profile`; `GET` `POST` `DELETE` `/provider/availability`, `/provider/services` |
+| Admin | `GET /admin/revenue`, `/admin/city-revenue`, `/admin/leaderboard`, `/admin/complaints`, `/admin/complaints/board`, `/admin/providers`, `/admin/bookings` (keyset); `PATCH /admin/providers/{id}/verification`, `/admin/complaints/{id}`; `POST /admin/refunds/{id}/process`, `/admin/refresh-views`, `/admin/queries/{key}/explain` |
+| Meta | `GET /meta/queries/{key}`: the SQL behind a screen, named in each response's `X-Sevak-Query` header |
+| Health | `/actuator/health/readiness` (`503` when the database is down), `/actuator/health/liveness`, `/actuator/info`, `/actuator/metrics` |
 
 Every response carries an `X-Request-Id`, which also appears on the matching log lines.
 
-### Error Responses
-Errors use [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457), with a stable `type`:
+</details>
 
-| Status | `type` | When |
-|:-------|:-------|:-----|
-| `400` | `urn:sevak:error:validation-error` | Invalid parameter or body |
-| `401` | `urn:sevak:error:unauthenticated` | Missing, expired or invalid login token |
-| `403` | `urn:sevak:error:forbidden` | Your role can't do this |
-| `404` | `urn:sevak:error:not-found` | Unknown URL, or a resource that doesn't exist or isn't yours |
-| `405` | `urn:sevak:error:method-not-allowed` | Wrong HTTP method |
-| `409` | `urn:sevak:error:invalid-state` | Booking is in the wrong status for the action |
-| `409` | `urn:sevak:error:slot-taken` | Someone else just booked that time |
-| `409` | `urn:sevak:error:idempotency-conflict` | An `Idempotency-Key` was reused for a different request |
-| `409` | `urn:sevak:error:slot-overlap` | New working hours overlap hours already set for that day |
-| `422` | `urn:sevak:error:business-rule` | Business rule broken, such as provider unavailable |
-| `422` | `urn:sevak:error:coupon-invalid` | Coupon expired, used up, already used by you, or below its minimum |
-| `429` | `urn:sevak:error:rate-limited` | Too many requests; see `Retry-After` |
-| `500` | `urn:sevak:error:internal` | Unexpected error; details only in the server log |
+## Run it locally
 
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Java 21+
-- PostgreSQL 16+
-- Maven 3.9+
-
-### Local Development
+Needs only Docker.
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/madhavthesiya/sevak.git
-cd sevak
-
-# 2. Configure environment
-cp .env.example .env
-# Edit .env and set your PostgreSQL password
-
-# 3. Set up database
-psql -U postgres -c "CREATE DATABASE sevak_db"
-# The tables and demo data are created by Flyway when the app first starts.
-
-# 4. Run the API
-export DB_PASSWORD=your_password   # Linux/Mac
-$env:DB_PASSWORD="your_password"   # Windows PowerShell
-cd api && ./mvnw spring-boot:run
-
-# 5. Open Swagger UI
-open http://localhost:8080/swagger-ui.html
-```
-
-### Docker (One Command)
-
-```bash
+git clone https://github.com/madhavthesiya/sevak.git && cd sevak
 docker compose up --build
-# API:     http://localhost:8080/swagger-ui.html
-# Health:  http://localhost:8080/actuator/health
-# If you ran an older version: docker compose down -v  (removes the old database volume)
 ```
 
-### Web app
+| | |
+|---|---|
+| Web app | <http://localhost:5173> |
+| API docs (Swagger UI) | <http://localhost:8080/swagger-ui.html> |
+| Health | <http://localhost:8080/actuator/health/readiness> |
 
-```bash
-# With the API running on http://localhost:8080
-cd web
-cp .env.example .env
-npm ci
-npm run dev          # http://localhost:5173
-```
-
-Use the one-click **Customer**, **Provider** or **Admin** login on the home page. After changing the API, run `npm run api:sync` to regenerate the TypeScript types.
-
----
-
-## ✅ Testing
-
-```bash
-cd api && ./mvnw verify   # needs Docker running
-```
-
-Tests run against a real PostgreSQL 16 in Docker (Testcontainers), and Flyway builds the database from scratch for every run. Each test is rolled back, so tests can't affect each other. They cover every read endpoint, error responses, stored procedures, triggers, revenue totals, data integrity and customer data isolation. CI runs them on every push, along with a formatting check (Spotless); the coverage report is written to `api/target/site/jacoco`.
-
-```bash
-cd web
-npm test                # unit tests (Vitest)
-npx playwright test     # end-to-end tests; needs the API running
-```
-
-```bash
-# Benchmarks on about 1 million bookings (needs Docker, about 15 minutes). Results: docs/BENCHMARKS.md
-cd api && ./mvnw test -Dtest=QueryBenchmark -Dsurefire.failIfNoSpecifiedTests=false
-```
-
-The end-to-end tests drive a real browser against the real API: a customer books, the provider accepts, a coupon reprices the bill, overlapping hours are refused, and a full booking works at phone width. CI also fails if the generated API types no longer match the backend.
-
-The login token is kept in `localStorage` so a refresh or new tab stays signed in. Any script on the page could read it, so the app renders no user-supplied HTML and loads no third-party scripts. Address coordinates are placeholders, because the app has no maps service.
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology | Purpose |
-|:------|:-----------|:--------|
-| Runtime | Java 21 (Temurin) | Long-term support JDK |
-| Framework | Spring Boot 4.0.4 | REST API + dependency injection |
-| Database | PostgreSQL (Supabase) | Managed cloud PostgreSQL |
-| DB Access | Spring JDBC (JdbcTemplate) | Raw SQL execution — intentionally chosen over JPA to showcase SQL proficiency |
-| Security | Spring Security, JWT, BCrypt | Roles, ownership checks and hashed passwords |
-| Rate limiting | Bucket4j | Per-IP limits on login, booking and general traffic |
-| Migrations | Flyway | Versioned schema changes; the app builds its own database |
-| Testing | JUnit 5, MockMvc, Testcontainers | Integration tests on a real PostgreSQL |
-| API Docs | springdoc-openapi 3.0.2 | Auto-generated Swagger UI |
-| Frontend | React, TypeScript, Vite | The web app in `web/` |
-| Frontend data | TanStack Query, openapi-fetch, openapi-typescript | Server state and generated API types |
-| Frontend UI | Tailwind CSS, shadcn/ui, Recharts | Components and charts |
-| Frontend tests | Vitest, Playwright | Unit and end-to-end tests |
-| Load testing | k6 | 50 virtual users against the API on 1M bookings |
-| Container | Docker + Docker Compose | Reproducible deployments |
-| API Hosting | DigitalOcean App Platform | Production API deployment |
-| DB Hosting | Supabase | Free-tier managed PostgreSQL |
-
----
-
-## 📁 Project Structure
-
-```
-sevak/
-├── api/                 # Spring Boot backend
-│   ├── src/main/java/com/sevak/api/
-│   │   ├── auth/        # Login, tokens, security rules
-│   │   ├── common/      # Errors, pagination, rate limiting, request logging, OpenAPI
-│   │   ├── catalog/     # Services
-│   │   ├── provider/    # Search, profiles, jobs, earnings
-│   │   ├── customer/    # Bookings, payments, spending, addresses
-│   │   ├── booking/     # Create, lifecycle, payments, reviews, complaints
-│   │   └── admin/       # Analytics, verification, refunds, scheduled jobs
-│   │                    # Each feature: Controller → Service → Repository, with dto/ records
-│   ├── src/main/resources/db/  # Flyway: migration/ (schema, procedures, views), seed/ (demo data)
-│   ├── src/test/java/   # Integration tests on a real PostgreSQL
-│   ├── sql/             # Top 15 showcase queries, data integrity checks, the 1M-booking generator
-│   └── load-test/       # k6 load test
-├── web/                 # React frontend
-│   ├── src/api/         # Generated types and one typed function per API call
-│   ├── src/pages/       # Screens for customers, providers and admins
-│   ├── src/sql/         # The "Show the SQL" drawer
-│   └── e2e/             # Playwright tests
-├── docs/                # Normalization proof, DBML, query notes
-└── docker-compose.yml   # Runs the database and the API
-```
-
----
-
-## 📊 Advanced SQL Showcase
-
-This project intentionally uses **Spring JDBC** instead of JPA/Hibernate to demonstrate advanced SQL capabilities:
+Flyway builds the schema and loads the demo data on first start. Demo accounts (password `Demo@1234`): customer `aarav.sharma@gmail.com`, provider `ravi.electrician@gmail.com`, admin `admin.raj@sevak.com`.
 
 <details>
-<summary><b>Window Function — Provider Leaderboard</b></summary>
+<summary><b>Developing without Docker for the app</b></summary>
 
-```sql
--- v_provider_leaderboard: the live view; mv_provider_leaderboard is its materialized copy
-WITH platform AS (SELECT AVG(rating) AS avg_rating FROM provider_reviews),
--- Jobs are counted per provider first. A booking has at most one successful payment, so COUNT(*)
--- needs no DISTINCT; the earlier COUNT(DISTINCT) sorted on disk and took 3,041 ms at 1M bookings, this 452 ms.
-jobs AS (
-    SELECT b.provider_id, COUNT(*) AS jobs_completed, COALESCE(SUM(p.amount), 0) AS total_revenue
-    FROM bookings b
-    LEFT JOIN payments p ON p.booking_id = b.booking_id AND p.status = 'success'
-    WHERE b.status = 'completed'
-    GROUP BY b.provider_id
-),
-stats AS (
-    SELECT sp.provider_id, u.email, ci.city_name, sp.avg_rating, sp.review_count,
-           -- Bayesian average: one 5-star review can't beat fifty excellent ones
-           CASE WHEN sp.review_count > 0 THEN
-               ROUND((5 * pl.avg_rating + sp.avg_rating * sp.review_count) / (5 + sp.review_count), 2)
-           END                              AS weighted_rating,
-           COALESCE(j.jobs_completed, 0)    AS jobs_completed,
-           COALESCE(j.total_revenue, 0)     AS total_revenue
-    FROM service_providers sp
-    JOIN users u   ON sp.user_id = u.user_id
-    JOIN cities ci ON sp.city_id = ci.city_id
-    CROSS JOIN platform pl
-    LEFT JOIN jobs j ON j.provider_id = sp.provider_id
-    WHERE sp.is_active = TRUE
-)
-SELECT RANK() OVER (ORDER BY weighted_rating DESC NULLS LAST, jobs_completed DESC) AS rank, *
-FROM stats
+```bash
+docker compose up -d db                       # just PostgreSQL
+cd api && ./mvnw spring-boot:run              # API on :8080 (Java 21)
+cd web && cp .env.example .env && npm ci && npm run dev   # web app on :5173 (Node 24)
 ```
+
+After changing the API, run `npm run api:sync` in `web/` to regenerate the TypeScript types.
+
 </details>
 
-<details>
-<summary><b>Derived Table — Rating vs City Average</b></summary>
+## Testing
 
-```sql
-SELECT sp.provider_id, u.email, ci.city_name,
-       sp.avg_rating AS my_rating,
-       city_avg.avg_city_rating,
-       CASE
-           WHEN sp.avg_rating > city_avg.avg_city_rating THEN 'Above Average'
-           WHEN sp.avg_rating = city_avg.avg_city_rating THEN 'Average'
-           ELSE 'Below Average'
-       END AS comparison
-FROM service_providers sp
-JOIN users u ON sp.user_id = u.user_id
-JOIN cities ci ON sp.city_id = ci.city_id
-JOIN (
-    SELECT city_id, ROUND(AVG(avg_rating), 2) AS avg_city_rating
-    FROM service_providers WHERE avg_rating IS NOT NULL
-    GROUP BY city_id
-) city_avg ON sp.city_id = city_avg.city_id
-WHERE sp.provider_id = ?
-```
-</details>
-
-<details>
-<summary><b>Stored Procedure — Booking Cancellation</b></summary>
-
-```sql
-CALL sp_cancel_booking(booking_id, 'Customer changed mind');
--- Atomically: updates status, creates cancellation record,
--- processes refund if payment exists — all in one transaction
-```
-</details>
-
----
-
-## 📡 Sample Response
-
-`GET` [`/api/v1/admin/leaderboard`](https://sevak.madhavv.me/api/v1/admin/leaderboard) — uses `RANK()` Window Function:
-
-```json
-[
-  {
-    "rank": 1,
-    "providerId": 1,
-    "providerName": "Ravi Kumar",
-    "cityName": "Ahmedabad",
-    "avgRating": 5.00,
-    "reviewCount": 1,
-    "weightedRating": 4.33,
-    "jobsCompleted": 1,
-    "totalRevenue": 495.00
-  },
-  {
-    "rank": 1,
-    "providerId": 3,
-    "providerName": "Amit Joshi",
-    "cityName": "Mumbai",
-    "avgRating": 5.00,
-    "reviewCount": 1,
-    "weightedRating": 4.33,
-    "jobsCompleted": 1,
-    "totalRevenue": 1400.00
-  },
-  {
-    "rank": 3,
-    "providerId": 2,
-    "providerName": "Sunita Devi",
-    "cityName": "Ahmedabad",
-    "avgRating": 4.00,
-    "reviewCount": 2,
-    "weightedRating": 4.14,
-    "jobsCompleted": 2,
-    "totalRevenue": 4025.00
-  }
-]
+```bash
+cd api && ./mvnw verify     # 235 tests; needs Docker
+cd web && npm test          # unit tests (Vitest)
+cd web && npx playwright test   # end-to-end, against a running API
 ```
 
-> **Note on ranking:** Providers 1 and 3 tie on weighted rating and completed jobs, so both receive rank 1. Because `RANK()` is used instead of `DENSE_RANK()`, rank 2 is skipped and the next provider receives rank 3.
----
+- **Backend:** integration tests against a real PostgreSQL 16 in Docker (Testcontainers), built from scratch by Flyway. Each test rolls back. They cover every endpoint, the error catalogue, security and ownership, every constraint and trigger, the stored procedures, revenue correctness and real concurrent requests. JaCoCo line coverage on 14 Nov 2026: 96.5% overall and 94.1% for the service classes (85.4% of branches); the report is in `api/target/site/jacoco`.
+- **Schema docs:** `SchemaDocsTest` fails if any diagram or schema document no longer matches the database.
+- **Frontend:** unit tests, and Playwright journeys in a real browser against the real API: a customer books, the provider accepts, a coupon reprices the bill, overlapping hours are refused, and a full booking works at phone width.
+- **CI** runs all of it on every push, plus a formatting check and a check that the generated API types are current.
+- **Benchmarks** on 1M bookings: `./mvnw test -Dtest=QueryBenchmark -Dsurefire.failIfNoSpecifiedTests=false` (about 15 minutes).
 
-<div align="center">
+## Design decisions
 
-**© 2026 Madhav Thesiya. All Rights Reserved.**
+Seven short [Architecture Decision Records](docs/adr/README.md): [raw SQL over JPA](docs/adr/0001-raw-sql-with-jdbcclient-over-jpa.md) · [rules in the database](docs/adr/0002-enforce-business-rules-in-the-database.md) · [exclusion constraint](docs/adr/0003-exclusion-constraint-for-double-booking.md) · [materialized views](docs/adr/0004-materialized-views-for-dashboards.md) · [procedures vs services](docs/adr/0005-stored-procedures-vs-service-layer.md) · [OFFSET vs keyset](docs/adr/0006-offset-vs-keyset-pagination.md) · [JWT](docs/adr/0007-jwt-authentication.md)
 
----
+## Tech stack
 
-**Made by [Madhav Thesiya](https://www.linkedin.com/in/madhavthesiya/)** — If this was useful, drop a ⭐
+| Layer | Choice |
+|---|---|
+| Backend | Java 21, Spring Boot 4, Spring JDBC (`JdbcClient`), Spring Security with JWT, Bucket4j rate limits, springdoc-openapi |
+| Database | PostgreSQL 16 with `btree_gist` and `pg_trgm`, Flyway migrations |
+| Frontend | React, TypeScript, Vite, TanStack Query, openapi-fetch, Tailwind CSS, shadcn/ui, Recharts |
+| Testing | JUnit 5, Testcontainers, MockMvc, JaCoCo, Vitest, Playwright, k6 |
+| Delivery | Docker Compose, GitHub Actions |
 
-</div>
+## Project layout
+
+```
+api/        Spring Boot API, packaged by feature (auth, catalog, provider, customer, booking, admin)
+  src/main/resources/db/   Flyway: migration/ (schema, procedures, views) and seed/ (demo data)
+  src/test/                Integration, concurrency and schema-doc tests; the benchmark
+  sql/                     Showcase queries, data integrity checks, the 1M-booking generator
+web/        React app: pages per role, generated API types, the "Show the SQL" drawer, Playwright tests
+docs/       Schema diagrams, ADRs, benchmarks, normalization proof
+```
+
+## Known limitations and future work
+
+| Limit | What I'd do next |
+|---|---|
+| The hosted demo is offline | Deploy as the final step of the roadmap |
+| Payments are mocked | A real gateway with signed webhooks |
+| A banned user's token works for up to 24 hours | Short-lived tokens with refresh, or a denylist |
+| The login token is readable by scripts on the page | An `HttpOnly` cookie with CSRF protection |
+| Search filters by city, so it can list providers who don't cover the customer's area (found by the load test) | Filter by the logged-in customer's area |
+| Rate limits are counted per server | Shared counters if there is more than one server |
+| Stored summaries can be 15 minutes old | Fine for analytics; refresh on demand where a page needs fresher data |
+| Address coordinates are placeholders | A geocoding service |
+| Benchmarks ran on one laptop with generated data | Measure again on real servers after deployment |
+| "Every booking has at least one item" is enforced by the API, not the database | A deferred constraint trigger, like the subtotal check |
+
+## Author
+
+**Madhav Thesiya** · [LinkedIn](https://www.linkedin.com/in/madhavthesiya/) · [GitHub](https://github.com/madhavthesiya)
+
+© 2026 Madhav Thesiya. All rights reserved; see [LICENSE](LICENSE).
