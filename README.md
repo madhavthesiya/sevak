@@ -79,6 +79,88 @@ graph TD
 
 ## 🗄️ Database Design
 
+### Core tables
+
+The 12 central tables and their key columns, generated from the database (a test fails if it drifts). The [full diagram](docs/schema/sevak-schema.svg) has all 29 tables.
+
+<!-- schema:mermaid:start -->
+```mermaid
+erDiagram
+    USERS ||--o| CUSTOMERS : "is a"
+    USERS ||--o| SERVICE_PROVIDERS : "is a"
+    CUSTOMERS ||--o{ CUSTOMER_ADDRESSES : "saves"
+    LOCATIONS ||--o{ CUSTOMER_ADDRESSES : "saved as"
+    CUSTOMERS ||--o{ BOOKINGS : "books"
+    LOCATIONS ||--o{ BOOKINGS : "hosts"
+    SERVICE_PROVIDERS ||--o{ BOOKINGS : "fulfils"
+    CUSTOMER_ADDRESSES ||--o{ BOOKINGS : "happens at"
+    SERVICE_PROVIDERS ||--o{ PROVIDER_SERVICES : "offers"
+    SERVICES ||--o{ PROVIDER_SERVICES : "offered by"
+    SERVICES ||--o{ SERVICE_VARIANTS : "has"
+    BOOKINGS ||--o{ BOOKING_ITEMS : "contains"
+    SERVICES ||--o{ BOOKING_ITEMS : "booked as"
+    SERVICE_VARIANTS |o--o{ BOOKING_ITEMS : "chosen as"
+    BOOKINGS ||--o{ PAYMENTS : "paid by"
+    BOOKINGS ||--o| PROVIDER_REVIEWS : "reviewed in"
+    USERS {
+        int user_id PK
+        varchar email UK
+    }
+    CUSTOMERS {
+        int customer_id PK
+        int user_id FK, UK
+        varchar role FK
+    }
+    SERVICE_PROVIDERS {
+        int provider_id PK
+        int user_id FK, UK
+        int city_id FK
+        varchar role FK
+    }
+    CUSTOMER_ADDRESSES {
+        int customer_id PK, FK
+        int location_id PK, FK
+    }
+    LOCATIONS {
+        int location_id PK
+        int area_id FK
+    }
+    BOOKINGS {
+        int booking_id PK
+        int customer_id FK
+        int provider_id FK
+        int location_id FK
+        int coupon_id FK
+    }
+    PROVIDER_SERVICES {
+        int provider_id PK, FK
+        int service_id PK, FK
+    }
+    SERVICES {
+        int service_id PK
+        int category_id FK
+    }
+    SERVICE_VARIANTS {
+        int variant_id PK
+        int service_id FK
+    }
+    BOOKING_ITEMS {
+        int booking_id PK, FK
+        int item_no PK
+        int service_id FK
+        int variant_id FK
+    }
+    PAYMENTS {
+        int payment_id PK
+        int booking_id FK
+    }
+    PROVIDER_REVIEWS {
+        int review_id PK
+        int booking_id FK, UK
+    }
+```
+<!-- schema:mermaid:end -->
+
 ### Entity-Relationship Summary
 
 | Domain | Tables | Description |

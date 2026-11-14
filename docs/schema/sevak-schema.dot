@@ -1,5 +1,5 @@
 digraph sevak {
-  id="schema_42fff4038846a51b"
+  id="schema_2c371e1eabda2ec4"
   graph [rankdir=LR, fontname="Helvetica", fontsize=22, labelloc=t, nodesep=0.25, ranksep=1.1, pad=0.4, bgcolor="white",
          label=<<b>SEVAK physical schema</b><br/><font point-size="13">29 tables, generated from the Flyway-built database. PK primary key, FK foreign key, UK unique, * NOT NULL</font>>]
   node [shape=plain, fontname="Helvetica", fontsize=11]
@@ -54,10 +54,10 @@ digraph sevak {
     provider_availability [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="3" bgcolor="white"><tr><td colspan="3" bgcolor="#7C3AED"><font color="white"><b>provider_availability</b></font></td></tr><tr><td port="slot_id" align="left"><b>slot_id</b> *</td><td align="left"><font color="#475569">bigint</font></td><td><font color="#7C3AED">PK</font></td></tr><tr><td port="provider_id" align="left">provider_id *</td><td align="left"><font color="#475569">int</font></td><td><font color="#7C3AED">FK</font></td></tr><tr><td port="day_of_week" align="left">day_of_week *</td><td align="left"><font color="#475569">smallint</font></td><td> </td></tr><tr><td port="start_time" align="left">start_time *</td><td align="left"><font color="#475569">time</font></td><td> </td></tr><tr><td port="end_time" align="left">end_time *</td><td align="left"><font color="#475569">time</font></td><td> </td></tr><tr><td colspan="3" align="left" bgcolor="#F8FAFC"><font point-size="9" color="#475569">ex_availability_no_overlap · 2 CHECKs</font></td></tr></table>>]
   }
 
-  customers:user_id -> users:user_id [arrowtail=crowodot, arrowhead=teetee]
-  service_providers:user_id -> users:user_id [arrowtail=crowodot, arrowhead=teetee]
+  customers:user_id -> users:user_id [arrowtail=teeodot, arrowhead=teetee]
+  service_providers:user_id -> users:user_id [arrowtail=teeodot, arrowhead=teetee]
   service_providers:city_id -> cities:city_id [arrowtail=crowodot, arrowhead=teetee]
-  admins:user_id -> users:user_id [arrowtail=crowodot, arrowhead=teetee]
+  admins:user_id -> users:user_id [arrowtail=teeodot, arrowhead=teetee]
   admin_permissions:admin_id -> admins:admin_id [arrowtail=crowodot, arrowhead=teetee]
   areas:city_id -> cities:city_id [arrowtail=crowodot, arrowhead=teetee]
   locations:area_id -> areas:area_id [arrowtail=crowodot, arrowhead=teetee]

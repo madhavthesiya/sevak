@@ -77,6 +77,39 @@ final class SchemaDocs {
                             "provider_documents",
                             "provider_availability")));
 
+    /** The core tables drawn in the README, and how each relationship reads (parent "label" child). */
+    static final List<String> README_TABLES = List.of(
+            "users",
+            "customers",
+            "service_providers",
+            "customer_addresses",
+            "locations",
+            "bookings",
+            "provider_services",
+            "services",
+            "service_variants",
+            "booking_items",
+            "payments",
+            "provider_reviews");
+
+    static final Map<String, String> README_LABELS = Map.ofEntries(
+            Map.entry("customers>users", "is a"),
+            Map.entry("service_providers>users", "is a"),
+            Map.entry("customer_addresses>customers", "saves"),
+            Map.entry("customer_addresses>locations", "saved as"),
+            Map.entry("bookings>customers", "books"),
+            Map.entry("bookings>locations", "hosts"),
+            Map.entry("bookings>customer_addresses", "happens at"),
+            Map.entry("bookings>service_providers", "fulfils"),
+            Map.entry("provider_services>service_providers", "offers"),
+            Map.entry("provider_services>services", "offered by"),
+            Map.entry("service_variants>services", "has"),
+            Map.entry("booking_items>bookings", "contains"),
+            Map.entry("booking_items>services", "booked as"),
+            Map.entry("booking_items>service_variants", "chosen as"),
+            Map.entry("payments>bookings", "paid by"),
+            Map.entry("provider_reviews>bookings", "reviewed in"));
+
     record Column(String name, String type, boolean notNull, String defaultExpr, boolean generated) {}
 
     record Key(String name, List<String> columns) {}
@@ -125,13 +158,15 @@ final class SchemaDocs {
             return uniques.stream().anyMatch(u -> u.columns().equals(List.of(column)));
         }
 
-        /** True when the columns are exactly the primary key or a unique constraint. */
+        /**
+         * True when no two rows can share these values: they include the primary key or a unique
+         * constraint. For example {@code customers (user_id, role)} includes the unique {@code user_id}.
+         */
         boolean isKey(List<String> cols) {
-            Set<String> wanted = Set.copyOf(cols);
-            if (primaryKey != null && Set.copyOf(primaryKey.columns()).equals(wanted)) {
+            if (primaryKey != null && cols.containsAll(primaryKey.columns())) {
                 return true;
             }
-            return uniques.stream().anyMatch(u -> Set.copyOf(u.columns()).equals(wanted));
+            return uniques.stream().anyMatch(u -> cols.containsAll(u.columns()));
         }
     }
 
@@ -760,5 +795,59 @@ final class SchemaDocs {
                     .append("`\n");
         }
         return out.toString();
+    }
+
+    // ── Mermaid (the README) ──────────────────────────────────────────────────────────────
+
+    static String mermaid(Schema schema) {
+        StringBuilder out = new StringBuilder("```mermaid\nerDiagram\n");
+        for (String name : README_TABLES) {
+            Table t = schema.tables().get(name);
+            Set<String> drawn = new LinkedHashSet<>();
+            for (ForeignKey fk : t.foreignKeys()) {
+                if (!README_TABLES.contains(fk.refTable()) || !drawn.add(fk.refTable())) {
+                    continue;
+                }
+                boolean optional =
+                        fk.columns().stream().anyMatch(c -> !t.column(c).notNull());
+                String label = README_LABELS.getOrDefault(name + ">" + fk.refTable(), list(fk.columns()));
+                out.append("    ")
+                        .append(fk.refTable().toUpperCase())
+                        .append(optional ? " |o--" : " ||--")
+                        .append(t.isKey(fk.columns()) ? "o| " : "o{ ")
+                        .append(name.toUpperCase())
+                        .append(" : \"")
+                        .append(label)
+                        .append("\"\n");
+            }
+        }
+        for (String name : README_TABLES) {
+            Table t = schema.tables().get(name);
+            out.append("    ").append(name.toUpperCase()).append(" {\n");
+            for (Column c : t.columns()) {
+                List<String> keys = new ArrayList<>();
+                if (t.isPrimaryKey(c.name())) {
+                    keys.add("PK");
+                }
+                if (t.isForeignKey(c.name())) {
+                    keys.add("FK");
+                }
+                if (t.isUniqueAlone(c.name())) {
+                    keys.add("UK");
+                }
+                if (keys.isEmpty()) {
+                    continue; // key columns only; the full diagram has the rest
+                }
+                out.append("        ")
+                        .append(shortType(c.type()).replaceAll("\\(.*\\)", ""))
+                        .append(' ')
+                        .append(c.name())
+                        .append(' ')
+                        .append(String.join(", ", keys))
+                        .append('\n');
+            }
+            out.append("    }\n");
+        }
+        return out.append("```\n").toString();
     }
 }

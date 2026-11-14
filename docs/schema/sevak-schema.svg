@@ -6,38 +6,38 @@
 <!-- Title: sevak Pages: 1 -->
 <svg width="1982pt" height="2680pt"
  viewBox="0.00 0.00 1982.17 2680.12" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="schema_42fff4038846a51b" class="graph" transform="scale(1 1) rotate(0) translate(28.8 2651.32)">
+<g id="schema_2c371e1eabda2ec4" class="graph" transform="scale(1 1) rotate(0) translate(28.8 2651.32)">
 <title>sevak</title>
 <polygon fill="white" stroke="none" points="-28.8,28.8 -28.8,-2651.32 1953.37,-2651.32 1953.37,28.8 -28.8,28.8"/>
 <text text-anchor="start" x="816.41" y="-2598.62" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="22.00">SEVAK physical schema</text>
 <text text-anchor="start" x="600.41" y="-2585.17" font-family="Helvetica,sans-Serif" font-size="13.00">29 tables, generated from the Flyway&#45;built database. PK primary key, FK foreign key, UK unique, * NOT NULL</text>
-<g id="schema_42fff4038846a51b" class="cluster">
+<g id="schema_2c371e1eabda2ec4" class="cluster">
 <title>cluster_feedback</title>
 <path fill="#f5f3ff" stroke="#7c3aed" d="M308.57,-8.52C308.57,-8.52 606.57,-8.52 606.57,-8.52 612.57,-8.52 618.57,-14.52 618.57,-20.52 618.57,-20.52 618.57,-1090.52 618.57,-1090.52 618.57,-1096.52 612.57,-1102.52 606.57,-1102.52 606.57,-1102.52 308.57,-1102.52 308.57,-1102.52 302.57,-1102.52 296.57,-1096.52 296.57,-1090.52 296.57,-1090.52 296.57,-20.52 296.57,-20.52 296.57,-14.52 302.57,-8.52 308.57,-8.52"/>
 <text text-anchor="start" x="304.19" y="-1084.32" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="16.00" fill="#7c3aed">Feedback and provider operations</text>
 </g>
-<g id="schema_42fff4038846a51b" class="cluster">
+<g id="schema_2c371e1eabda2ec4" class="cluster">
 <title>cluster_booking</title>
 <path fill="#fff7ed" stroke="#c2410c" d="M20.57,-1110.52C20.57,-1110.52 1353.57,-1110.52 1353.57,-1110.52 1359.57,-1110.52 1365.57,-1116.52 1365.57,-1122.52 1365.57,-1122.52 1365.57,-2153.52 1365.57,-2153.52 1365.57,-2159.52 1359.57,-2165.52 1353.57,-2165.52 1353.57,-2165.52 20.57,-2165.52 20.57,-2165.52 14.57,-2165.52 8.57,-2159.52 8.57,-2153.52 8.57,-2153.52 8.57,-1122.52 8.57,-1122.52 8.57,-1116.52 14.57,-1110.52 20.57,-1110.52"/>
 <text text-anchor="start" x="598.94" y="-2147.32" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="16.00" fill="#c2410c">Booking and money</text>
 </g>
-<g id="schema_42fff4038846a51b" class="cluster">
+<g id="schema_2c371e1eabda2ec4" class="cluster">
 <title>cluster_location</title>
 <path fill="#ecfdf5" stroke="#059669" d="M777.07,-2279.52C777.07,-2279.52 1904.57,-2279.52 1904.57,-2279.52 1910.57,-2279.52 1916.57,-2285.52 1916.57,-2291.52 1916.57,-2291.52 1916.57,-2559.52 1916.57,-2559.52 1916.57,-2565.52 1910.57,-2571.52 1904.57,-2571.52 1904.57,-2571.52 777.07,-2571.52 777.07,-2571.52 771.07,-2571.52 765.07,-2565.52 765.07,-2559.52 765.07,-2559.52 765.07,-2291.52 765.07,-2291.52 765.07,-2285.52 771.07,-2279.52 777.07,-2279.52"/>
 <text text-anchor="start" x="1291.69" y="-2553.32" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="16.00" fill="#059669">Geography</text>
 </g>
-<g id="schema_42fff4038846a51b" class="cluster">
+<g id="schema_2c371e1eabda2ec4" class="cluster">
 <title>cluster_catalog</title>
 <path fill="#fffbeb" stroke="#d97706" d="M693.57,-184.52C693.57,-184.52 1651.57,-184.52 1651.57,-184.52 1657.57,-184.52 1663.57,-190.52 1663.57,-196.52 1663.57,-196.52 1663.57,-504.52 1663.57,-504.52 1663.57,-510.52 1657.57,-516.52 1651.57,-516.52 1651.57,-516.52 693.57,-516.52 693.57,-516.52 687.57,-516.52 681.57,-510.52 681.57,-504.52 681.57,-504.52 681.57,-196.52 681.57,-196.52 681.57,-190.52 687.57,-184.52 693.57,-184.52"/>
 <text text-anchor="start" x="1138.44" y="-498.32" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="16.00" fill="#d97706">Catalog</text>
 </g>
-<g id="schema_42fff4038846a51b" class="cluster">
+<g id="schema_2c371e1eabda2ec4" class="cluster">
 <title>cluster_identity</title>
 <path fill="#eff6ff" stroke="#2563eb" d="M780.57,-524.52C780.57,-524.52 1651.57,-524.52 1651.57,-524.52 1657.57,-524.52 1663.57,-530.52 1663.57,-536.52 1663.57,-536.52 1663.57,-1090.52 1663.57,-1090.52 1663.57,-1096.52 1657.57,-1102.52 1651.57,-1102.52 1651.57,-1102.52 780.57,-1102.52 780.57,-1102.52 774.57,-1102.52 768.57,-1096.52 768.57,-1090.52 768.57,-1090.52 768.57,-536.52 768.57,-536.52 768.57,-530.52 774.57,-524.52 780.57,-524.52"/>
 <text text-anchor="start" x="1181.19" y="-1084.32" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="16.00" fill="#2563eb">Identity</text>
 </g>
 <!-- users -->
-<g id="schema_42fff4038846a51b_node1" class="node">
+<g id="schema_2c371e1eabda2ec4_node1" class="node">
 <title>users</title>
 <polygon fill="white" stroke="none" points="1452.57,-837.52 1452.57,-1045.52 1655.57,-1045.52 1655.57,-837.52 1452.57,-837.52"/>
 <polygon fill="#2563eb" stroke="none" points="1452.57,-1024.52 1452.57,-1045.52 1655.57,-1045.52 1655.57,-1024.52 1452.57,-1024.52"/>
@@ -97,7 +97,7 @@
 <text text-anchor="start" x="1456.57" y="-843.97" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">UNIQUE (user_id, role) · 2 CHECKs</text>
 </g>
 <!-- customers -->
-<g id="schema_42fff4038846a51b_node2" class="node">
+<g id="schema_2c371e1eabda2ec4_node2" class="node">
 <title>customers</title>
 <polygon fill="white" stroke="none" points="1153.57,-964.02 1153.57,-1067.02 1357.57,-1067.02 1357.57,-964.02 1153.57,-964.02"/>
 <polygon fill="#2563eb" stroke="none" points="1153.57,-1046.02 1153.57,-1067.02 1357.57,-1067.02 1357.57,-1046.02 1153.57,-1046.02"/>
@@ -127,18 +127,19 @@
 <text text-anchor="start" x="1157.57" y="-970.47" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">1 CHECK</text>
 </g>
 <!-- customers&#45;&gt;users -->
-<g id="schema_42fff4038846a51b_edge1" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge1" class="edge">
 <title>customers:user_id&#45;&gt;users:user_id</title>
-<path fill="none" stroke="#64748b" stroke-width="1.1" d="M1138.57,-1000.91C1137.57,-989.4 1144.05,-973.35 1153.57,-964.02 1169.75,-948.15 1335.57,-958.53 1357.57,-964.02 1400.52,-974.72 1404.38,-1008.89 1442.66,-1013.9"/>
-<polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1145.13,-1007.29 1149.17,-1017.49 1148.98,-1011.03 1152.04,-1014 1152.04,-1014 1152.04,-1014 1148.98,-1011.03 1155.44,-1011.03 1145.13,-1007.29"/>
-<ellipse fill="none" stroke="#64748b" stroke-width="1.1" cx="1140.91" cy="-1003.18" rx="4" ry="4"/>
+<path fill="none" stroke="#64748b" stroke-width="1.1" d="M1140.42,-1007.82C1134.82,-996.92 1141.92,-975.44 1153.57,-964.02 1169.75,-948.15 1335.57,-958.53 1357.57,-964.02 1400.52,-974.72 1404.38,-1008.89 1442.66,-1013.9"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1154.11,-1009.66 1149.28,-1018.41 1147.53,-1017.45 1152.35,-1008.69 1154.11,-1009.66"/>
+<polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1152.57,-1014.52 1148.19,-1012.1"/>
+<ellipse fill="none" stroke="#64748b" stroke-width="1.1" cx="1144.2" cy="-1009.9" rx="4" ry="4"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1451.88,-1009.46 1451.26,-1019.45 1449.26,-1019.32 1449.88,-1009.34 1451.88,-1009.46"/>
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1452.57,-1014.52 1447.58,-1014.21"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1446.89,-1009.15 1446.27,-1019.13 1444.27,-1019.01 1444.89,-1009.03 1446.89,-1009.15"/>
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1447.58,-1014.21 1442.59,-1013.9"/>
 </g>
 <!-- service_providers -->
-<g id="schema_42fff4038846a51b_node3" class="node">
+<g id="schema_2c371e1eabda2ec4_node3" class="node">
 <title>service_providers</title>
 <polygon fill="white" stroke="none" points="1137.57,-532.52 1137.57,-782.52 1373.57,-782.52 1373.57,-532.52 1137.57,-532.52"/>
 <polygon fill="#2563eb" stroke="none" points="1137.57,-761.52 1137.57,-782.52 1373.57,-782.52 1373.57,-761.52 1137.57,-761.52"/>
@@ -210,18 +211,19 @@
 <text text-anchor="start" x="1141.57" y="-538.97" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">5 CHECKs</text>
 </g>
 <!-- service_providers&#45;&gt;users -->
-<g id="schema_42fff4038846a51b_edge2" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge2" class="edge">
 <title>service_providers:user_id&#45;&gt;users:user_id</title>
-<path fill="none" stroke="#64748b" stroke-width="1.1" d="M1122.35,-743.5C1120.94,-755.32 1127.74,-772.42 1137.57,-782.52 1155.87,-801.33 1352.47,-777.9 1373.57,-793.52 1454.55,-853.44 1355.49,-1003.76 1442.6,-1013.97"/>
-<polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1128.91,-737.51 1139.33,-734.09 1132.88,-733.89 1136.02,-731.01 1136.02,-731.01 1136.02,-731.01 1132.88,-733.89 1133.26,-727.44 1128.91,-737.51"/>
-<ellipse fill="none" stroke="#64748b" stroke-width="1.1" cx="1124.56" cy="-741.48" rx="4" ry="4"/>
+<path fill="none" stroke="#64748b" stroke-width="1.1" d="M1124.3,-737C1118.27,-748.01 1125.73,-770.35 1137.57,-782.52 1155.87,-801.33 1352.47,-777.9 1373.57,-793.52 1454.55,-853.44 1355.49,-1003.76 1442.6,-1013.97"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1133.35,-726.56 1138.02,-735.41 1136.25,-736.34 1131.58,-727.5 1133.35,-726.56"/>
+<polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1136.57,-730.52 1132.15,-732.85"/>
+<ellipse fill="none" stroke="#64748b" stroke-width="1.1" cx="1128.12" cy="-734.98" rx="4" ry="4"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1451.84,-1009.47 1451.29,-1019.45 1449.3,-1019.35 1449.85,-1009.36 1451.84,-1009.47"/>
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1452.57,-1014.52 1447.57,-1014.24"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1446.85,-1009.2 1446.3,-1019.18 1444.31,-1019.07 1444.85,-1009.09 1446.85,-1009.2"/>
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1447.57,-1014.24 1442.58,-1013.97"/>
 </g>
 <!-- cities -->
-<g id="schema_42fff4038846a51b_node6" class="node">
+<g id="schema_2c371e1eabda2ec4_node6" class="node">
 <title>cities</title>
 <polygon fill="white" stroke="none" points="1734.57,-2288.02 1734.57,-2391.02 1908.57,-2391.02 1908.57,-2288.02 1734.57,-2288.02"/>
 <polygon fill="#059669" stroke="none" points="1734.57,-2370.02 1734.57,-2391.02 1908.57,-2391.02 1908.57,-2370.02 1734.57,-2370.02"/>
@@ -251,7 +253,7 @@
 <text text-anchor="start" x="1738.57" y="-2294.47" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">UNIQUE (city_name, state)</text>
 </g>
 <!-- service_providers&#45;&gt;cities -->
-<g id="schema_42fff4038846a51b_edge3" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge3" class="edge">
 <title>service_providers:city_id&#45;&gt;cities:city_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M1119.29,-718.61C1110.73,-734.05 1121,-765.39 1137.57,-782.52 1146.69,-791.95 1360.49,-792.42 1373.57,-793.52 1502.94,-804.32 1575.22,-733.39 1663.57,-828.52 1777.2,-950.85 1572.55,-2305.08 1725.02,-2357.93"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1127.39,-714.34 1138.34,-713.67 1132.14,-711.85 1135.92,-709.86 1135.92,-709.86 1135.92,-709.86 1132.14,-711.85 1134.15,-705.71 1127.39,-714.34"/>
@@ -262,7 +264,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1729.64,-2358.7 1724.7,-2357.87"/>
 </g>
 <!-- admins -->
-<g id="schema_42fff4038846a51b_node4" class="node">
+<g id="schema_2c371e1eabda2ec4_node4" class="node">
 <title>admins</title>
 <polygon fill="white" stroke="none" points="1157.07,-801.02 1157.07,-946.02 1354.07,-946.02 1354.07,-801.02 1157.07,-801.02"/>
 <polygon fill="#2563eb" stroke="none" points="1157.07,-925.02 1157.07,-946.02 1354.07,-946.02 1354.07,-925.02 1157.07,-925.02"/>
@@ -304,18 +306,19 @@
 <text text-anchor="start" x="1161.07" y="-807.47" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">1 CHECK</text>
 </g>
 <!-- admins&#45;&gt;users -->
-<g id="schema_42fff4038846a51b_edge4" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge4" class="edge">
 <title>admins:user_id&#45;&gt;users:user_id</title>
-<path fill="none" stroke="#64748b" stroke-width="1.1" d="M1141.2,-906.63C1139.77,-918.57 1146.64,-935.84 1156.57,-946.02 1173.42,-963.29 1350.84,-947.41 1373.57,-955.52 1411.46,-969.03 1409.43,-1007.45 1442.74,-1013.66"/>
-<polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1147.91,-900.51 1158.33,-897.09 1151.87,-896.89 1155.02,-894.01 1155.02,-894.01 1155.02,-894.01 1151.87,-896.89 1152.26,-890.44 1147.91,-900.51"/>
-<ellipse fill="none" stroke="#64748b" stroke-width="1.1" cx="1143.56" cy="-904.48" rx="4" ry="4"/>
+<path fill="none" stroke="#64748b" stroke-width="1.1" d="M1143.18,-900.07C1137.08,-911.19 1144.6,-933.75 1156.57,-946.02 1173.42,-963.29 1350.84,-947.41 1373.57,-955.52 1411.46,-969.03 1409.43,-1007.45 1442.74,-1013.66"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1152.35,-889.56 1157.02,-898.4 1155.25,-899.34 1150.58,-890.5 1152.35,-889.56"/>
+<polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1155.57,-893.52 1151.15,-895.85"/>
+<ellipse fill="none" stroke="#64748b" stroke-width="1.1" cx="1147.12" cy="-897.98" rx="4" ry="4"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1452,-1009.45 1451.14,-1019.41 1449.15,-1019.24 1450.01,-1009.28 1452,-1009.45"/>
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1452.57,-1014.52 1447.59,-1014.08"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1447.02,-1009.02 1446.16,-1018.98 1444.16,-1018.81 1445.03,-1008.84 1447.02,-1009.02"/>
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1447.59,-1014.08 1442.6,-1013.65"/>
 </g>
 <!-- admin_permissions -->
-<g id="schema_42fff4038846a51b_node5" class="node">
+<g id="schema_2c371e1eabda2ec4_node5" class="node">
 <title>admin_permissions</title>
 <polygon fill="white" stroke="none" points="776.57,-603.52 776.57,-685.52 971.57,-685.52 971.57,-603.52 776.57,-603.52"/>
 <polygon fill="#2563eb" stroke="none" points="776.57,-664.52 776.57,-685.52 971.57,-685.52 971.57,-664.52 776.57,-664.52"/>
@@ -340,7 +343,7 @@
 <text text-anchor="start" x="780.57" y="-609.97" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">1 CHECK</text>
 </g>
 <!-- admin_permissions&#45;&gt;admins -->
-<g id="schema_42fff4038846a51b_edge5" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge5" class="edge">
 <title>admin_permissions:admin_id&#45;&gt;admins:admin_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M769.71,-673.22C771.38,-677.54 773.71,-681.91 776.07,-685.52 852.23,-801.75 944.58,-740.03 1058.57,-819.52 1105.16,-852.01 1096.51,-907.52 1145.69,-913.91"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="772.21,-664.48 779.29,-656.11 773.69,-659.32 774.86,-655.22 774.86,-655.22 774.86,-655.22 773.69,-659.32 770.64,-653.63 772.21,-664.48"/>
@@ -351,7 +354,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1150.58,-914.21 1145.59,-913.91"/>
 </g>
 <!-- areas -->
-<g id="schema_42fff4038846a51b_node7" class="node">
+<g id="schema_2c371e1eabda2ec4_node7" class="node">
 <title>areas</title>
 <polygon fill="white" stroke="none" points="1465.07,-2287.52 1465.07,-2411.52 1643.07,-2411.52 1643.07,-2287.52 1465.07,-2287.52"/>
 <polygon fill="#059669" stroke="none" points="1465.07,-2390.52 1465.07,-2411.52 1643.07,-2411.52 1643.07,-2390.52 1465.07,-2390.52"/>
@@ -387,7 +390,7 @@
 <text text-anchor="start" x="1469.07" y="-2293.97" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">UNIQUE (city_id, area_name)</text>
 </g>
 <!-- areas&#45;&gt;cities -->
-<g id="schema_42fff4038846a51b_edge6" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge6" class="edge">
 <title>areas:city_id&#45;&gt;cities:city_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M1449.74,-2372.61C1448.26,-2384.5 1455.01,-2401.65 1465.07,-2411.52 1521.54,-2466.92 1566.58,-2431.73 1643.07,-2411.52 1684.93,-2400.45 1687.61,-2365.31 1724.9,-2360.15"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1456.41,-2366.51 1466.83,-2363.09 1460.38,-2362.89 1463.52,-2360.01 1463.52,-2360.01 1463.52,-2360.01 1460.38,-2362.89 1460.76,-2356.44 1456.41,-2366.51"/>
@@ -398,7 +401,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1729.58,-2359.84 1724.59,-2360.17"/>
 </g>
 <!-- locations -->
-<g id="schema_42fff4038846a51b_node8" class="node">
+<g id="schema_2c371e1eabda2ec4_node8" class="node">
 <title>locations</title>
 <polygon fill="white" stroke="none" points="1161.57,-2369.52 1161.57,-2535.52 1349.57,-2535.52 1349.57,-2369.52 1161.57,-2369.52"/>
 <polygon fill="#059669" stroke="none" points="1161.57,-2514.52 1161.57,-2535.52 1349.57,-2535.52 1349.57,-2514.52 1161.57,-2514.52"/>
@@ -446,7 +449,7 @@
 <text text-anchor="start" x="1165.57" y="-2375.97" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">UNIQUE (latitude, longitude)</text>
 </g>
 <!-- locations&#45;&gt;areas -->
-<g id="schema_42fff4038846a51b_edge7" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge7" class="edge">
 <title>locations:area_id&#45;&gt;areas:area_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M1146.24,-2496.61C1144.76,-2508.5 1151.51,-2525.65 1161.57,-2535.52 1221.22,-2594.03 1274.97,-2573.16 1349.57,-2535.52 1422.9,-2498.52 1382.12,-2389.94 1454.18,-2381.09"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1152.91,-2490.51 1163.33,-2487.09 1156.88,-2486.89 1160.02,-2484.01 1160.02,-2484.01 1160.02,-2484.01 1156.88,-2486.89 1157.26,-2480.44 1152.91,-2490.51"/>
@@ -457,7 +460,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1459.08,-2380.81 1454.08,-2381.1"/>
 </g>
 <!-- customer_addresses -->
-<g id="schema_42fff4038846a51b_node9" class="node">
+<g id="schema_2c371e1eabda2ec4_node9" class="node">
 <title>customer_addresses</title>
 <polygon fill="white" stroke="none" points="773.07,-2287.52 773.07,-2413.52 975.07,-2413.52 975.07,-2287.52 773.07,-2287.52"/>
 <polygon fill="#059669" stroke="none" points="773.07,-2392.52 773.07,-2413.52 975.07,-2413.52 975.07,-2392.52 773.07,-2392.52"/>
@@ -497,7 +500,7 @@
 <text text-anchor="start" x="953.69" y="-2294.07" font-family="Helvetica,sans-Serif" font-size="11.00"> </text>
 </g>
 <!-- customer_addresses&#45;&gt;customers -->
-<g id="schema_42fff4038846a51b_edge8" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge8" class="edge">
 <title>customer_addresses:customer_id&#45;&gt;customers:customer_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M765.19,-2400.79C766.85,-2405.53 769.66,-2410.22 773.07,-2413.52 837.56,-2475.97 902.03,-2465.72 975.07,-2413.52 1068.32,-2346.87 1035.58,-2281.81 1058.57,-2169.52 1083.26,-2048.92 1029.12,-1088.17 1142.95,-1037.59"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="768.41,-2392.22 776.15,-2384.45 770.31,-2387.2 771.81,-2383.21 771.81,-2383.21 771.81,-2383.21 770.31,-2387.2 767.73,-2381.28 768.41,-2392.22"/>
@@ -508,7 +511,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1147.68,-1036.57 1142.79,-1037.62"/>
 </g>
 <!-- customer_addresses&#45;&gt;locations -->
-<g id="schema_42fff4038846a51b_edge9" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge9" class="edge">
 <title>customer_addresses:location_id&#45;&gt;locations:location_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M758.23,-2375.01C757.56,-2386.51 764.44,-2402.84 773.07,-2413.52 882.2,-2548.56 979.97,-2506.18 1150.8,-2504.56"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="764.64,-2368.75 774.94,-2365 768.49,-2365.01 771.54,-2362.03 771.54,-2362.03 771.54,-2362.03 768.49,-2365.01 768.66,-2358.55 764.64,-2368.75"/>
@@ -519,7 +522,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1155.57,-2504.54 1150.57,-2504.57"/>
 </g>
 <!-- provider_service_areas -->
-<g id="schema_42fff4038846a51b_node10" class="node">
+<g id="schema_2c371e1eabda2ec4_node10" class="node">
 <title>provider_service_areas</title>
 <polygon fill="white" stroke="none" points="1181.07,-2288.02 1181.07,-2351.02 1330.07,-2351.02 1330.07,-2288.02 1181.07,-2288.02"/>
 <polygon fill="#059669" stroke="none" points="1181.07,-2330.02 1181.07,-2351.02 1330.07,-2351.02 1330.07,-2330.02 1181.07,-2330.02"/>
@@ -541,7 +544,7 @@
 <text text-anchor="start" x="1294.32" y="-2294.57" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#059669">PK FK</text>
 </g>
 <!-- provider_service_areas&#45;&gt;service_providers -->
-<g id="schema_42fff4038846a51b_edge11" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge11" class="edge">
 <title>provider_service_areas:provider_id&#45;&gt;service_providers:provider_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M1160.06,-2318.17C1130.11,-2313.53 1115.21,-2296.77 1098.07,-2264.52 1059.92,-2192.75 1071.4,-878.3 1098.07,-801.52 1106.16,-778.21 1108.64,-757.57 1127.86,-752.63"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1169.22,-2318.8 1178.89,-2323.98 1174.58,-2319.17 1178.83,-2319.47 1178.83,-2319.47 1178.83,-2319.47 1174.58,-2319.17 1179.51,-2315 1169.22,-2318.8"/>
@@ -552,7 +555,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1132.6,-752.09 1127.63,-752.66"/>
 </g>
 <!-- provider_service_areas&#45;&gt;areas -->
-<g id="schema_42fff4038846a51b_edge10" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge10" class="edge">
 <title>provider_service_areas:area_id&#45;&gt;areas:area_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M1239.43,-2275.28C1264.89,-2271.64 1313.68,-2282.3 1330.07,-2287.52 1395.91,-2308.47 1392.12,-2373.97 1454.38,-2380.06"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1232.03,-2280.52 1221.27,-2282.63 1227.65,-2283.63 1224.17,-2286.09 1224.17,-2286.09 1224.17,-2286.09 1227.65,-2283.63 1226.47,-2289.98 1232.03,-2280.52"/>
@@ -563,7 +566,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1459.07,-2380.28 1454.08,-2380.05"/>
 </g>
 <!-- categories -->
-<g id="schema_42fff4038846a51b_node11" class="node">
+<g id="schema_2c371e1eabda2ec4_node11" class="node">
 <title>categories</title>
 <polygon fill="white" stroke="none" points="1452.57,-232.52 1452.57,-316.52 1655.57,-316.52 1655.57,-232.52 1452.57,-232.52"/>
 <polygon fill="#d97706" stroke="none" points="1452.57,-295.52 1452.57,-316.52 1655.57,-316.52 1655.57,-295.52 1452.57,-295.52"/>
@@ -590,7 +593,7 @@
 <text text-anchor="start" x="1642.19" y="-239.07" font-family="Helvetica,sans-Serif" font-size="11.00"> </text>
 </g>
 <!-- services -->
-<g id="schema_42fff4038846a51b_node12" class="node">
+<g id="schema_2c371e1eabda2ec4_node12" class="node">
 <title>services</title>
 <polygon fill="white" stroke="none" points="1157.07,-193.02 1157.07,-338.02 1354.07,-338.02 1354.07,-193.02 1157.07,-193.02"/>
 <polygon fill="#d97706" stroke="none" points="1157.07,-317.02 1157.07,-338.02 1354.07,-338.02 1354.07,-317.02 1157.07,-317.02"/>
@@ -632,7 +635,7 @@
 <text text-anchor="start" x="1161.07" y="-199.47" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">idx_services_name_trgm · 1 CHECK</text>
 </g>
 <!-- services&#45;&gt;categories -->
-<g id="schema_42fff4038846a51b_edge12" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge12" class="edge">
 <title>services:category_id&#45;&gt;categories:category_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M1141.17,-298.27C1139.42,-310.3 1146.29,-327.93 1156.57,-338.02 1219.22,-399.49 1268.91,-359.3 1354.07,-338.02 1398.81,-326.84 1402.62,-291.07 1442.79,-286.09"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="1147.81,-292.39 1158.28,-289.13 1151.82,-288.83 1155.02,-286.01 1155.02,-286.01 1155.02,-286.01 1151.82,-288.83 1152.31,-282.39 1147.81,-292.39"/>
@@ -643,7 +646,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1447.58,-285.81 1442.58,-286.11"/>
 </g>
 <!-- service_variants -->
-<g id="schema_42fff4038846a51b_node13" class="node">
+<g id="schema_2c371e1eabda2ec4_node13" class="node">
 <title>service_variants</title>
 <polygon fill="white" stroke="none" points="689.57,-193.02 689.57,-338.02 1058.57,-338.02 1058.57,-193.02 689.57,-193.02"/>
 <polygon fill="#d97706" stroke="none" points="689.57,-317.02 689.57,-338.02 1058.57,-338.02 1058.57,-317.02 689.57,-317.02"/>
@@ -685,7 +688,7 @@
 <text text-anchor="start" x="693.32" y="-199.47" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">UNIQUE (service_id, variant_name) · UNIQUE (service_id, variant_id) · 2 CHECKs</text>
 </g>
 <!-- service_variants&#45;&gt;services -->
-<g id="schema_42fff4038846a51b_edge13" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge13" class="edge">
 <title>service_variants:service_id&#45;&gt;services:service_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M673.67,-298.27C671.92,-310.3 678.79,-327.93 689.07,-338.02 703.72,-352.39 1038.29,-341.23 1058.57,-338.02 1099.84,-331.48 1108.93,-310.23 1145.61,-306.94"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="680.31,-292.39 690.78,-289.13 684.32,-288.83 687.52,-286.01 687.52,-286.01 687.52,-286.01 684.32,-288.83 684.81,-282.39 680.31,-292.39"/>
@@ -696,7 +699,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1150.57,-306.73 1145.58,-306.95"/>
 </g>
 <!-- provider_services -->
-<g id="schema_42fff4038846a51b_node14" class="node">
+<g id="schema_2c371e1eabda2ec4_node14" class="node">
 <title>provider_services</title>
 <polygon fill="white" stroke="none" points="770.57,-356.52 770.57,-480.52 977.57,-480.52 977.57,-356.52 770.57,-356.52"/>
 <polygon fill="#d97706" stroke="none" points="770.57,-459.52 770.57,-480.52 977.57,-480.52 977.57,-459.52 770.57,-459.52"/>
@@ -733,7 +736,7 @@
 <text text-anchor="start" x="774.57" y="-362.97" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">1 CHECK</text>
 </g>
 <!-- provider_services&#45;&gt;service_providers -->
-<g id="schema_42fff4038846a51b_edge14" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge14" class="edge">
 <title>provider_services:provider_id&#45;&gt;service_providers:provider_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M762.61,-467.82C764.29,-472.45 766.97,-477.07 770.07,-480.52 856.65,-576.75 958.69,-438.17 1058.57,-520.52 1139.59,-587.32 1036.16,-741.17 1127.75,-751.02"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="765.62,-459.29 773.19,-451.36 767.4,-454.23 768.82,-450.21 768.82,-450.21 768.82,-450.21 767.4,-454.23 764.7,-448.37 765.62,-459.29"/>
@@ -744,7 +747,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1132.57,-751.26 1127.58,-751.01"/>
 </g>
 <!-- provider_services&#45;&gt;services -->
-<g id="schema_42fff4038846a51b_edge15" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge15" class="edge">
 <title>provider_services:service_id&#45;&gt;services:service_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M754.74,-441.61C753.26,-453.5 760.01,-470.65 770.07,-480.52 835.9,-545.1 892.17,-515.32 977.57,-480.52 1076.81,-440.07 1047,-314.69 1145.61,-306.9"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="761.41,-435.51 771.83,-432.09 765.38,-431.89 768.52,-429.01 768.52,-429.01 768.52,-429.01 765.38,-431.89 765.76,-425.44 761.41,-435.51"/>
@@ -755,7 +758,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1150.57,-306.71 1145.57,-306.9"/>
 </g>
 <!-- bookings -->
-<g id="schema_42fff4038846a51b_node15" class="node">
+<g id="schema_2c371e1eabda2ec4_node15" class="node">
 <title>bookings</title>
 <polygon fill="white" stroke="none" points="690.07,-1154.52 690.07,-1488.52 1058.07,-1488.52 1058.07,-1154.52 690.07,-1154.52"/>
 <polygon fill="#c2410c" stroke="none" points="690.07,-1467.52 690.07,-1488.52 1058.07,-1488.52 1058.07,-1467.52 690.07,-1467.52"/>
@@ -851,7 +854,7 @@
 <text text-anchor="start" x="694.07" y="-1160.97" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">ex_provider_no_double_booking · idx_bookings_pending · 5 CHECKs · 4 triggers</text>
 </g>
 <!-- bookings&#45;&gt;customers -->
-<g id="schema_42fff4038846a51b_edge17" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge17" class="edge">
 <title>bookings:customer_id&#45;&gt;customers:customer_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M674.74,-1449.61C673.26,-1461.5 680.01,-1478.65 690.07,-1488.52 748.45,-1545.78 994.62,-1540.12 1058.07,-1488.52 1214.98,-1360.9 955.77,-1046.2 1142.71,-1035.78"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="681.41,-1443.51 691.83,-1440.09 685.38,-1439.89 688.52,-1437.01 688.52,-1437.01 688.52,-1437.01 685.38,-1439.89 685.76,-1433.44 681.41,-1443.51"/>
@@ -862,7 +865,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1147.57,-1035.65 1142.57,-1035.79"/>
 </g>
 <!-- bookings&#45;&gt;service_providers -->
-<g id="schema_42fff4038846a51b_edge19" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge19" class="edge">
 <title>bookings:provider_id&#45;&gt;service_providers:provider_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M671.99,-1424.2C662.8,-1439.59 672.92,-1471.61 690.07,-1488.52 748.29,-1545.95 997.22,-1543.15 1058.07,-1488.52 1178.12,-1380.72 981.22,-777.01 1127.9,-752.3"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="679.83,-1420.22 690.78,-1419.7 684.61,-1417.78 688.41,-1415.85 688.41,-1415.85 688.41,-1415.85 684.61,-1417.78 686.7,-1411.67 679.83,-1420.22"/>
@@ -873,7 +876,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1132.58,-751.92 1127.6,-752.32"/>
 </g>
 <!-- bookings&#45;&gt;locations -->
-<g id="schema_42fff4038846a51b_edge18" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge18" class="edge">
 <title>bookings:location_id&#45;&gt;locations:location_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M671.1,-1401.95C661.22,-1418.01 682.88,-1457.01 690.07,-1488.52 775.96,-1865.07 898.1,-1924.21 1058.57,-2275.52 1103.41,-2373.7 1052.53,-2496.56 1150.6,-2504.15"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="679.49,-1398.48 690.45,-1398.82 684.45,-1396.43 688.39,-1394.8 688.39,-1394.8 688.39,-1394.8 684.45,-1396.43 687.01,-1390.5 679.49,-1398.48"/>
@@ -884,7 +887,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1155.57,-2504.33 1150.57,-2504.15"/>
 </g>
 <!-- bookings&#45;&gt;customer_addresses -->
-<g id="schema_42fff4038846a51b_edge20" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge20" class="edge">
 <title>bookings:customer_id&#45;&gt;customer_addresses:customer_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M767.16,-2374.05C736.79,-2280.13 664.16,-1436.52 689.07,-1436.52"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="775.89,-2379.15 767.24,-2384.16 766.24,-2382.43 774.89,-2377.42 775.89,-2379.15"/>
@@ -893,7 +896,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="769.56,-2378.19 767.06,-2373.86"/>
 </g>
 <!-- coupons -->
-<g id="schema_42fff4038846a51b_node19" class="node">
+<g id="schema_2c371e1eabda2ec4_node19" class="node">
 <title>coupons</title>
 <polygon fill="white" stroke="none" points="1153.57,-1221.52 1153.57,-1471.52 1357.57,-1471.52 1357.57,-1221.52 1153.57,-1221.52"/>
 <polygon fill="#c2410c" stroke="none" points="1153.57,-1450.52 1153.57,-1471.52 1357.57,-1471.52 1357.57,-1450.52 1153.57,-1450.52"/>
@@ -965,7 +968,7 @@
 <text text-anchor="start" x="1157.57" y="-1227.97" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">7 CHECKs</text>
 </g>
 <!-- bookings&#45;&gt;coupons -->
-<g id="schema_42fff4038846a51b_edge16" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge16" class="edge">
 <title>bookings:coupon_id&#45;&gt;coupons:coupon_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M670.2,-1378.59C643.25,-1396.59 659.3,-1458.01 690.07,-1488.52 748.14,-1546.09 978.54,-1507.56 1058.07,-1488.52 1098.87,-1478.75 1104.58,-1448.31 1138.63,-1441.76"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="679.05,-1376.21 689.88,-1377.96 684.24,-1374.81 688.36,-1373.71 688.36,-1373.71 688.36,-1373.71 684.24,-1374.81 687.54,-1369.27 679.05,-1376.21"/>
@@ -975,7 +978,7 @@
 <ellipse fill="none" stroke="#64748b" stroke-width="1.1" cx="1143.06" cy="-1441.37" rx="4" ry="4"/>
 </g>
 <!-- booking_items -->
-<g id="schema_42fff4038846a51b_node16" class="node">
+<g id="schema_2c371e1eabda2ec4_node16" class="node">
 <title>booking_items</title>
 <polygon fill="white" stroke="none" points="355.07,-1304.52 355.07,-1470.52 559.07,-1470.52 559.07,-1304.52 355.07,-1304.52"/>
 <polygon fill="#c2410c" stroke="none" points="355.07,-1449.52 355.07,-1470.52 559.07,-1470.52 559.07,-1449.52 355.07,-1449.52"/>
@@ -1024,7 +1027,7 @@
 <text text-anchor="start" x="359.07" y="-1310.97" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">2 CHECKs · 1 trigger</text>
 </g>
 <!-- booking_items&#45;&gt;services -->
-<g id="schema_42fff4038846a51b_edge22" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge22" class="edge">
 <title>booking_items:service_id&#45;&gt;services:service_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M336.99,-1406.2C327.8,-1421.59 337.92,-1453.61 355.07,-1470.52 371.2,-1486.43 540.64,-1483.72 559.07,-1470.52 625.85,-1422.68 602.88,-1376.16 618.57,-1295.52 642.18,-1174.15 591.7,-269.43 681.57,-184.52 742.46,-126.98 983.11,-148.11 1058.57,-184.52 1117.79,-213.09 1089.57,-297.34 1145.79,-305.83"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="344.83,-1402.22 355.78,-1401.7 349.61,-1399.78 353.41,-1397.85 353.41,-1397.85 353.41,-1397.85 349.61,-1399.78 351.7,-1393.67 344.83,-1402.22"/>
@@ -1035,7 +1038,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1150.58,-306.16 1145.59,-305.81"/>
 </g>
 <!-- booking_items&#45;&gt;service_variants -->
-<g id="schema_42fff4038846a51b_edge23" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge23" class="edge">
 <title>booking_items:variant_id&#45;&gt;service_variants:variant_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M336.98,-1366.17C329.1,-1350.95 339.02,-1320.89 355.07,-1304.52 375.57,-1283.6 597.52,-1315.9 618.57,-1295.52 694.31,-1222.18 587.84,-383.38 675.11,-311.43"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="344.97,-1370.54 351.58,-1379.29 349.68,-1373.12 353.42,-1375.16 353.42,-1375.16 353.42,-1375.16 349.68,-1373.12 355.9,-1371.39 344.97,-1370.54"/>
@@ -1045,7 +1048,7 @@
 <ellipse fill="none" stroke="#64748b" stroke-width="1.1" cx="679.14" cy="-309.9" rx="4" ry="4"/>
 </g>
 <!-- booking_items&#45;&gt;bookings -->
-<g id="schema_42fff4038846a51b_edge21" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge21" class="edge">
 <title>booking_items:booking_id&#45;&gt;bookings:booking_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M347.19,-1457.79C348.85,-1462.53 351.66,-1467.22 355.07,-1470.52 371.35,-1486.28 536.43,-1471.65 559.07,-1470.52 613.66,-1467.79 629.22,-1458.68 679.3,-1457.62"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="350.41,-1449.22 358.15,-1441.45 352.31,-1444.2 353.81,-1440.21 353.81,-1440.21 353.81,-1440.21 352.31,-1444.2 349.73,-1438.28 350.41,-1449.22"/>
@@ -1056,7 +1059,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="684.07,-1457.57 679.07,-1457.62"/>
 </g>
 <!-- booking_status_log -->
-<g id="schema_42fff4038846a51b_node17" class="node">
+<g id="schema_2c371e1eabda2ec4_node17" class="node">
 <title>booking_status_log</title>
 <polygon fill="white" stroke="none" points="367.57,-1118.52 367.57,-1286.52 546.57,-1286.52 546.57,-1118.52 367.57,-1118.52"/>
 <polygon fill="#c2410c" stroke="none" points="367.57,-1265.52 367.57,-1286.52 546.57,-1286.52 546.57,-1265.52 367.57,-1265.52"/>
@@ -1107,7 +1110,7 @@
 <text text-anchor="start" x="533.69" y="-1125.07" font-family="Helvetica,sans-Serif" font-size="11.00"> </text>
 </g>
 <!-- booking_status_log&#45;&gt;users -->
-<g id="schema_42fff4038846a51b_edge25" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge25" class="edge">
 <title>booking_status_log:changed_by&#45;&gt;users:user_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M351.85,-1157.54C350.44,-1145.72 357.25,-1128.62 367.07,-1118.52 386.57,-1098.46 598.61,-1126.12 618.57,-1106.52 771.39,-956.38 525.21,-290.97 681.57,-144.52 906.34,66.02 1157.92,39.35 1373.57,-180.52 1500.49,-309.92 1278.67,-977.94 1438.71,-1013.08"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="358.41,-1163.53 362.76,-1173.59 362.38,-1167.15 365.52,-1170.02 365.52,-1170.02 365.52,-1170.02 362.38,-1167.15 368.83,-1166.95 358.41,-1163.53"/>
@@ -1117,7 +1120,7 @@
 <ellipse fill="none" stroke="#64748b" stroke-width="1.1" cx="1443.07" cy="-1013.53" rx="4" ry="4"/>
 </g>
 <!-- booking_status_log&#45;&gt;bookings -->
-<g id="schema_42fff4038846a51b_edge24" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge24" class="edge">
 <title>booking_status_log:booking_id&#45;&gt;bookings:booking_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M351.83,-1247.52C350.4,-1259.36 357.19,-1276.47 367.07,-1286.52 386.68,-1306.45 595.46,-1279.77 618.57,-1295.52 680.55,-1337.74 616.82,-1447.08 679.38,-1456.82"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="358.41,-1241.51 368.83,-1238.09 362.38,-1237.89 365.52,-1235.01 365.52,-1235.01 365.52,-1235.01 362.38,-1237.89 362.76,-1231.44 358.41,-1241.51"/>
@@ -1128,7 +1131,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="684.08,-1457.16 679.09,-1456.8"/>
 </g>
 <!-- booking_status_transitions -->
-<g id="schema_42fff4038846a51b_node18" class="node">
+<g id="schema_2c371e1eabda2ec4_node18" class="node">
 <title>booking_status_transitions</title>
 <polygon fill="white" stroke="none" points="29.57,-1973.02 29.57,-2036.02 212.57,-2036.02 212.57,-1973.02 29.57,-1973.02"/>
 <polygon fill="#c2410c" stroke="none" points="29.57,-2015.02 29.57,-2036.02 212.57,-2036.02 212.57,-2015.02 29.57,-2015.02"/>
@@ -1150,7 +1153,7 @@
 <text text-anchor="start" x="194.44" y="-1979.57" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#c2410c">PK</text>
 </g>
 <!-- coupon_redemptions -->
-<g id="schema_42fff4038846a51b_node20" class="node">
+<g id="schema_2c371e1eabda2ec4_node20" class="node">
 <title>coupon_redemptions</title>
 <polygon fill="white" stroke="none" points="352.57,-1489.02 352.57,-1594.02 561.57,-1594.02 561.57,-1489.02 352.57,-1489.02"/>
 <polygon fill="#c2410c" stroke="none" points="352.57,-1573.02 352.57,-1594.02 561.57,-1594.02 561.57,-1573.02 352.57,-1573.02"/>
@@ -1184,7 +1187,7 @@
 <text text-anchor="start" x="539.19" y="-1495.57" font-family="Helvetica,sans-Serif" font-size="11.00"> </text>
 </g>
 <!-- coupon_redemptions&#45;&gt;customers -->
-<g id="schema_42fff4038846a51b_edge28" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge28" class="edge">
 <title>coupon_redemptions:customer_id&#45;&gt;customers:customer_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M336.67,-1554.27C334.92,-1566.3 341.79,-1583.93 352.07,-1594.02 360.38,-1602.17 551.67,-1600.14 561.57,-1594.02 609.9,-1564.09 600.46,-1533.4 618.57,-1479.52 666.68,-1336.32 577.07,-1254.61 681.57,-1145.52 827.94,-992.71 934.24,-1034.15 1142.57,-1035.48"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="343.31,-1548.39 353.78,-1545.13 347.32,-1544.83 350.52,-1542.01 350.52,-1542.01 350.52,-1542.01 347.32,-1544.83 347.81,-1538.39 343.31,-1548.39"/>
@@ -1195,7 +1198,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1147.57,-1035.5 1142.57,-1035.48"/>
 </g>
 <!-- coupon_redemptions&#45;&gt;bookings -->
-<g id="schema_42fff4038846a51b_edge26" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge26" class="edge">
 <title>coupon_redemptions:booking_id&#45;&gt;bookings:booking_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M342.52,-1509.41C343.02,-1502.6 346.89,-1494.21 352.07,-1489.02 362.52,-1478.52 603.96,-1482.01 618.57,-1479.52 647.38,-1474.6 654.76,-1460.99 679.21,-1458.07"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="354.42,-1516.67 346.5,-1522.77 345.28,-1521.19 353.2,-1515.09 354.42,-1516.67"/>
@@ -1207,7 +1210,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="684.08,-1457.8 679.08,-1458.08"/>
 </g>
 <!-- coupon_redemptions&#45;&gt;coupons -->
-<g id="schema_42fff4038846a51b_edge27" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge27" class="edge">
 <title>coupon_redemptions:coupon_id&#45;&gt;coupons:coupon_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M343.95,-1580.75C345.63,-1585.68 348.53,-1590.59 352.07,-1594.02 368.79,-1610.21 538.4,-1596.25 561.57,-1594.02 785.55,-1572.47 848.65,-1578.56 1058.57,-1497.52 1100.94,-1481.16 1103.54,-1445.95 1142.96,-1441.08"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="347.3,-1572.18 355.13,-1564.5 349.25,-1567.18 350.8,-1563.2 350.8,-1563.2 350.8,-1563.2 349.25,-1567.18 346.74,-1561.22 347.3,-1572.18"/>
@@ -1218,7 +1221,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1147.58,-1440.81 1142.58,-1441.1"/>
 </g>
 <!-- idempotency_keys -->
-<g id="schema_42fff4038846a51b_node21" class="node">
+<g id="schema_2c371e1eabda2ec4_node21" class="node">
 <title>idempotency_keys</title>
 <polygon fill="white" stroke="none" points="336.57,-1859.52 336.57,-1985.52 577.57,-1985.52 577.57,-1859.52 336.57,-1859.52"/>
 <polygon fill="#c2410c" stroke="none" points="336.57,-1964.52 336.57,-1985.52 577.57,-1985.52 577.57,-1964.52 336.57,-1964.52"/>
@@ -1258,7 +1261,7 @@
 <text text-anchor="start" x="556.19" y="-1866.07" font-family="Helvetica,sans-Serif" font-size="11.00"> </text>
 </g>
 <!-- idempotency_keys&#45;&gt;users -->
-<g id="schema_42fff4038846a51b_edge30" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge30" class="edge">
 <title>idempotency_keys:user_id&#45;&gt;users:user_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M328.26,-1972.72C329.92,-1977.46 332.72,-1982.17 336.07,-1985.52 358.28,-2007.72 593.51,-1975.58 618.57,-1994.52 692.23,-2050.21 607.02,-2138.01 681.57,-2192.52 743.63,-2237.9 1317.41,-2245.04 1373.57,-2192.52 1466.95,-2105.19 1328.74,-1069.14 1443.11,-1016.59"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="331.43,-1964.23 339.15,-1956.44 333.31,-1959.2 334.81,-1955.21 334.81,-1955.21 334.81,-1955.21 333.31,-1959.2 330.72,-1953.28 331.43,-1964.23"/>
@@ -1269,7 +1272,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1447.68,-1015.59 1442.8,-1016.66"/>
 </g>
 <!-- idempotency_keys&#45;&gt;bookings -->
-<g id="schema_42fff4038846a51b_edge29" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge29" class="edge">
 <title>idempotency_keys:booking_id&#45;&gt;bookings:booking_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M328.26,-1872.32C329.92,-1867.58 332.72,-1862.87 336.07,-1859.52 358.28,-1837.32 594.8,-1871.05 618.57,-1850.52 749.17,-1737.67 524.52,-1472.54 675.43,-1458.13"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="331.43,-1880.81 330.72,-1891.75 333.31,-1885.83 334.81,-1889.83 334.81,-1889.83 334.81,-1889.83 333.31,-1885.83 339.15,-1888.6 331.43,-1880.81"/>
@@ -1279,7 +1282,7 @@
 <ellipse fill="none" stroke="#64748b" stroke-width="1.1" cx="679.53" cy="-1457.95" rx="4" ry="4"/>
 </g>
 <!-- payments -->
-<g id="schema_42fff4038846a51b_node22" class="node">
+<g id="schema_2c371e1eabda2ec4_node22" class="node">
 <title>payments</title>
 <polygon fill="white" stroke="none" points="348.07,-1612.02 348.07,-1841.02 566.07,-1841.02 566.07,-1612.02 348.07,-1612.02"/>
 <polygon fill="#c2410c" stroke="none" points="348.07,-1820.02 348.07,-1841.02 566.07,-1841.02 566.07,-1820.02 348.07,-1820.02"/>
@@ -1345,7 +1348,7 @@
 <text text-anchor="start" x="352.07" y="-1618.47" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">uq_one_successful_payment · 2 CHECKs</text>
 </g>
 <!-- payments&#45;&gt;bookings -->
-<g id="schema_42fff4038846a51b_edge31" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge31" class="edge">
 <title>payments:booking_id&#45;&gt;bookings:booking_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M332.67,-1801.27C330.92,-1813.3 337.79,-1830.93 348.07,-1841.02 356.71,-1849.5 556.28,-1848.15 566.07,-1841.02 635.69,-1790.23 602.3,-1481.68 679.62,-1458.85"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="339.31,-1795.39 349.78,-1792.13 343.32,-1791.83 346.52,-1789.01 346.52,-1789.01 346.52,-1789.01 343.32,-1791.83 343.81,-1785.39 339.31,-1795.39"/>
@@ -1356,7 +1359,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="684.12,-1458.22 679.17,-1458.92"/>
 </g>
 <!-- refunds -->
-<g id="schema_42fff4038846a51b_node23" class="node">
+<g id="schema_2c371e1eabda2ec4_node23" class="node">
 <title>refunds</title>
 <polygon fill="white" stroke="none" points="16.57,-1695.52 16.57,-1861.52 225.57,-1861.52 225.57,-1695.52 16.57,-1695.52"/>
 <polygon fill="#c2410c" stroke="none" points="16.57,-1840.52 16.57,-1861.52 225.57,-1861.52 225.57,-1840.52 16.57,-1840.52"/>
@@ -1404,7 +1407,7 @@
 <text text-anchor="start" x="20.57" y="-1701.97" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">uq_one_active_refund · 2 CHECKs · 1 trigger</text>
 </g>
 <!-- refunds&#45;&gt;payments -->
-<g id="schema_42fff4038846a51b_edge32" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge32" class="edge">
 <title>refunds:payment_id&#45;&gt;payments:payment_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M0.74,-1822.61C-0.74,-1834.5 6.01,-1851.65 16.07,-1861.52 82.54,-1926.72 134.35,-1880.22 225.57,-1861.52 279.74,-1850.41 287.54,-1814.13 337.27,-1809.92"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="7.41,-1816.51 17.83,-1813.09 11.38,-1812.89 14.52,-1810.01 14.52,-1810.01 14.52,-1810.01 11.38,-1812.89 11.76,-1806.44 7.41,-1816.51"/>
@@ -1415,7 +1418,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="342.07,-1809.72 337.08,-1809.93"/>
 </g>
 <!-- cancellations -->
-<g id="schema_42fff4038846a51b_node24" class="node">
+<g id="schema_2c371e1eabda2ec4_node24" class="node">
 <title>cancellations</title>
 <polygon fill="white" stroke="none" points="355.57,-2003.52 355.57,-2129.52 558.57,-2129.52 558.57,-2003.52 355.57,-2003.52"/>
 <polygon fill="#c2410c" stroke="none" points="355.57,-2108.52 355.57,-2129.52 558.57,-2129.52 558.57,-2108.52 355.57,-2108.52"/>
@@ -1454,7 +1457,7 @@
 <text text-anchor="start" x="531.32" y="-2010.07" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#c2410c">FK</text>
 </g>
 <!-- cancellations&#45;&gt;users -->
-<g id="schema_42fff4038846a51b_edge34" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge34" class="edge">
 <title>cancellations:cancelled_by&#45;&gt;users:user_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M417.2,-1998.54C458.46,-1995.93 552.59,-1999.98 558.57,-2003.52 655.29,-2060.79 584.66,-2167.55 681.57,-2224.52 747.85,-2263.48 1317.54,-2276.17 1373.57,-2223.52 1468.22,-2134.57 1328.44,-1091.78 1439.41,-1018.57"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="408.22,-2000.41 397.51,-1998.04 402.96,-2001.5 398.79,-2002.37 398.79,-2002.37 398.79,-2002.37 402.96,-2001.5 399.34,-2006.85 408.22,-2000.41"/>
@@ -1464,7 +1467,7 @@
 <ellipse fill="none" stroke="#64748b" stroke-width="1.1" cx="1443.44" cy="-1017.33" rx="4" ry="4"/>
 </g>
 <!-- cancellations&#45;&gt;bookings -->
-<g id="schema_42fff4038846a51b_edge33" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge33" class="edge">
 <title>cancellations:booking_id&#45;&gt;bookings:booking_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M341.74,-2084.06C335.62,-2095.16 342.95,-2117.63 355.07,-2129.52 419.63,-2192.85 482.73,-2178.8 558.57,-2129.52 613.62,-2093.74 600.78,-2057.72 618.57,-1994.52 650.25,-1881.94 573.29,-1481.13 679.32,-1458.51"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="350.84,-2073.57 355.53,-2082.4 353.76,-2083.34 349.07,-2074.51 350.84,-2073.57"/>
@@ -1476,7 +1479,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="684.09,-1458.03 679.12,-1458.53"/>
 </g>
 <!-- provider_reviews -->
-<g id="schema_42fff4038846a51b_node25" class="node">
+<g id="schema_2c371e1eabda2ec4_node25" class="node">
 <title>provider_reviews</title>
 <polygon fill="white" stroke="none" points="359.07,-632.52 359.07,-798.52 555.07,-798.52 555.07,-632.52 359.07,-632.52"/>
 <polygon fill="#7c3aed" stroke="none" points="359.07,-777.52 359.07,-798.52 555.07,-798.52 555.07,-777.52 359.07,-777.52"/>
@@ -1524,7 +1527,7 @@
 <text text-anchor="start" x="363.07" y="-638.97" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">1 CHECK · 3 triggers</text>
 </g>
 <!-- provider_reviews&#45;&gt;bookings -->
-<g id="schema_42fff4038846a51b_edge35" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge35" class="edge">
 <title>provider_reviews:booking_id&#45;&gt;bookings:booking_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M345.79,-753.01C339.73,-764.05 347.16,-786.42 359.07,-798.52 379.31,-819.07 597.43,-787.88 618.57,-807.52 722.51,-904.1 552.11,-1431.93 679.38,-1456.62"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="354.84,-742.57 359.52,-751.4 357.75,-752.34 353.08,-743.5 354.84,-742.57"/>
@@ -1536,7 +1539,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="684.09,-1457.06 679.11,-1456.6"/>
 </g>
 <!-- service_reviews -->
-<g id="schema_42fff4038846a51b_node26" class="node">
+<g id="schema_2c371e1eabda2ec4_node26" class="node">
 <title>service_reviews</title>
 <polygon fill="white" stroke="none" points="329.57,-427.02 329.57,-614.02 584.57,-614.02 584.57,-427.02 329.57,-427.02"/>
 <polygon fill="#7c3aed" stroke="none" points="329.57,-593.02 329.57,-614.02 584.57,-614.02 584.57,-593.02 329.57,-593.02"/>
@@ -1590,7 +1593,7 @@
 <text text-anchor="start" x="333.32" y="-433.47" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">UNIQUE (service_id, booking_id) · 1 CHECK · 3 triggers</text>
 </g>
 <!-- service_reviews&#45;&gt;services -->
-<g id="schema_42fff4038846a51b_edge37" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge37" class="edge">
 <title>service_reviews:service_id&#45;&gt;services:service_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M313.67,-574.27C311.92,-586.3 318.79,-603.93 329.07,-614.02 339.2,-623.96 573.55,-622.97 584.57,-614.02 747.92,-481.31 518.22,-283.22 681.57,-150.52 811.62,-44.87 912.11,-69.12 1058.57,-150.52 1126.86,-188.47 1078.5,-296.66 1145.78,-305.89"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="320.31,-568.39 330.78,-565.13 324.32,-564.83 327.52,-562.01 327.52,-562.01 327.52,-562.01 324.32,-564.83 324.81,-558.39 320.31,-568.39"/>
@@ -1601,7 +1604,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1150.58,-306.2 1145.59,-305.88"/>
 </g>
 <!-- service_reviews&#45;&gt;bookings -->
-<g id="schema_42fff4038846a51b_edge36" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge36" class="edge">
 <title>service_reviews:booking_id&#45;&gt;bookings:booking_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M310.93,-549.2C301.77,-564.61 312.09,-596.71 329.07,-614.02 351.61,-636.99 595.23,-601.35 618.57,-623.52 683.63,-685.31 602.2,-1404.25 679.92,-1454.73"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="318.82,-545.2 329.77,-544.7 323.61,-542.78 327.41,-540.85 327.41,-540.85 327.41,-540.85 323.61,-542.78 325.7,-536.67 318.82,-545.2"/>
@@ -1612,7 +1615,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="684.28,-1456.06 679.5,-1454.6"/>
 </g>
 <!-- complaints -->
-<g id="schema_42fff4038846a51b_node27" class="node">
+<g id="schema_2c371e1eabda2ec4_node27" class="node">
 <title>complaints</title>
 <polygon fill="white" stroke="none" points="351.57,-816.52 351.57,-1066.52 562.57,-1066.52 562.57,-816.52 351.57,-816.52"/>
 <polygon fill="#7c3aed" stroke="none" points="351.57,-1045.52 351.57,-1066.52 562.57,-1066.52 562.57,-1045.52 351.57,-1045.52"/>
@@ -1684,7 +1687,7 @@
 <text text-anchor="start" x="355.57" y="-822.97" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">1 CHECK</text>
 </g>
 <!-- complaints&#45;&gt;users -->
-<g id="schema_42fff4038846a51b_edge40" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge40" class="edge">
 <title>complaints:raised_by&#45;&gt;users:user_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M331.53,-924.54C305.05,-906.84 320.83,-846.49 351.07,-816.52 359.41,-808.25 553.51,-809.04 562.57,-816.52 663.81,-900.08 602.2,-976.27 618.57,-1106.52 633.32,-1223.91 595.46,-2088.37 681.57,-2169.52 709.54,-2195.89 1345.47,-2195.76 1373.57,-2169.52 1465.1,-2084.03 1331.34,-1070.11 1442.95,-1016.71"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="340.05,-926.83 348.54,-933.77 345.24,-928.22 349.36,-929.33 349.36,-929.33 349.36,-929.33 345.24,-928.22 350.88,-925.08 340.05,-926.83"/>
@@ -1695,7 +1698,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1447.69,-1015.63 1442.82,-1016.74"/>
 </g>
 <!-- complaints&#45;&gt;admins -->
-<g id="schema_42fff4038846a51b_edge38" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge38" class="edge">
 <title>complaints:assigned_admin_id&#45;&gt;admins:admin_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M331.98,-902.01C314.8,-885.13 327.67,-839.66 351.07,-816.52 367.77,-799.99 539.26,-813.53 562.57,-816.52 616.78,-823.46 627.98,-836.79 681.57,-847.52 885.5,-888.35 940.36,-913.38 1141.47,-914.48"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="340.31,-905.01 348.2,-912.63 345.36,-906.82 349.37,-908.27 349.37,-908.27 349.37,-908.27 345.36,-906.82 351.24,-904.16 340.31,-905.01"/>
@@ -1705,7 +1708,7 @@
 <ellipse fill="none" stroke="#64748b" stroke-width="1.1" cx="1146.02" cy="-914.49" rx="4" ry="4"/>
 </g>
 <!-- complaints&#45;&gt;bookings -->
-<g id="schema_42fff4038846a51b_edge39" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge39" class="edge">
 <title>complaints:booking_id&#45;&gt;bookings:booking_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M336.05,-1027.73C335.03,-1039.37 341.89,-1056.07 351.07,-1066.52 430.4,-1156.83 531.48,-1023.66 618.57,-1106.52 731.37,-1213.84 538.57,-1447.21 679.31,-1457.19"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="342.52,-1021.63 352.89,-1018.04 346.43,-1017.95 349.53,-1015.02 349.53,-1015.02 349.53,-1015.02 346.43,-1017.95 346.71,-1011.49 342.52,-1021.63"/>
@@ -1716,7 +1719,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="684.07,-1457.35 679.07,-1457.18"/>
 </g>
 <!-- provider_documents -->
-<g id="schema_42fff4038846a51b_node28" class="node">
+<g id="schema_2c371e1eabda2ec4_node28" class="node">
 <title>provider_documents</title>
 <polygon fill="white" stroke="none" points="356.07,-180.02 356.07,-409.02 558.07,-409.02 558.07,-180.02 356.07,-180.02"/>
 <polygon fill="#7c3aed" stroke="none" points="356.07,-388.02 356.07,-409.02 558.07,-409.02 558.07,-388.02 356.07,-388.02"/>
@@ -1782,7 +1785,7 @@
 <text text-anchor="start" x="360.07" y="-186.47" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">1 CHECK</text>
 </g>
 <!-- provider_documents&#45;&gt;service_providers -->
-<g id="schema_42fff4038846a51b_edge41" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge41" class="edge">
 <title>provider_documents:provider_id&#45;&gt;service_providers:provider_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M340.69,-369.65C339.24,-381.6 346.1,-398.88 356.07,-409.02 376.53,-429.83 596.3,-399.65 618.57,-418.52 725.5,-509.12 575.38,-636.04 681.57,-727.52 832.85,-857.84 931.41,-754.95 1127.84,-751.6"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="347.41,-363.51 357.83,-360.09 351.37,-359.89 354.52,-357.01 354.52,-357.01 354.52,-357.01 351.37,-359.89 351.76,-353.44 347.41,-363.51"/>
@@ -1793,7 +1796,7 @@
 <polyline fill="none" stroke="#64748b" stroke-width="1.1" points="1132.57,-751.56 1127.57,-751.6"/>
 </g>
 <!-- provider_documents&#45;&gt;admins -->
-<g id="schema_42fff4038846a51b_edge42" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge42" class="edge">
 <title>provider_documents:verified_by&#45;&gt;admins:admin_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M341.07,-216.91C340.07,-205.4 346.55,-189.35 356.07,-180.02 364.08,-172.16 549.21,-173.13 558.07,-180.02 664.39,-262.74 587.18,-677.4 681.57,-773.52 801.2,-895.35 901.24,-781.16 1058.57,-847.52 1102.13,-865.89 1103.39,-905.66 1141.72,-913.25"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="347.63,-223.29 351.67,-233.49 351.48,-227.03 354.54,-230 354.54,-230 354.54,-230 351.48,-227.03 357.94,-227.03 347.63,-223.29"/>
@@ -1803,7 +1806,7 @@
 <ellipse fill="none" stroke="#64748b" stroke-width="1.1" cx="1146.06" cy="-913.65" rx="4" ry="4"/>
 </g>
 <!-- provider_availability -->
-<g id="schema_42fff4038846a51b_node29" class="node">
+<g id="schema_2c371e1eabda2ec4_node29" class="node">
 <title>provider_availability</title>
 <polygon fill="white" stroke="none" points="369.07,-17.02 369.07,-162.02 545.07,-162.02 545.07,-17.02 369.07,-17.02"/>
 <polygon fill="#7c3aed" stroke="none" points="369.07,-141.02 369.07,-162.02 545.07,-162.02 545.07,-141.02 369.07,-141.02"/>
@@ -1845,7 +1848,7 @@
 <text text-anchor="start" x="372.69" y="-23.47" font-family="Helvetica,sans-Serif" font-size="9.00" fill="#475569">ex_availability_no_overlap · 2 CHECKs</text>
 </g>
 <!-- provider_availability&#45;&gt;service_providers -->
-<g id="schema_42fff4038846a51b_edge43" class="edge">
+<g id="schema_2c371e1eabda2ec4_edge43" class="edge">
 <title>provider_availability:provider_id&#45;&gt;service_providers:provider_id</title>
 <path fill="none" stroke="#64748b" stroke-width="1.1" d="M353.69,-122.64C352.25,-134.59 359.11,-151.87 369.07,-162.02 388.5,-181.82 598.16,-152.72 618.57,-171.52 790.75,-330.16 513.34,-531.68 681.57,-694.52 741.99,-753.01 976,-711.54 1058.57,-727.52 1091.08,-733.81 1099.36,-748.29 1127.63,-751.06"/>
 <polygon fill="#64748b" stroke="#64748b" stroke-width="1.1" points="360.41,-116.51 370.83,-113.09 364.37,-112.89 367.52,-110.01 367.52,-110.01 367.52,-110.01 364.37,-112.89 364.76,-106.44 360.41,-116.51"/>

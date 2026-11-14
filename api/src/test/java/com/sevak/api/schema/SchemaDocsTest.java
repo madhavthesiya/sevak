@@ -22,6 +22,9 @@ import org.junit.jupiter.api.Test;
 class SchemaDocsTest extends IntegrationTest {
 
     private static final Path DOCS = Path.of("..", "docs", "schema");
+    private static final Path README = Path.of("..", "README.md");
+    private static final String MERMAID_START = "<!-- schema:mermaid:start -->";
+    private static final String MERMAID_END = "<!-- schema:mermaid:end -->";
     private static final boolean WRITE = Boolean.getBoolean("schema.docs.write");
     private static final String HOW_TO_FIX =
             " is out of date with the migrations. Regenerate it as described in docs/schema/README.md.";
@@ -54,6 +57,27 @@ class SchemaDocsTest extends IntegrationTest {
             } else {
                 assertThat(read(path)).as(file.getKey() + HOW_TO_FIX).isEqualTo(file.getValue());
             }
+        }
+    }
+
+    @Test
+    void readmeDiagramMatchesTheDatabase() throws IOException {
+        String readme = read(README);
+        int start = readme.indexOf(MERMAID_START);
+        int end = readme.indexOf(MERMAID_END);
+        assertThat(start)
+                .as("README.md needs the %s and %s markers", MERMAID_START, MERMAID_END)
+                .isNotNegative()
+                .isLessThan(end);
+        String current = readme.substring(start + MERMAID_START.length(), end);
+        String generated = "\n" + SchemaDocs.mermaid(SchemaDocs.read(jdbc));
+        if (WRITE) {
+            Files.writeString(
+                    README,
+                    readme.substring(0, start + MERMAID_START.length()) + generated + readme.substring(end),
+                    StandardCharsets.UTF_8);
+        } else {
+            assertThat(current).as("The README's Mermaid diagram" + HOW_TO_FIX).isEqualTo(generated);
         }
     }
 
