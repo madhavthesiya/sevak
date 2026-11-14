@@ -326,7 +326,6 @@ docs/       Schema diagrams, ADRs, benchmarks, normalization proof
 | Stored summaries can be 15 minutes old | Fine for analytics; refresh on demand where a page needs fresher data |
 | Address coordinates are placeholders | A geocoding service |
 | Benchmarks ran on one laptop with generated data | Measure again on real servers after deployment |
-| "Every booking has at least one item" is enforced by the API, not the database | A deferred constraint trigger, like the subtotal check |
 
 ## Author
 

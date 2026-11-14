@@ -22,7 +22,7 @@ The full list is generated from the database in [RELATIONAL_SCHEMA.md](../schema
 - Each rule has a test that tries to break it (`DatabaseConstraintsTest`, `DatabaseTriggersTest`).
 - Some rules exist twice: in Java for the message, in SQL for the guarantee. `PgErrors` maps database errors such as an exclusion violation back to the API's error types, so a rule the Java missed still returns a clean `409` or `422`.
 - Triggers are less visible than Java code. The generated schema docs list them per table.
-- Not every rule fits. "A booking has at least one item" is enforced by the API only; the [conceptual model](../schema/CONCEPTUAL_MODEL.md) says so.
+- Gaps are found by checking, not assumed away. "A booking has at least one item" was enforced only by the API until Phase 7 found it; it is now part of the deferred subtotal check, with a test that tries to break it.
 
 ## Alternatives considered
 
