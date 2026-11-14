@@ -91,13 +91,14 @@ CREATE OR REPLACE TRIGGER trg_booking_status_transition
 BEFORE UPDATE OF status ON bookings
 FOR EACH ROW EXECUTE FUNCTION fn_check_status_transition();
 
--- ── A booking's subtotal must equal its items, checked at commit ─
+-- ── A booking has at least one item, and its subtotal equals them, checked at commit ─
 -- Deferred because a booking and its items are inserted in separate statements.
 CREATE OR REPLACE FUNCTION fn_check_booking_subtotal() RETURNS trigger AS $$
 DECLARE
     v_booking_id INT;
     v_subtotal   NUMERIC(10,2);
     v_items      NUMERIC(12,2);
+    v_count      INT;
 BEGIN
     IF TG_OP = 'DELETE' THEN
         v_booking_id := OLD.booking_id;
@@ -110,8 +111,13 @@ BEGIN
         RETURN NULL; -- the booking itself is being deleted
     END IF;
 
-    SELECT COALESCE(SUM(quantity * unit_price), 0) INTO v_items
+    SELECT COALESCE(SUM(quantity * unit_price), 0), COUNT(*) INTO v_items, v_count
     FROM booking_items WHERE booking_id = v_booking_id;
+
+    IF v_count = 0 THEN
+        RAISE EXCEPTION USING ERRCODE = 'SV422',
+            MESSAGE = format('Booking %s has no items', v_booking_id);
+    END IF;
 
     IF v_items <> v_subtotal THEN
         RAISE EXCEPTION USING ERRCODE = 'SV422',

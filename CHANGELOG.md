@@ -4,6 +4,11 @@ Notable changes to SEVAK, newest first. Each release links to its pull request, 
 
 ## Unreleased
 
+### Fixed
+- A booking with no items is now rejected by the database, not only by the API. The deferred check that compares a booking's subtotal with its items also refuses a booking whose last item is removed.
+
+## [3.0.0] - 2026-11-15: diagrams, docs and launch
+
 ### Added
 - Schema documents generated from the database that the migrations build: a one-page diagram of all 29 tables (`docs/schema/sevak-schema.svg`), a text relational schema with every key, CHECK, index and trigger, a DBML file, and the README's Mermaid diagram. `SchemaDocsTest` fails the build if any of them drifts from the database.
 - The conceptual ER model (`docs/schema/CONCEPTUAL_MODEL.md`): entities, relationships, cardinalities and participation, checked against the schema.
@@ -61,6 +66,7 @@ Benchmarks on about 1 million bookings ([docs/BENCHMARKS.md](docs/BENCHMARKS.md)
 - **Added:** RFC 9457 Problem Details errors, input validation for paging parameters, and `sql/checks/data_integrity.sql`.
 - **Removed:** duplicate indexes and the outdated `V2_improvements.sql`. ([#1](https://github.com/madhavthesiya/sevak/pull/1))
 
+[3.0.0]: https://github.com/madhavthesiya/sevak/releases/tag/v3.0.0
 [2.4.0]: https://github.com/madhavthesiya/sevak/releases/tag/v2.4.0
 [2.3.0]: https://github.com/madhavthesiya/sevak/releases/tag/v2.3.0
 [2.2.0]: https://github.com/madhavthesiya/sevak/releases/tag/v2.2.0

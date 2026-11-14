@@ -108,6 +108,7 @@ Some rules span rows or tables, so no normal form covers them. They are enforced
 - A provider can't be double-booked (exclusion constraint on a time range).
 - Bookings only change status along allowed paths (trigger and `booking_status_transitions`).
 - Reviews are only allowed after completion (triggers).
+- A booking has at least one item, and its subtotal equals its items (deferred constraint trigger).
 
 ---
 

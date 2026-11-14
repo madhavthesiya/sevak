@@ -128,6 +128,34 @@ class DatabaseConstraintsTest extends IntegrationTest {
     }
 
     @Test
+    void aBookingWithNoItemsIsRejectedWhenTheTransactionCommits() {
+        jdbc.update("""
+                INSERT INTO bookings (customer_id, provider_id, location_id, scheduled_start, scheduled_end,
+                                      subtotal, discount, total_amount)
+                SELECT customer_id, 1, location_id, now() + interval '400 days', now() + interval '400 days 1 hour',
+                       0, 0, 0
+                FROM customer_addresses WHERE customer_id = 1 LIMIT 1
+                """);
+
+        assertThatThrownBy(() -> jdbc.execute("SET CONSTRAINTS ALL IMMEDIATE"))
+                .isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("has no items");
+    }
+
+    @Test
+    void removingTheLastItemOfABookingIsRejected() {
+        int booking = jdbc.queryForObject(
+                "SELECT booking_id FROM booking_items GROUP BY booking_id HAVING COUNT(*) = 1 ORDER BY 1 LIMIT 1",
+                Integer.class);
+        jdbc.update("UPDATE bookings SET subtotal = 0, discount = 0, total_amount = 0 WHERE booking_id = ?", booking);
+        jdbc.update("DELETE FROM booking_items WHERE booking_id = ?", booking);
+
+        assertThatThrownBy(() -> jdbc.execute("SET CONSTRAINTS ALL IMMEDIATE"))
+                .isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("has no items");
+    }
+
+    @Test
     void aFailedPaymentCanBeRetried() {
         jdbc.update(
                 "INSERT INTO payments (booking_id, payment_method, status, amount) VALUES (4, 'UPI', 'failed', 350)");
