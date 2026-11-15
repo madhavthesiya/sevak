@@ -1,3 +1,19 @@
+<p align="center">
+  <a href="../../README.md"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../images/logo-dark.png">
+    <img alt="SEVAK" src="../images/logo-light.png" height="30">
+  </picture></a>
+</p>
+
+<p align="center">
+  <a href="../adr/README.md">Decisions</a> &nbsp;·&nbsp;
+  <a href="../BENCHMARKS.md">Benchmarks</a> &nbsp;·&nbsp;
+  <a href="../schema/README.md">Schema</a> &nbsp;·&nbsp;
+  <b>Conceptual model</b> &nbsp;·&nbsp;
+  <a href="../SEVAK_Normalization_Proof.md">Normalization</a> &nbsp;·&nbsp;
+  <a href="../DEPLOYMENT.md">Deployment</a>
+</p>
+
 # SEVAK: conceptual model (Chen / EER)
 
 This is the conceptual ER model behind the 29 tables. Every entity, attribute, relationship and cardinality below was checked against the generated [relational schema](RELATIONAL_SCHEMA.md), which comes straight from the migrations.

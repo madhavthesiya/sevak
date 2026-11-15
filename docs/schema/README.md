@@ -1,6 +1,26 @@
+<p align="center">
+  <a href="../../README.md"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../images/logo-dark.png">
+    <img alt="SEVAK" src="../images/logo-light.png" height="30">
+  </picture></a>
+</p>
+
+<p align="center">
+  <a href="../adr/README.md">Decisions</a> &nbsp;·&nbsp;
+  <a href="../BENCHMARKS.md">Benchmarks</a> &nbsp;·&nbsp;
+  <b>Schema</b> &nbsp;·&nbsp;
+  <a href="../schema/CONCEPTUAL_MODEL.md">Conceptual model</a> &nbsp;·&nbsp;
+  <a href="../SEVAK_Normalization_Proof.md">Normalization</a> &nbsp;·&nbsp;
+  <a href="../DEPLOYMENT.md">Deployment</a>
+</p>
+
 # Schema diagrams
 
 The physical schema files here are **generated from the real database**. A test builds a fresh PostgreSQL with the Flyway migrations, reads the system catalog (`pg_class`, `pg_constraint`, `pg_index`, `information_schema.triggers`) and writes the files. Nothing is drawn by hand, so the diagrams can't fall behind the migrations.
+
+<a href="sevak-schema.svg"><img alt="The physical schema: all 29 tables, grouped and coloured by domain, with their keys and foreign keys. Open it full size." src="sevak-schema.svg" width="100%"></a>
+
+<p align="center"><sub>The physical schema, generated from the database. Click to open it full size.</sub></p>
 
 | File | What it is |
 |---|---|

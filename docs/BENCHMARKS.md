@@ -1,11 +1,34 @@
+<p align="center">
+  <a href="../README.md"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/logo-dark.png">
+    <img alt="SEVAK" src="images/logo-light.png" height="30">
+  </picture></a>
+</p>
+
+<p align="center">
+  <a href="adr/README.md">Decisions</a> &nbsp;·&nbsp;
+  <b>Benchmarks</b> &nbsp;·&nbsp;
+  <a href="schema/README.md">Schema</a> &nbsp;·&nbsp;
+  <a href="schema/CONCEPTUAL_MODEL.md">Conceptual model</a> &nbsp;·&nbsp;
+  <a href="SEVAK_Normalization_Proof.md">Normalization</a> &nbsp;·&nbsp;
+  <a href="DEPLOYMENT.md">Deployment</a>
+</p>
+
 # SEVAK benchmarks
 
 Every performance claim in this project, measured on about **1 million bookings**, in two runs:
+
+**On this page:** [Headline results](#headline-results) &nbsp;·&nbsp; [Setup](#setup) &nbsp;·&nbsp; [Method](#method) &nbsp;·&nbsp; [Experiments](#experiments) &nbsp;·&nbsp; [Every query in the app](#every-query-in-the-app) &nbsp;·&nbsp; [Load test](#load-test) &nbsp;·&nbsp; [What I learned](#what-i-learned) &nbsp;·&nbsp; [Limits](#limits)
 
 - **Phase 6** (14 Nov 2026). Experiments 1 to 8 below describe it. Its results and query plans are in [`benchmarks/phase-6/`](benchmarks/phase-6/).
 - **Phase 8** (15 Nov 2026), after adding row-level security. It repeats experiments 1 to 8 (every conclusion held, see [the re-run](#phase-8-re-run-of-experiments-1-to-8)), adds experiments 9 and 10, and re-measures every query in the app as the person who really sends it. Results: [`benchmarks/results.json`](benchmarks/results.json); plans: [`benchmarks/plans/`](benchmarks/plans/).
 
 ## Headline results
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/results-dark.svg">
+  <img alt="Before-and-after query times on 1M bookings, on a log scale. The same numbers are in the table below." src="assets/results-light.svg" width="100%">
+</picture>
 
 | What | Before | After | How |
 |---|---:|---:|---|

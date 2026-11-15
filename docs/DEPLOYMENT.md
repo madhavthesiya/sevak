@@ -1,6 +1,29 @@
+<p align="center">
+  <a href="../README.md"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/logo-dark.png">
+    <img alt="SEVAK" src="images/logo-light.png" height="30">
+  </picture></a>
+</p>
+
+<p align="center">
+  <a href="adr/README.md">Decisions</a> &nbsp;·&nbsp;
+  <a href="BENCHMARKS.md">Benchmarks</a> &nbsp;·&nbsp;
+  <a href="schema/README.md">Schema</a> &nbsp;·&nbsp;
+  <a href="schema/CONCEPTUAL_MODEL.md">Conceptual model</a> &nbsp;·&nbsp;
+  <a href="SEVAK_Normalization_Proof.md">Normalization</a> &nbsp;·&nbsp;
+  <b>Deployment</b>
+</p>
+
 # Deploying SEVAK
 
-The live demo runs on three free services:
+How the [live demo](https://sevak-tau.vercel.app) is put together, and how to deploy your own copy from this repository on free plans.
+
+**On this page:** [1. Database: Supabase](#1-database-supabase) &nbsp;·&nbsp; [2. API: Render](#2-api-render) &nbsp;·&nbsp; [3. Web app: Vercel](#3-web-app-vercel) &nbsp;·&nbsp; [4. Keep-alive](#4-keep-alive) &nbsp;·&nbsp; [5. Smoke test](#5-smoke-test) &nbsp;·&nbsp; [Notes](#notes)
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/architecture-dark.svg">
+  <img alt="The web app on Vercel calls the API on Render, which reaches PostgreSQL on Supabase as sevak_app under row-level security; Flyway and two jobs connect as the owner." src="assets/architecture-light.svg" width="100%">
+</picture>
 
 | Part | Service | Notes |
 |---|---|---|
@@ -9,7 +32,8 @@ The live demo runs on three free services:
 | Web app | Vercel, from [`web/vercel.json`](../web/vercel.json) | Static build of `web/` |
 | Keep-alive | A scheduled ping every 10 minutes | Render's free instances sleep after 15 minutes; the ping also keeps Supabase active |
 
-Put the database and the API in the **same region**: one page load runs several queries, and each one crosses that distance.
+> [!IMPORTANT]
+> Put the database and the API in the **same region**. One page load runs several queries, and each one crosses that distance: the live demo has both in Singapore. Connection details and passwords go only into the hosts' dashboards; `render.yaml` marks them `sync: false`, so none of them is in the repository.
 
 ## 1. Database: Supabase
 
@@ -49,6 +73,9 @@ Put the database and the API in the **same region**: one page load runs several 
 
 Create a scheduled job (for example on cron-job.org or UptimeRobot) that requests
 `https://<service>.onrender.com/actuator/health/readiness` every 10 minutes, with failure notifications on. It keeps the API awake, keeps the database active, and doubles as an uptime monitor.
+
+> [!TIP]
+> On Render's free plan the API takes about two minutes to start (Spring Boot on a small share of one CPU). Without the ping, the first visitor after 15 quiet minutes waits for that.
 
 ## 5. Smoke test
 

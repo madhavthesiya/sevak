@@ -101,7 +101,7 @@ git clone https://github.com/madhavthesiya/sevak.git && cd sevak
 docker compose up --build
 ```
 
-| | |
+| Open | At |
 |---|---|
 | Web app | <http://localhost:5173> |
 | API docs (Swagger UI) | <http://localhost:8080/swagger-ui.html> |
@@ -167,18 +167,17 @@ The API writes its own SQL with `JdbcClient`, so the SQL drawer shows exactly wh
 
 ## What the database guarantees
 
-| Rule | Enforced by | Proven by |
+| Rule | Enforced by | Tested in |
 |---|---|---|
-| A provider is never double-booked | Exclusion constraint on `(provider_id, tstzrange)` for active bookings | `twoCustomersBookingTheSameSlotOnlyOneWins`, `twoCustomersForTheSameSlotOneGetsIt` |
-| A booking moves only along allowed statuses | `booking_status_transitions` and a trigger | `anIllegalStatusChangeIsRejected` |
-| Every status change is logged, by whom | A trigger that only the database can run | `twoStatusChangesInOneTransactionAreBothLogged`, `theLogRecordsWhoMadeTheChange` |
-| A booking has items, and its subtotal equals them | A deferred constraint trigger, checked at commit | `subtotalMustMatchTheItemsWhenTheTransactionCommits`, `aBookingWithNoItemsIsRejectedWhenTheTransactionCommits` |
-| `total = subtotal − discount` | `CHECK` | `totalMustEqualSubtotalMinusDiscount` |
-| Cancel and accept can't corrupt each other | Row locks in the procedures, plus the status trigger | `cancelAndConfirmAtTheSameTimeLeaveAConsistentBooking` |
-| The last coupon goes to one customer, once each | An atomic claim and a primary key | `theLastCouponGoesToOneCustomer`, `aCustomerCanUseACouponOnlyOnce` |
-| A retried request creates one booking | `idempotency_keys` | `theSameRetryAtTheSameTimeCreatesOneBooking` |
-| A user is only one kind of account | Composite foreign keys on `(user_id, role)` | `aCustomerUserCannotHaveAProviderProfile` |
-| You see and change only your own rows | Row-level security on 16 tables, as `sevak_app` | [`RowLevelSecurityTest`](api/src/test/java/com/sevak/api/RowLevelSecurityTest.java): 29 tests, 17 of which fail with the policies off |
+| A provider is never double-booked | An exclusion constraint on `(provider_id, tstzrange)` over active bookings | [BookingConcurrencyTest](api/src/test/java/com/sevak/api/BookingConcurrencyTest.java), [ApiConcurrencyTest](api/src/test/java/com/sevak/api/ApiConcurrencyTest.java) |
+| A booking moves only along allowed statuses | The `booking_status_transitions` table and a trigger | [DatabaseConstraintsTest](api/src/test/java/com/sevak/api/DatabaseConstraintsTest.java) |
+| Every status change is logged, with who made it | A trigger only the database can run; the API can't write the log | [DatabaseTriggersTest](api/src/test/java/com/sevak/api/DatabaseTriggersTest.java) |
+| A booking has items, its subtotal equals them, and the total is subtotal minus discount | A deferred trigger checked at commit, and a `CHECK` | [DatabaseConstraintsTest](api/src/test/java/com/sevak/api/DatabaseConstraintsTest.java) |
+| Cancel and accept can't corrupt each other | Row locks in the procedures, plus the status trigger | [BookingConcurrencyTest](api/src/test/java/com/sevak/api/BookingConcurrencyTest.java) |
+| The last coupon goes to one customer, and each customer uses it once | An atomic claim and a primary key | [ApiConcurrencyTest](api/src/test/java/com/sevak/api/ApiConcurrencyTest.java) |
+| A retried request creates one booking | The `idempotency_keys` table | [ApiConcurrencyTest](api/src/test/java/com/sevak/api/ApiConcurrencyTest.java) |
+| A user is only one kind of account | Composite foreign keys on `(user_id, role)` | [DatabaseConstraintsTest](api/src/test/java/com/sevak/api/DatabaseConstraintsTest.java) |
+| You see and change only your own rows | Row-level security on 16 tables, as `sevak_app` | [RowLevelSecurityTest](api/src/test/java/com/sevak/api/RowLevelSecurityTest.java): with the policies off, 17 of its 29 tests fail |
 
 ## Data model
 
@@ -272,16 +271,20 @@ Everything is under `/api/v1`, documented in the [live Swagger UI](https://sevak
 API=https://sevak-api.onrender.com   # or http://localhost:8080
 
 # Log in as the demo customer
-TOKEN=$(curl -s -X POST $API/api/v1/auth/login -H 'Content-Type: application/json' \
-  -d '{"email":"aarav.sharma@gmail.com","password":"Demo@1234"}' | sed 's/.*"accessToken":"\([^"]*\)".*/\1/')
+TOKEN=$(curl -s -X POST $API/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"aarav.sharma@gmail.com","password":"Demo@1234"}' \
+  | sed 's/.*"accessToken":"\([^"]*\)".*/\1/')
 
 # Price a job with a coupon, without using the coupon up
-curl -s -X POST $API/api/v1/bookings/quote -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+curl -s -X POST $API/api/v1/bookings/quote \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"providerId":1,"couponCode":"NEWUSER25","items":[{"serviceId":2,"quantity":1}]}'
-# {"subtotal":2600.00,"discount":650.00,"totalAmount":1950.00,"minutes":60,"couponCode":"NEWUSER25"}
+# {"subtotal":2600.00,"discount":650.00,"totalAmount":1950.00,"minutes":60,...}
 
 # Someone else's booking looks like it doesn't exist
-curl -s -o /dev/null -w '%{http_code}\n' $API/api/v1/me/bookings/999999 -H "Authorization: Bearer $TOKEN"
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $TOKEN" \
+  $API/api/v1/me/bookings/999999
 # 404
 ```
 
@@ -381,7 +384,9 @@ CI runs the backend, web and end-to-end suites on every push, with a formatting 
 | [Deployment](docs/DEPLOYMENT.md) | Supabase, Render and Vercel, step by step, and the smoke test |
 | [Changelog](CHANGELOG.md) | Every release |
 
-| Layer | Built with |
+### Built with
+
+| Layer | Tools |
 |---|---|
 | Backend | Java 21, Spring Boot 4, Spring JDBC (`JdbcClient`), Spring Security with JWT, Bucket4j, springdoc-openapi |
 | Database | PostgreSQL 16 and 17, with `btree_gist` and `pg_trgm`; Flyway |
