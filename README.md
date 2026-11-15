@@ -7,6 +7,8 @@
 
 **A home-services marketplace where the database enforces the business rules.**
 
+**[Live demo](https://sevak-tau.vercel.app)** · [API docs (Swagger)](https://sevak-api.onrender.com/swagger-ui.html)
+
 Customers book electricians, plumbers and cleaners; providers accept and complete jobs; admins verify providers and watch revenue. Built on a 29-table PostgreSQL schema in BCNF, a Spring Boot API that writes its own SQL, and a React app that can show the SQL behind every screen.
 
 [![CI](https://github.com/madhavthesiya/sevak/actions/workflows/ci.yml/badge.svg)](https://github.com/madhavthesiya/sevak/actions/workflows/ci.yml)
@@ -25,7 +27,9 @@ Customers book electricians, plumbers and cleaners; providers accept and complet
 |---|---|---|
 | ![Booking screen](docs/images/booking.png) | ![The Show the SQL drawer](docs/images/sql-drawer.png) | ![Admin revenue dashboard](docs/images/admin-revenue.png) |
 
-**Try it:** `docker compose up --build`, open <http://localhost:5173> and click **Customer**, **Provider** or **Admin** on the home page to log in as a demo account. The hosted demo is offline until the project's final deployment.
+**Try it live:** open <https://sevak-tau.vercel.app> and click **Customer**, **Provider** or **Admin** on the home page to log in as a demo account. The demo data resets every night at 03:00 IST. It runs on free plans, so if nobody has used it for a while the first request can take about two minutes while the API starts.
+
+**Or locally:** `docker compose up --build`, then open <http://localhost:5173>.
 
 ## What it does
 
@@ -308,7 +312,7 @@ Eight short [Architecture Decision Records](docs/adr/README.md): [raw SQL over J
 | Database | PostgreSQL 16 with `btree_gist` and `pg_trgm`, Flyway migrations |
 | Frontend | React, TypeScript, Vite, TanStack Query, openapi-fetch, Tailwind CSS, shadcn/ui, Recharts |
 | Testing | JUnit 5, Testcontainers, MockMvc, JaCoCo, Vitest, Playwright, k6 |
-| Delivery | Docker Compose, GitHub Actions |
+| Delivery | Docker Compose, GitHub Actions; live on Supabase (database), Render (API) and Vercel (web), see [DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 
 ## Project layout
 
@@ -325,7 +329,7 @@ docs/       Schema diagrams, ADRs, benchmarks, normalization proof
 
 | Limit | What I'd do next |
 |---|---|
-| The hosted demo is offline | Deploy as the final step of the roadmap |
+| The live demo runs on free plans: after an idle spell the API takes about two minutes to start | A keep-alive ping every 10 minutes; an always-on paid instance would remove the wait |
 | Payments are mocked | A real gateway with signed webhooks |
 | A banned user's token works for up to 24 hours | Short-lived tokens with refresh, or a denylist |
 | The login token is readable by scripts on the page | An `HttpOnly` cookie with CSRF protection |
