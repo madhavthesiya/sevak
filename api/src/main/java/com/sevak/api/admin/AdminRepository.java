@@ -7,12 +7,15 @@ import com.sevak.api.admin.dto.ComplaintBoardItem;
 import com.sevak.api.admin.dto.ComplaintSummary;
 import com.sevak.api.admin.dto.LeaderboardEntry;
 import com.sevak.api.admin.dto.VerificationCandidate;
+import com.sevak.api.common.DatabaseConfig;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.sql.DataSource;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -133,11 +136,13 @@ public class AdminRepository {
             """;
 
     private final JdbcClient jdbc;
-    private final JdbcTemplate template;
 
-    public AdminRepository(JdbcClient jdbc, JdbcTemplate template) {
+    /** Only a materialized view's owner may refresh it, so the refresh uses the owner pool. */
+    private final JdbcTemplate owner;
+
+    public AdminRepository(JdbcClient jdbc, @Qualifier(DatabaseConfig.OWNER) DataSource owner) {
         this.jdbc = jdbc;
-        this.template = template;
+        this.owner = new JdbcTemplate(owner);
     }
 
     /** Each payment is split across categories in proportion to item value, so nothing is counted twice. */
@@ -209,7 +214,7 @@ public class AdminRepository {
      * @return false if another connection held the lock and nothing was refreshed
      */
     public boolean refreshViewsIfNotRunning() {
-        return Boolean.TRUE.equals(template.execute((ConnectionCallback<Boolean>) connection -> {
+        return Boolean.TRUE.equals(owner.execute((ConnectionCallback<Boolean>) connection -> {
             try (PreparedStatement lock = connection.prepareStatement("SELECT pg_try_advisory_lock(?)")) {
                 lock.setLong(1, VIEW_REFRESH_LOCK);
                 try (ResultSet result = lock.executeQuery()) {

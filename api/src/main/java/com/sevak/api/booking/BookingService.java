@@ -57,7 +57,6 @@ public class BookingService {
     }
 
     private BookingActionResult cancelAs(CurrentUser user, int bookingId, String reason, String verb) {
-        repo.setActor(user.userId());
         try {
             repo.cancel(bookingId, reason, user.userId());
         } catch (DataAccessException ex) {
@@ -69,7 +68,6 @@ public class BookingService {
     @Transactional
     public BookingActionResult accept(CurrentUser provider, int bookingId) {
         requireProvider(provider, bookingId);
-        repo.setActor(provider.userId());
         try {
             repo.confirm(bookingId);
         } catch (DataAccessException ex) {
@@ -90,7 +88,6 @@ public class BookingService {
 
     private BookingActionResult moveTo(CurrentUser provider, int bookingId, String status, String verb) {
         requireProvider(provider, bookingId);
-        repo.setActor(provider.userId());
         try {
             repo.setStatus(bookingId, status);
         } catch (DataAccessException ex) {

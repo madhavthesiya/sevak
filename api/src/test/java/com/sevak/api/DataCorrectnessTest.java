@@ -27,7 +27,7 @@ class DataCorrectnessTest extends IntegrationTest {
     private AdminRepository admin;
 
     private BigDecimal totalCategoryRevenue() {
-        return admin.computeRevenueByCategory().stream()
+        return asUser(ADMIN_USER, admin::computeRevenueByCategory).stream()
                 .map(CategoryRevenue::totalRevenue)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
@@ -37,7 +37,7 @@ class DataCorrectnessTest extends IntegrationTest {
     }
 
     private BigDecimal revenueOf(String category) {
-        return admin.computeRevenueByCategory().stream()
+        return asUser(ADMIN_USER, admin::computeRevenueByCategory).stream()
                 .filter(row -> category.equals(row.categoryName()))
                 .map(CategoryRevenue::totalRevenue)
                 .findFirst()
@@ -87,15 +87,17 @@ class DataCorrectnessTest extends IntegrationTest {
 
     @Test
     void storedCategoryRevenueMatchesTheLiveCalculation() {
-        assertThat(admin.findRevenueByCategory()).isNotEmpty().isEqualTo(admin.computeRevenueByCategory());
+        assertThat(asUser(ADMIN_USER, admin::findRevenueByCategory))
+                .isNotEmpty()
+                .isEqualTo(asUser(ADMIN_USER, admin::computeRevenueByCategory));
     }
 
     @Test
     void liveLeaderboardMatchesTheMaterializedView() {
-        List<LeaderboardEntry> live = admin.findLeaderboard();
+        List<LeaderboardEntry> live = asUser(ADMIN_USER, admin::findLeaderboard);
 
         assertThat(live).isNotEmpty();
-        assertThat(admin.findLeaderboardFromView()).isEqualTo(live);
+        assertThat(asUser(ADMIN_USER, admin::findLeaderboardFromView)).isEqualTo(live);
     }
 
     @Test
