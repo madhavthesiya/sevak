@@ -127,9 +127,10 @@
 - Trigger `trg_booking_subtotal`: after insert or update → `fn_check_booking_subtotal()`
 - Trigger `trg_bookings_touch`: before update → `fn_touch_updated_at()`
 - Row-level security: enabled and forced
-- Policy `bookings_create` (insert): check `(customer_id = (SELECT app_customer_id()))`
+- Policy `bookings_create` (insert): check `((customer_id = (SELECT app_customer_id())) AND ((status)::text = 'pending'::text))`
+- Policy `bookings_customer_cancels` (update): using `(customer_id = (SELECT app_customer_id()))`; check `((customer_id = (SELECT app_customer_id())) AND ((status)::text = 'cancelled'::text))`
+- Policy `bookings_provider_updates` (update): using `(provider_id = (SELECT app_provider_id()))`; check `(provider_id = (SELECT app_provider_id()))`
 - Policy `bookings_read` (select): using `((customer_id = (SELECT app_customer_id())) OR (provider_id = (SELECT app_provider_id())) OR (SELECT app_is_admin()))`
-- Policy `bookings_update` (update): using `((customer_id = (SELECT app_customer_id())) OR (provider_id = (SELECT app_provider_id())))`; check `((customer_id = (SELECT app_customer_id())) OR (provider_id = (SELECT app_provider_id())))`
 
 **booking_items**(<ins>*booking_id*</ins> → bookings, <ins>item_no</ins>, *service_id* → services, *variant_id* → service_variants, quantity, unit_price)
 
@@ -250,7 +251,6 @@
 - Index `idx_prov_docs_provider`: (provider_id)
 - Row-level security: enabled and forced
 - Policy `provider_documents_read` (select): using `((provider_id = (SELECT app_provider_id())) OR (SELECT app_is_admin()))`
-- Policy `provider_documents_upload` (insert): check `(provider_id = (SELECT app_provider_id()))`
 - Policy `provider_documents_verify` (update): using `(SELECT app_is_admin())`; check `(SELECT app_is_admin())`
 
 **provider_availability**(<ins>slot_id</ins>, *provider_id* → service_providers, day_of_week, start_time, end_time)

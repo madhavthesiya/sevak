@@ -62,7 +62,9 @@ GRANT SELECT (user_id, email, role, status, created_at, full_name, phone) ON use
 GRANT INSERT ON users TO sevak_app;
 
 GRANT SELECT, INSERT ON customers TO sevak_app;
-GRANT SELECT, INSERT, UPDATE ON locations TO sevak_app;
+GRANT SELECT, INSERT ON locations TO sevak_app;
+GRANT UPDATE (latitude) ON locations TO sevak_app; -- only what the address upsert's DO UPDATE touches; a shared
+                                                  -- map point's street can't be changed by one customer
 GRANT SELECT ON coupons TO sevak_app;
 GRANT UPDATE (used_count) ON coupons TO sevak_app;
 
@@ -70,11 +72,18 @@ GRANT SELECT, INSERT ON bookings TO sevak_app;
 GRANT UPDATE (status) ON bookings TO sevak_app; -- the only column the app changes; SELECT FOR UPDATE needs it too
 GRANT SELECT, INSERT ON booking_items, payments, cancellations, provider_reviews, service_reviews TO sevak_app;
 GRANT SELECT ON booking_status_log TO sevak_app; -- written only by its trigger, so it can't be forged
-GRANT SELECT, INSERT, UPDATE ON refunds, complaints, customer_addresses, idempotency_keys,
-                                provider_documents, provider_services
-    TO sevak_app;
+GRANT SELECT, INSERT, UPDATE ON customer_addresses, idempotency_keys, provider_services TO sevak_app;
+-- Policies check whose row it is; column grants decide which values a caller may choose. The other
+-- columns take their defaults, which are the safe values: a refund starts pending, a complaint open.
+GRANT SELECT, UPDATE ON refunds, complaints TO sevak_app;
+GRANT INSERT (payment_id, amount) ON refunds TO sevak_app;
+GRANT INSERT (booking_id, subject, description, raised_by) ON complaints TO sevak_app;
+-- No INSERT: the app never uploads documents, so the role can't create one already marked verified.
+GRANT SELECT, UPDATE ON provider_documents TO sevak_app;
 GRANT SELECT, INSERT, DELETE ON coupon_redemptions, provider_availability TO sevak_app;
-GRANT SELECT, INSERT ON service_providers TO sevak_app;
+GRANT SELECT ON service_providers TO sevak_app;
+-- Registration only: a new provider starts unverified, with no rating or reviews.
+GRANT INSERT (user_id, city_id, bio, experience_years) ON service_providers TO sevak_app;
 GRANT UPDATE (verification_status) ON service_providers TO sevak_app;
 
 -- ── Row-level security ──────────────────────────────────────
@@ -120,13 +129,20 @@ CREATE POLICY bookings_read ON bookings FOR SELECT
            OR provider_id = (SELECT app_provider_id())
            OR (SELECT app_is_admin()));
 
+-- A new booking is always a pending request; it can't be created already completed (and then reviewed).
 CREATE POLICY bookings_create ON bookings FOR INSERT
-    WITH CHECK (customer_id = (SELECT app_customer_id()));
+    WITH CHECK (customer_id = (SELECT app_customer_id()) AND status = 'pending');
 
--- Cancelling, accepting, starting and completing. Nobody can move a booking to someone else.
-CREATE POLICY bookings_update ON bookings FOR UPDATE
-    USING (customer_id = (SELECT app_customer_id()) OR provider_id = (SELECT app_provider_id()))
-    WITH CHECK (customer_id = (SELECT app_customer_id()) OR provider_id = (SELECT app_provider_id()));
+-- A customer may only cancel their own booking; accepting, starting and completing are the provider's.
+-- The status-rules trigger still decides which moves are allowed at all. Nobody can move a booking to
+-- someone else.
+CREATE POLICY bookings_customer_cancels ON bookings FOR UPDATE
+    USING (customer_id = (SELECT app_customer_id()))
+    WITH CHECK (customer_id = (SELECT app_customer_id()) AND status = 'cancelled');
+
+CREATE POLICY bookings_provider_updates ON bookings FOR UPDATE
+    USING (provider_id = (SELECT app_provider_id()))
+    WITH CHECK (provider_id = (SELECT app_provider_id()));
 
 -- ── Rows that belong to a booking: visible to whoever can see the booking ─
 -- The EXISTS reads bookings, so the bookings policy above decides.
@@ -205,9 +221,6 @@ CREATE POLICY complaints_handle ON complaints FOR UPDATE
 
 CREATE POLICY provider_documents_read ON provider_documents FOR SELECT
     USING (provider_id = (SELECT app_provider_id()) OR (SELECT app_is_admin()));
-
-CREATE POLICY provider_documents_upload ON provider_documents FOR INSERT
-    WITH CHECK (provider_id = (SELECT app_provider_id()));
 
 CREATE POLICY provider_documents_verify ON provider_documents FOR UPDATE
     USING ((SELECT app_is_admin()))

@@ -210,6 +210,73 @@ class RowLevelSecurityTest extends IntegrationTest {
         assertThat(count("SELECT COUNT(*) FROM provider_documents")).isEqualTo(6);
     }
 
+    // ── Only the values the app writes (found in the Phase 8 review) ──
+
+    @Test
+    void aCustomerCannotCreateARefundThatIsAlreadyProcessed() throws SQLException {
+        actAs(1);
+        assertDenied("""
+                INSERT INTO refunds (payment_id, amount, status)
+                SELECT payment_id, amount, 'processed' FROM payments WHERE booking_id = 1 AND status = 'success'
+                """);
+        // What sp_cancel_booking does still works, and the refund starts pending.
+        run("INSERT INTO refunds (payment_id, amount) SELECT payment_id, amount FROM payments"
+                + " WHERE booking_id = 1 AND status = 'success'");
+        assertThat(count("SELECT COUNT(*) FROM refunds r JOIN payments p USING (payment_id)"
+                        + " WHERE p.booking_id = 1 AND r.status = 'pending'"))
+                .isOne();
+    }
+
+    @Test
+    void aNewProviderCannotRegisterAlreadyVerifiedOrRated() throws SQLException {
+        int userId = (int) count("""
+                INSERT INTO users (email, password_hash, role, full_name)
+                VALUES ('new.provider@example.com', 'x', 'provider', 'New Provider')
+                RETURNING user_id
+                """);
+        actAs(userId);
+        assertDenied("INSERT INTO service_providers (user_id, city_id, verification_status) VALUES (" + userId
+                + ", 1, 'verified')");
+        assertDenied("INSERT INTO service_providers (user_id, city_id, avg_rating, review_count) VALUES (" + userId
+                + ", 1, 5.00, 500)");
+        run("INSERT INTO service_providers (user_id, city_id, bio, experience_years) VALUES (" + userId
+                + ", 1, 'Hello', 2)"); // what registration does
+    }
+
+    @Test
+    void aCustomerCannotCreateABookingThatIsAlreadyCompleted() throws SQLException {
+        actAs(1);
+        assertDenied("""
+                INSERT INTO bookings (customer_id, provider_id, location_id, scheduled_start, scheduled_end,
+                                      status, subtotal, discount, total_amount)
+                VALUES (1, 2, 1, now() + interval '40 days', now() + interval '40 days 1 hour', 'completed', 0, 0, 0)
+                """);
+    }
+
+    @Test
+    void aCustomerCanOnlyCancelTheirOwnBooking() throws SQLException {
+        actAs(7); // booking 10 is customer 7's pending request
+        assertDenied("UPDATE bookings SET status = 'confirmed' WHERE booking_id = 10");
+        assertThat(update("UPDATE bookings SET status = 'cancelled' WHERE booking_id = 10"))
+                .isOne();
+    }
+
+    @Test
+    void aProviderCannotCreateAVerifiedDocument() throws SQLException {
+        actAs(8);
+        assertDenied("INSERT INTO provider_documents (provider_id, document_type, file_url, status)"
+                + " VALUES (1, 'Licence', '/docs/x.pdf', 'verified')");
+    }
+
+    @Test
+    void aCustomerCannotChangeASharedMapPoint() throws SQLException {
+        actAs(1);
+        assertDenied("UPDATE locations SET street = 'Somewhere else' WHERE location_id = 3");
+        // The address upsert's DO UPDATE touches only latitude, which is still allowed.
+        assertThat(update("UPDATE locations SET latitude = latitude WHERE location_id = 1"))
+                .isOne();
+    }
+
     // ── Nobody logged in, and admins ────────────────────────
 
     @Test
