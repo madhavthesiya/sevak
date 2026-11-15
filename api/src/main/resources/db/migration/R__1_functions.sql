@@ -354,7 +354,9 @@ $$;
 -- This returns only the time ranges of one provider's active bookings: no customer, price or address.
 CREATE OR REPLACE FUNCTION fn_provider_busy_times(p_provider_id INT, p_from TIMESTAMPTZ, p_to TIMESTAMPTZ)
 RETURNS TABLE (busy_start TIMESTAMPTZ, busy_end TIMESTAMPTZ)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
+-- A realistic row estimate. With the default of 1000, the free-slots plan looked expensive enough for
+-- PostgreSQL to JIT-compile it: 12 ms of compiling for a 0.3 ms function.
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = sevak, pg_temp ROWS 20 AS $$
     SELECT scheduled_start, scheduled_end
     FROM bookings
     WHERE provider_id = p_provider_id

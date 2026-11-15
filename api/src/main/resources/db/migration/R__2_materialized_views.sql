@@ -4,6 +4,7 @@
 --  views once the data is loaded.
 -- ============================================================
 
+DROP FUNCTION IF EXISTS fn_live_leaderboard(); -- returns the view's row type, so it goes first
 DROP MATERIALIZED VIEW IF EXISTS mv_provider_leaderboard;
 DROP MATERIALIZED VIEW IF EXISTS mv_city_revenue_summary;
 DROP MATERIALIZED VIEW IF EXISTS mv_category_revenue;
@@ -17,8 +18,8 @@ DROP VIEW IF EXISTS v_public_reviews;
 --
 -- security_invoker: a plain view reads its tables with its owner's rights, which skip row-level security,
 -- so anyone allowed to read the view would see totals built from every booking. As the invoker, the
--- caller's policies apply. Only admins read the live view, and they can see every booking anyway.
--- The materialized copy below is refreshed as the owner, so it is always complete.
+-- caller's policies apply. The API role can't read it at all, though: admins reach it through
+-- fn_live_leaderboard below, and the materialized copy is refreshed as the owner.
 CREATE VIEW v_provider_leaderboard WITH (security_invoker = true) AS
 WITH platform AS (
     SELECT AVG(rating) AS avg_rating FROM provider_reviews
@@ -121,6 +122,24 @@ JOIN users cu_u   ON cu_u.user_id = cu.user_id;
 -- Recreating a view drops its grants, so they live here rather than in V14.
 -- Materialized views can't have row-level security. These hold totals per provider, city and category,
 -- not anyone's bookings; only the admin endpoints read the revenue columns.
-GRANT SELECT ON v_provider_leaderboard, v_public_reviews,
-                mv_provider_leaderboard, mv_city_revenue_summary, mv_category_revenue
+GRANT SELECT ON v_public_reviews, mv_provider_leaderboard, mv_city_revenue_summary, mv_category_revenue
     TO sevak_app;
+
+-- ── The live leaderboard, for admins ────────────────────────
+-- Read through the view under row-level security, it took 4-5 s at 1M bookings instead of 0.85 s, at the
+-- API's 5 s query limit. PostgreSQL plans a query before it knows who is asking, so it priced the
+-- "can you see this booking?" check on each of about 815,000 payments and chose 743,000 single-row
+-- lookups. For an admin the policies filter nothing, so admins read the view through this function:
+-- it refuses anyone else, then reads the view as the owner.
+CREATE FUNCTION fn_live_leaderboard() RETURNS SETOF v_provider_leaderboard
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
+BEGIN
+    IF NOT app_is_admin() THEN
+        RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'Only admins can read the live leaderboard';
+    END IF;
+    RETURN QUERY SELECT * FROM v_provider_leaderboard;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION fn_live_leaderboard() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fn_live_leaderboard() TO sevak_app;

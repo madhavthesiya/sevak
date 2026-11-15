@@ -24,23 +24,26 @@ $$;
 
 -- ── Who is calling ──────────────────────────────────────────
 -- Policies call these inside (SELECT ...), so each runs once per query, not once per row.
+-- PARALLEL SAFE: PostgreSQL treats a new function as parallel-unsafe, and one unsafe function in a policy
+-- stops every query on that table from using parallel workers. These only read a table and a setting,
+-- and parallel workers get the setting from the leader.
 CREATE FUNCTION app_user_id() RETURNS INT
-LANGUAGE sql STABLE AS $$
+LANGUAGE sql STABLE PARALLEL SAFE AS $$
     SELECT NULLIF(current_setting('sevak.user_id', true), '')::int
 $$;
 
 CREATE FUNCTION app_customer_id() RETURNS INT
-LANGUAGE sql STABLE AS $$
+LANGUAGE sql STABLE PARALLEL SAFE AS $$
     SELECT customer_id FROM sevak.customers WHERE user_id = sevak.app_user_id()
 $$;
 
 CREATE FUNCTION app_provider_id() RETURNS INT
-LANGUAGE sql STABLE AS $$
+LANGUAGE sql STABLE PARALLEL SAFE AS $$
     SELECT provider_id FROM sevak.service_providers WHERE user_id = sevak.app_user_id()
 $$;
 
 CREATE FUNCTION app_is_admin() RETURNS BOOLEAN
-LANGUAGE sql STABLE AS $$
+LANGUAGE sql STABLE PARALLEL SAFE AS $$
     SELECT EXISTS (SELECT 1 FROM sevak.admins WHERE user_id = sevak.app_user_id())
 $$;
 

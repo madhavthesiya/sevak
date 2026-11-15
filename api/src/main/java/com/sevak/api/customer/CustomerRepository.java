@@ -63,13 +63,21 @@ public class CustomerRepository {
                         ORDER BY log_id
                         """;
 
+    /**
+     * Totals only this customer's payments. The first version totalled every payment in the database and then
+     * kept this customer's: 1.6 s a page at 1M bookings, found while measuring row-level security (Phase 8).
+     */
     public static final String SPENDING_SQL = """
-                        WITH paid AS (
-                            SELECT booking_id,
-                                   COALESCE(SUM(amount) FILTER (WHERE status = 'success'), 0)  AS paid,
-                                   COALESCE(SUM(amount) FILTER (WHERE status = 'refunded'), 0) AS refunded
-                            FROM payments
-                            GROUP BY booking_id
+                        WITH mine AS (
+                            SELECT booking_id, status, total_amount FROM bookings WHERE customer_id = :id
+                        ),
+                        paid AS (
+                            SELECT p.booking_id,
+                                   COALESCE(SUM(p.amount) FILTER (WHERE p.status = 'success'), 0)  AS paid,
+                                   COALESCE(SUM(p.amount) FILTER (WHERE p.status = 'refunded'), 0) AS refunded
+                            FROM payments p
+                            JOIN mine m ON m.booking_id = p.booking_id
+                            GROUP BY p.booking_id
                         )
                         SELECT
                             COUNT(*)                                       AS total_bookings,
@@ -81,9 +89,8 @@ public class CustomerRepository {
                                 WHERE b.status IN ('pending', 'confirmed', 'in_progress')
                                   AND COALESCE(p.paid, 0) = 0), 0)         AS upcoming,
                             COALESCE(SUM(p.refunded), 0)                   AS refunded
-                        FROM bookings b
+                        FROM mine b
                         LEFT JOIN paid p ON p.booking_id = b.booking_id
-                        WHERE b.customer_id = :id
                         """;
 
     public static final String ADDRESSES_SQL = """

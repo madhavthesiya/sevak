@@ -277,6 +277,7 @@
 - Function `app_provider_id`
 - Function `app_user_id`
 - Function `fn_expire_pending_bookings` (security definer)
+- Function `fn_live_leaderboard` (security definer)
 - Function `fn_login_credentials` (security definer)
 - Function `fn_provider_available`
 - Function `fn_provider_busy_times` (security definer)

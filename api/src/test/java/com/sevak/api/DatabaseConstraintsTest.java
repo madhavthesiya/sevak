@@ -239,7 +239,7 @@ class DatabaseConstraintsTest extends IntegrationTest {
     void manyGoodReviewsBeatOnePerfectReview() {
         jdbc.update("UPDATE service_providers SET avg_rating = 4.80, review_count = 40 WHERE provider_id = 5");
 
-        List<Integer> ranking = admin.findLeaderboard().stream()
+        List<Integer> ranking = asUser(ADMIN_USER, admin::findLeaderboard).stream()
                 .map(LeaderboardEntry::providerId)
                 .toList();
 
@@ -248,7 +248,7 @@ class DatabaseConstraintsTest extends IntegrationTest {
 
     @Test
     void aProviderWithNoReviewsRanksLast() {
-        List<Integer> ranking = admin.findLeaderboard().stream()
+        List<Integer> ranking = asUser(ADMIN_USER, admin::findLeaderboard).stream()
                 .map(LeaderboardEntry::providerId)
                 .toList();
 

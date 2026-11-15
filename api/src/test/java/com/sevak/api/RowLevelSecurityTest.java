@@ -248,6 +248,16 @@ class RowLevelSecurityTest extends IntegrationTest {
         assertThat(count("SELECT COUNT(*) FROM payments")).isEqualTo(9);
     }
 
+    @Test
+    void onlyAdminsReadTheLiveLeaderboardAndNobodyReadsItsViewDirectly() throws SQLException {
+        actAs(14);
+        assertThat(count("SELECT COUNT(*) FROM fn_live_leaderboard()")).isEqualTo(5); // the 5 active providers
+
+        actAs(1);
+        assertDenied("SELECT COUNT(*) FROM fn_live_leaderboard()");
+        assertDenied("SELECT COUNT(*) FROM v_provider_leaderboard");
+    }
+
     // ── What the role can't do at all ──────────────────────
 
     @Test

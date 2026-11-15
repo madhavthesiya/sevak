@@ -87,9 +87,13 @@ public class AdminRepository {
             ORDER BY total_revenue DESC, category_name
             """;
 
+    /**
+     * The live leaderboard, for admins. fn_live_leaderboard checks the caller is an admin, then reads the view
+     * as its owner: under row-level security the same view took 4-5 s at 1M bookings instead of 0.85 s.
+     */
     public static final String LEADERBOARD_LIVE_SQL = """
             SELECT lb.*, u.full_name AS provider_name
-            FROM v_provider_leaderboard lb
+            FROM fn_live_leaderboard() lb
             JOIN service_providers sp ON sp.provider_id = lb.provider_id
             JOIN users u ON u.user_id = sp.user_id
             ORDER BY lb.rank, lb.provider_id
