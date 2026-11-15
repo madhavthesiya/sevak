@@ -1,0 +1,34 @@
+Provider reviews (owner's-rights view): as its user, under the policies
+
+Limit  (cost=3009.00..3009.03 rows=10 width=48) (actual time=1.248..1.251 rows=10 loops=1)
+  Buffers: shared hit=2095
+  ->  Sort  (cost=3009.00..3009.23 rows=92 width=48) (actual time=1.247..1.249 rows=10 loops=1)
+        Sort Key: pr.created_at DESC, pr.review_id DESC
+        Sort Method: top-N heapsort  Memory: 27kB
+        Buffers: shared hit=2095
+        ->  Nested Loop  (cost=11.04..3007.02 rows=92 width=48) (actual time=0.068..1.192 rows=180 loops=1)
+              Buffers: shared hit=2095
+              ->  Nested Loop  (cost=10.75..2968.95 rows=92 width=40) (actual time=0.060..0.871 rows=180 loops=1)
+                    Buffers: shared hit=1555
+                    ->  Nested Loop  (cost=10.46..2452.35 rows=92 width=40) (actual time=0.051..0.608 rows=180 loops=1)
+                          Buffers: shared hit=1015
+                          ->  Bitmap Heap Scan on bookings b  (cost=10.04..764.83 rows=208 width=8) (actual time=0.038..0.182 rows=208 loops=1)
+                                Recheck Cond: (provider_id = 1607)
+                                Heap Blocks: exact=208
+                                Buffers: shared hit=211
+                                ->  Bitmap Index Scan on idx_bookings_provider_status  (cost=0.00..9.99 rows=208 width=0) (actual time=0.015..0.015 rows=208 loops=1)
+                                      Index Cond: (provider_id = 1607)
+                                      Buffers: shared hit=3
+                          ->  Index Scan using provider_reviews_booking_id_key on provider_reviews pr  (cost=0.42..8.11 rows=1 width=40) (actual time=0.002..0.002 rows=1 loops=208)
+                                Index Cond: (booking_id = b.booking_id)
+                                Buffers: shared hit=804
+                    ->  Index Scan using customers_pkey on customers cu  (cost=0.29..5.62 rows=1 width=8) (actual time=0.001..0.001 rows=1 loops=180)
+                          Index Cond: (customer_id = b.customer_id)
+                          Buffers: shared hit=540
+              ->  Index Scan using users_pkey on users cu_u  (cost=0.29..0.41 rows=1 width=16) (actual time=0.001..0.001 rows=1 loops=180)
+                    Index Cond: (user_id = cu.user_id)
+                    Buffers: shared hit=540
+Planning:
+  Buffers: shared hit=37
+Planning Time: 0.734 ms
+Execution Time: 1.369 ms

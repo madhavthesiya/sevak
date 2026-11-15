@@ -1,0 +1,25 @@
+Live leaderboard: as shipped, an admin-checked SECURITY DEFINER function
+
+Sort  (cost=1657.76..1660.26 rows=1000 width=878) (actual time=327.280..327.518 rows=4939 loops=1)
+  Sort Key: lb.rank, lb.provider_id
+  Sort Method: quicksort  Memory: 811kB
+  Buffers: shared hit=30382 read=13448, temp read=5179 written=5236
+  ->  Nested Loop  (cost=226.17..1607.94 rows=1000 width=878) (actual time=320.123..324.989 rows=4939 loops=1)
+        Buffers: shared hit=30382 read=13448, temp read=5179 written=5236
+        ->  Hash Join  (cost=225.88..238.51 rows=1000 width=870) (actual time=320.099..321.083 rows=4939 loops=1)
+              Hash Cond: (lb.provider_id = sp.provider_id)
+              Buffers: shared hit=15565 read=13448, temp read=5179 written=5236
+              ->  Function Scan on fn_live_leaderboard lb  (cost=0.25..10.25 rows=1000 width=866) (actual time=319.323..319.507 rows=4939 loops=1)
+                    Buffers: shared hit=15452 read=13448, temp read=5179 written=5236
+              ->  Hash  (cost=163.06..163.06 rows=5006 width=8) (actual time=0.724..0.725 rows=5006 loops=1)
+                    Buckets: 8192  Batches: 1  Memory Usage: 260kB
+                    Buffers: shared hit=113
+                    ->  Seq Scan on service_providers sp  (cost=0.00..163.06 rows=5006 width=8) (actual time=0.012..0.330 rows=5006 loops=1)
+                          Buffers: shared hit=113
+        ->  Index Scan using users_pkey on users u  (cost=0.29..1.37 rows=1 width=16) (actual time=0.001..0.001 rows=1 loops=4939)
+              Index Cond: (user_id = sp.user_id)
+              Buffers: shared hit=14817
+Planning:
+  Buffers: shared hit=12
+Planning Time: 0.387 ms
+Execution Time: 327.977 ms

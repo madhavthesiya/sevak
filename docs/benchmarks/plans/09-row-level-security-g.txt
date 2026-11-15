@@ -1,0 +1,61 @@
+My bookings, busiest customer: as its user, under the policies
+
+Limit  (cost=14.66..857.96 rows=20 width=78) (actual time=0.355..0.545 rows=20 loops=1)
+  Buffers: shared hit=441
+  InitPlan 9 (returns $9)
+    ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.105..0.105 rows=1 loops=1)
+          Buffers: shared hit=3
+  InitPlan 10 (returns $10)
+    ->  Result  (cost=0.00..0.26 rows=1 width=4) (never executed)
+  InitPlan 11 (returns $11)
+    ->  Result  (cost=0.00..0.26 rows=1 width=1) (never executed)
+  ->  Result  (cost=13.88..9163.67 rows=217 width=78) (actual time=0.354..0.542 rows=20 loops=1)
+        Buffers: shared hit=441
+        ->  Incremental Sort  (cost=13.88..2661.81 rows=217 width=46) (actual time=0.240..0.242 rows=20 loops=1)
+              Sort Key: b.scheduled_start DESC, b.booking_id DESC
+              Presorted Key: b.scheduled_start
+              Full-sort Groups: 1  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+              Buffers: shared hit=153
+              ->  Nested Loop  (cost=1.00..2652.43 rows=217 width=46) (actual time=0.149..0.229 rows=21 loops=1)
+                    Buffers: shared hit=153
+                    ->  Nested Loop  (cost=0.71..2355.27 rows=217 width=38) (actual time=0.137..0.184 rows=21 loops=1)
+                          Buffers: shared hit=90
+                          ->  Index Scan using idx_bookings_customer_start on bookings b  (cost=0.42..1730.16 rows=217 width=38) (actual time=0.125..0.141 rows=21 loops=1)
+                                Index Cond: (customer_id = 20508)
+                                Filter: ((customer_id = $9) OR (provider_id = $10) OR $11)
+                                Buffers: shared hit=27
+                          ->  Index Scan using service_providers_pkey on service_providers sp  (cost=0.28..2.88 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=21)
+                                Index Cond: (provider_id = b.provider_id)
+                                Buffers: shared hit=63
+                    ->  Index Scan using users_pkey on users u  (cost=0.29..1.37 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=21)
+                          Index Cond: (user_id = sp.user_id)
+                          Buffers: shared hit=63
+        SubPlan 8
+          ->  Aggregate  (cost=29.94..29.95 rows=1 width=32) (actual time=0.014..0.014 rows=1 loops=20)
+                Buffers: shared hit=288
+                ->  Nested Loop  (cost=0.43..29.94 rows=1 width=24) (actual time=0.010..0.013 rows=2 loops=20)
+                      Join Filter: (bi.service_id = s.service_id)
+                      Rows Removed by Join Filter: 12
+                      Buffers: shared hit=288
+                      ->  Index Scan using booking_items_pkey on booking_items bi  (cost=0.43..28.67 rows=1 width=8) (actual time=0.009..0.010 rows=2 loops=20)
+                            Index Cond: (booking_id = b.booking_id)
+                            Filter: (SubPlan 4)
+                            Buffers: shared hit=247
+                            SubPlan 4
+                              ->  Index Scan using bookings_pkey on bookings b_1  (cost=1.21..9.23 rows=1 width=0) (actual time=0.003..0.003 rows=1 loops=41)
+                                    Index Cond: (booking_id = bi.booking_id)
+                                    Filter: ((customer_id = $2) OR (provider_id = $3) OR $4)
+                                    Buffers: shared hit=167
+                                    InitPlan 1 (returns $2)
+                                      ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.078..0.078 rows=1 loops=1)
+                                            Buffers: shared hit=3
+                                    InitPlan 2 (returns $3)
+                                      ->  Result  (cost=0.00..0.26 rows=1 width=4) (never executed)
+                                    InitPlan 3 (returns $4)
+                                      ->  Result  (cost=0.00..0.26 rows=1 width=1) (never executed)
+                      ->  Seq Scan on services s  (cost=0.00..1.12 rows=12 width=24) (actual time=0.000..0.001 rows=7 loops=41)
+                            Buffers: shared hit=41
+Planning:
+  Buffers: shared hit=28
+Planning Time: 0.804 ms
+Execution Time: 0.684 ms

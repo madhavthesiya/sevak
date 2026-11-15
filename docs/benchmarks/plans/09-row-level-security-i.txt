@@ -1,0 +1,89 @@
+Booking detail: as its user, under the policies
+
+Result  (cost=20.58..51.49 rows=1 width=152) (actual time=0.607..0.613 rows=1 loops=1)
+  One-Time Filter: ($5 = 658)
+  Buffers: shared hit=42
+  InitPlan 2 (returns $2)
+    ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.112..0.113 rows=1 loops=1)
+          Buffers: shared hit=3
+  InitPlan 3 (returns $3)
+    ->  Result  (cost=0.00..0.26 rows=1 width=4) (never executed)
+  InitPlan 4 (returns $4)
+    ->  Result  (cost=0.00..0.26 rows=1 width=1) (never executed)
+  InitPlan 5 (returns $5)
+    ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.209..0.210 rows=1 loops=1)
+          Buffers: shared hit=3
+  ->  Nested Loop Left Join  (cost=19.54..46.01 rows=1 width=151) (actual time=0.376..0.381 rows=1 loops=1)
+        Buffers: shared hit=35
+        ->  Nested Loop Left Join  (cost=1.86..28.31 rows=1 width=144) (actual time=0.240..0.244 rows=1 loops=1)
+              Join Filter: (c.coupon_id = b.coupon_id)
+              Rows Removed by Join Filter: 5
+              Buffers: shared hit=24
+              ->  Nested Loop  (cost=1.86..27.19 rows=1 width=139) (actual time=0.233..0.236 rows=1 loops=1)
+                    Buffers: shared hit=23
+                    ->  Nested Loop  (cost=1.72..26.96 rows=1 width=136) (actual time=0.212..0.214 rows=1 loops=1)
+                          Buffers: shared hit=21
+                          ->  Nested Loop  (cost=1.58..26.80 rows=1 width=119) (actual time=0.198..0.201 rows=1 loops=1)
+                                Join Filter: (ca.location_id = b.location_id)
+                                Buffers: shared hit=19
+                                ->  Nested Loop  (cost=1.29..26.43 rows=1 width=122) (actual time=0.185..0.187 rows=1 loops=1)
+                                      Buffers: shared hit=16
+                                      ->  Nested Loop  (cost=1.00..18.12 rows=1 width=98) (actual time=0.171..0.173 rows=1 loops=1)
+                                            Buffers: shared hit=13
+                                            ->  Nested Loop  (cost=0.71..16.75 rows=1 width=90) (actual time=0.155..0.156 rows=1 loops=1)
+                                                  Buffers: shared hit=10
+                                                  ->  Index Scan using bookings_pkey on bookings b  (cost=0.42..8.45 rows=1 width=86) (actual time=0.138..0.138 rows=1 loops=1)
+                                                        Index Cond: (booking_id = 840182)
+                                                        Filter: ((customer_id = 658) AND ((customer_id = $2) OR (provider_id = $3) OR $4))
+                                                        Buffers: shared hit=7
+                                                  ->  Index Scan using service_providers_pkey on service_providers sp  (cost=0.28..8.30 rows=1 width=8) (actual time=0.015..0.015 rows=1 loops=1)
+                                                        Index Cond: (provider_id = b.provider_id)
+                                                        Buffers: shared hit=3
+                                            ->  Index Scan using users_pkey on users u  (cost=0.29..1.37 rows=1 width=16) (actual time=0.015..0.015 rows=1 loops=1)
+                                                  Index Cond: (user_id = sp.user_id)
+                                                  Buffers: shared hit=3
+                                      ->  Index Scan using locations_pkey on locations loc  (cost=0.29..8.31 rows=1 width=24) (actual time=0.012..0.012 rows=1 loops=1)
+                                            Index Cond: (location_id = b.location_id)
+                                            Buffers: shared hit=3
+                                ->  Index Scan using customer_addresses_pkey on customer_addresses ca  (cost=0.29..0.35 rows=1 width=17) (actual time=0.012..0.012 rows=1 loops=1)
+                                      Index Cond: ((customer_id = 658) AND (location_id = loc.location_id))
+                                      Buffers: shared hit=3
+                          ->  Index Scan using areas_pkey on areas ar  (cost=0.14..0.16 rows=1 width=25) (actual time=0.012..0.012 rows=1 loops=1)
+                                Index Cond: (area_id = loc.area_id)
+                                Buffers: shared hit=2
+                    ->  Index Scan using cities_pkey on cities ci  (cost=0.13..0.21 rows=1 width=11) (actual time=0.020..0.020 rows=1 loops=1)
+                          Index Cond: (city_id = ar.city_id)
+                          Buffers: shared hit=2
+              ->  Seq Scan on coupons c  (cost=0.00..1.05 rows=5 width=13) (actual time=0.005..0.006 rows=5 loops=1)
+                    Buffers: shared hit=1
+        ->  Limit  (cost=17.68..17.69 rows=1 width=19) (actual time=0.133..0.134 rows=1 loops=1)
+              Buffers: shared hit=11
+              ->  Sort  (cost=17.68..17.69 rows=1 width=19) (actual time=0.132..0.133 rows=1 loops=1)
+                    Sort Key: payments.created_at DESC, payments.payment_id DESC
+                    Sort Method: quicksort  Memory: 25kB
+                    Buffers: shared hit=11
+                    ->  Index Scan using idx_payments_booking on payments  (cost=0.42..17.67 rows=1 width=19) (actual time=0.123..0.125 rows=1 loops=1)
+                          Index Cond: (booking_id = b.booking_id)
+                          Filter: (SubPlan 9)
+                          Buffers: shared hit=11
+                          SubPlan 9
+                            ->  Index Scan using bookings_pkey on bookings b_1  (cost=1.21..9.23 rows=1 width=0) (actual time=0.105..0.106 rows=1 loops=1)
+                                  Index Cond: (booking_id = payments.booking_id)
+                                  Filter: ((customer_id = $8) OR (provider_id = $9) OR $10)
+                                  Buffers: shared hit=7
+                                  InitPlan 6 (returns $8)
+                                    ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.093..0.093 rows=1 loops=1)
+                                          Buffers: shared hit=3
+                                  InitPlan 7 (returns $9)
+                                    ->  Result  (cost=0.00..0.26 rows=1 width=4) (never executed)
+                                  InitPlan 8 (returns $10)
+                                    ->  Result  (cost=0.00..0.26 rows=1 width=1) (never executed)
+  SubPlan 1
+    ->  Index Only Scan using provider_reviews_booking_id_key on provider_reviews pr  (cost=0.42..4.44 rows=1 width=0) (actual time=0.016..0.016 rows=1 loops=1)
+          Index Cond: (booking_id = b.booking_id)
+          Heap Fetches: 0
+          Buffers: shared hit=4
+Planning:
+  Buffers: shared hit=65
+Planning Time: 14.945 ms
+Execution Time: 0.902 ms

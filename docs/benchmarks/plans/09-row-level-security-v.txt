@@ -1,0 +1,35 @@
+Free slots (busy times via a definer function): policies skipped
+
+Sort  (cost=8414.88..8439.73 rows=9940 width=12) (actual time=1.362..1.372 rows=194 loops=1)
+  Sort Key: ((start_at.start_at AT TIME ZONE 'Asia/Kolkata'::text))
+  Sort Method: quicksort  Memory: 32kB
+  Buffers: shared hit=23
+  CTE busy
+    ->  Function Scan on fn_provider_busy_times  (cost=0.25..0.45 rows=20 width=16) (actual time=0.298..0.299 rows=5 loops=1)
+          Buffers: shared hit=14
+  ->  Nested Loop Anti Join  (cost=25.53..7754.46 rows=9940 width=12) (actual time=0.400..1.340 rows=194 loops=1)
+        Join Filter: (tstzrange(b.busy_start, b.busy_end, '[)'::text) && tstzrange((start_at.start_at AT TIME ZONE 'Asia/Kolkata'::text), ((start_at.start_at AT TIME ZONE 'Asia/Kolkata'::text) + '01:00:00'::interval), '[)'::text))
+        Rows Removed by Join Filter: 1033
+        Buffers: shared hit=23
+        ->  Nested Loop  (cost=25.53..743.23 rows=9990 width=16) (actual time=0.073..0.193 rows=228 loops=1)
+              Buffers: shared hit=9
+              ->  Hash Join  (cost=25.52..43.32 rows=30 width=24) (actual time=0.059..0.072 rows=12 loops=1)
+                    Hash Cond: (EXTRACT(isodow FROM (d.d)::date) = (pa.day_of_week)::numeric)
+                    Buffers: shared hit=9
+                    ->  Function Scan on generate_series d  (cost=0.01..10.01 rows=1000 width=8) (actual time=0.009..0.011 rows=14 loops=1)
+                    ->  Hash  (cost=25.43..25.43 rows=6 width=18) (actual time=0.036..0.037 rows=6 loops=1)
+                          Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                          Buffers: shared hit=9
+                          ->  Bitmap Heap Scan on provider_availability pa  (cost=4.32..25.43 rows=6 width=18) (actual time=0.018..0.024 rows=6 loops=1)
+                                Recheck Cond: (provider_id = 1607)
+                                Heap Blocks: exact=6
+                                Buffers: shared hit=9
+                                ->  Bitmap Index Scan on ex_availability_no_overlap  (cost=0.00..4.32 rows=6 width=0) (actual time=0.014..0.014 rows=6 loops=1)
+                                      Index Cond: (provider_id = 1607)
+                                      Buffers: shared hit=3
+              ->  Function Scan on generate_series start_at  (cost=0.02..20.02 rows=333 width=8) (actual time=0.003..0.008 rows=19 loops=12)
+                    Filter: ((start_at AT TIME ZONE 'Asia/Kolkata'::text) > (now() + '02:00:00'::interval))
+        ->  CTE Scan on busy b  (cost=0.00..0.40 rows=20 width=16) (actual time=0.001..0.002 rows=5 loops=228)
+              Buffers: shared hit=14
+Planning Time: 0.252 ms
+Execution Time: 1.506 ms
