@@ -23,8 +23,18 @@ CREATE OR REPLACE TRIGGER trg_service_reviews_touch
 BEFORE UPDATE ON service_reviews
 FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
 
+-- ── Trigger functions and row-level security ────────────────
+-- A trigger function normally runs as the user who fired it, so row-level security filters what it
+-- sees. The ones that keep derived or audit data correct must see every row, so they are
+-- SECURITY DEFINER: they run as their owner. Each sets a fixed search_path, so a caller can't put
+-- look-alike tables in front of the real ones. Checks that only look at the caller's own booking stay
+-- as the caller, and fail closed when they can't see it.
+
 -- ── Keep a provider's cached rating and review count correct ─
-CREATE OR REPLACE FUNCTION fn_update_provider_avg_rating() RETURNS trigger AS $$
+-- A customer's review fires this, but the average covers every customer's reviews, and the
+-- customer may not update service_providers at all. As the caller it would silently do nothing.
+CREATE OR REPLACE FUNCTION fn_update_provider_avg_rating() RETURNS trigger
+SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
 DECLARE
     v_provider_id INT;
 BEGIN
@@ -56,7 +66,9 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_provider_avg_rating();
 -- ── Audit trail of every booking status, including the first ─
 -- The application records who made the change with
 -- SELECT set_config('sevak.user_id', ?, true) inside its transaction.
-CREATE OR REPLACE FUNCTION fn_log_booking_status_change() RETURNS trigger AS $$
+-- The API role has no INSERT on booking_status_log, so only this trigger can write it.
+CREATE OR REPLACE FUNCTION fn_log_booking_status_change() RETURNS trigger
+SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
 BEGIN
     IF TG_OP = 'INSERT' OR NEW.status IS DISTINCT FROM OLD.status THEN
         INSERT INTO booking_status_log (booking_id, old_status, new_status, changed_by)
@@ -93,7 +105,10 @@ FOR EACH ROW EXECUTE FUNCTION fn_check_status_transition();
 
 -- ── A booking has at least one item, and its subtotal equals them, checked at commit ─
 -- Deferred because a booking and its items are inserted in separate statements.
-CREATE OR REPLACE FUNCTION fn_check_booking_subtotal() RETURNS trigger AS $$
+-- SECURITY DEFINER because "booking not found" means "skip the check": as the caller, a booking it
+-- couldn't see would pass unchecked.
+CREATE OR REPLACE FUNCTION fn_check_booking_subtotal() RETURNS trigger
+SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
 DECLARE
     v_booking_id INT;
     v_subtotal   NUMERIC(10,2);
@@ -181,7 +196,9 @@ BEFORE INSERT OR UPDATE ON service_reviews
 FOR EACH ROW EXECUTE FUNCTION fn_check_service_in_booking();
 
 -- ── A processed refund marks its payment as refunded ────────
-CREATE OR REPLACE FUNCTION fn_mark_payment_refunded() RETURNS trigger AS $$
+-- The API role can't update payments, so a payment's status can only change this way.
+CREATE OR REPLACE FUNCTION fn_mark_payment_refunded() RETURNS trigger
+SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
 BEGIN
     IF NEW.status = 'processed' THEN
         UPDATE payments SET status = 'refunded' WHERE payment_id = NEW.payment_id;
@@ -310,8 +327,10 @@ $$;
 
 -- ── Release the slot of a request the provider never answered ─
 -- SKIP LOCKED leaves alone any booking someone is working on right now.
+-- SECURITY DEFINER: the scheduled job has no user, and must see every customer's pending requests.
+-- It takes no arguments, so a caller can only run the expiry rule itself.
 CREATE OR REPLACE FUNCTION fn_expire_pending_bookings() RETURNS INT
-LANGUAGE plpgsql AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
 DECLARE
     v_booking_id INT;
     v_expired    INT := 0;
@@ -329,3 +348,45 @@ BEGIN
     RETURN v_expired;
 END;
 $$;
+
+-- ── When a provider is busy, for the public free-slots screen ─
+-- Row-level security hides other customers' bookings, but a free slot depends on all of them.
+-- This returns only the time ranges of one provider's active bookings: no customer, price or address.
+CREATE OR REPLACE FUNCTION fn_provider_busy_times(p_provider_id INT, p_from TIMESTAMPTZ, p_to TIMESTAMPTZ)
+RETURNS TABLE (busy_start TIMESTAMPTZ, busy_end TIMESTAMPTZ)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
+    SELECT scheduled_start, scheduled_end
+    FROM bookings
+    WHERE provider_id = p_provider_id
+      AND status IN ('pending', 'confirmed', 'in_progress')
+      AND scheduled_start < p_to
+      AND scheduled_end > p_from;
+$$;
+
+-- ── Login ───────────────────────────────────────────────────
+-- The API role can't read password hashes. Login, which runs before anyone is known,
+-- gets the one hash for the email being checked, and nothing else.
+CREATE OR REPLACE FUNCTION fn_login_credentials(p_email TEXT)
+RETURNS TABLE (user_id INT, password_hash VARCHAR, role VARCHAR, status VARCHAR, profile_id INT)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
+    SELECT u.user_id, u.password_hash, u.role, u.status,
+           COALESCE(c.customer_id, sp.provider_id, a.admin_id)
+    FROM users u
+    LEFT JOIN customers c          ON c.user_id = u.user_id
+    LEFT JOIN service_providers sp ON sp.user_id = u.user_id
+    LEFT JOIN admins a             ON a.user_id = u.user_id
+    WHERE LOWER(u.email) = LOWER(p_email);
+$$;
+
+-- ── Who may run what ────────────────────────────────────────
+-- PostgreSQL lets everyone execute a new function. The SECURITY DEFINER ones run with the owner's
+-- rights, so only the API role may call them, and the trigger-only ones can't be called at all.
+REVOKE EXECUTE ON FUNCTION fn_update_provider_avg_rating(), fn_log_booking_status_change(),
+                           fn_check_booking_subtotal(), fn_mark_payment_refunded()
+    FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION fn_expire_pending_bookings(), fn_provider_busy_times(INT, TIMESTAMPTZ, TIMESTAMPTZ),
+                           fn_login_credentials(TEXT)
+    FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fn_expire_pending_bookings(), fn_provider_busy_times(INT, TIMESTAMPTZ, TIMESTAMPTZ),
+                          fn_login_credentials(TEXT)
+    TO sevak_app;

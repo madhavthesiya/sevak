@@ -66,9 +66,20 @@ public class ProviderRepository {
             ORDER BY s.service_name, s.service_id
             """;
 
-    /** Mirrors fn_provider_available and ex_provider_no_double_booking, so a listed slot can be booked. */
+    /**
+     * Mirrors fn_provider_available and ex_provider_no_double_booking, so a listed slot can be booked.
+     * Row-level security hides other customers' bookings, so the busy times come from
+     * fn_provider_busy_times, which returns only time ranges.
+     */
     public static final String SLOTS_SQL = """
-            WITH days AS (
+            WITH busy AS MATERIALIZED (
+                SELECT busy_start, busy_end
+                FROM fn_provider_busy_times(
+                    :provider,
+                    CAST(CAST(:from AS date) AS timestamp) AT TIME ZONE 'Asia/Kolkata',
+                    CAST(CAST(:from AS date) + CAST(:days AS int) + 1 AS timestamp) AT TIME ZONE 'Asia/Kolkata')
+            ),
+            days AS (
                 SELECT CAST(d AS date) AS day
                 FROM generate_series(CAST(:from AS date), CAST(:from AS date) + CAST(:days AS int) - 1,
                                      interval '1 day') d
@@ -87,10 +98,8 @@ public class ProviderRepository {
             FROM candidates c
             WHERE c.slot_start > now() + interval '2 hours'
               AND NOT EXISTS (
-                    SELECT 1 FROM bookings b
-                    WHERE b.provider_id = :provider
-                      AND b.status IN ('pending', 'confirmed', 'in_progress')
-                      AND tstzrange(b.scheduled_start, b.scheduled_end, '[)')
+                    SELECT 1 FROM busy b
+                    WHERE tstzrange(b.busy_start, b.busy_end, '[)')
                           && tstzrange(c.slot_start, c.slot_start + make_interval(mins => CAST(:minutes AS int)), '[)'))
             ORDER BY c.slot_start
             """;
@@ -145,14 +154,16 @@ public class ProviderRepository {
                         WHERE sp.provider_id = :id
                         """;
 
+    /**
+     * Reviews are public, but the bookings that link them to a provider are not. v_public_reviews runs with
+     * its owner's rights and exposes only these columns; it is a plain view, so this query still uses the
+     * same indexes.
+     */
     public static final String REVIEWS_SQL = """
-                        SELECT pr.rating, pr.comment, cu_u.full_name AS customer_name, pr.created_at AS reviewed_at
-                        FROM provider_reviews pr
-                        JOIN bookings b    ON b.booking_id = pr.booking_id
-                        JOIN customers cu  ON cu.customer_id = b.customer_id
-                        JOIN users cu_u    ON cu_u.user_id = cu.user_id
-                        WHERE b.provider_id = :id
-                        ORDER BY pr.created_at DESC, pr.review_id DESC
+                        SELECT rating, comment, customer_name, reviewed_at
+                        FROM v_public_reviews
+                        WHERE provider_id = :id
+                        ORDER BY reviewed_at DESC, review_id DESC
                         LIMIT :limit OFFSET :offset
                         """;
 
@@ -358,11 +369,10 @@ public class ProviderRepository {
     }
 
     public long countReviews(int providerId) {
-        return jdbc.sql("""
-                        SELECT COUNT(*) FROM provider_reviews pr
-                        JOIN bookings b ON b.booking_id = pr.booking_id
-                        WHERE b.provider_id = :id
-                        """).param("id", providerId).query(Long.class).single();
+        return jdbc.sql("SELECT COUNT(*) FROM v_public_reviews WHERE provider_id = :id")
+                .param("id", providerId)
+                .query(Long.class)
+                .single();
     }
 
     /** Upcoming work is listed soonest first; finished work newest first. */

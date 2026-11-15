@@ -32,6 +32,10 @@
 - Check: `role = 'provider'`
 - Check: `verification_status IN ('pending', 'verified', 'rejected')`
 - Index `idx_providers_city`: (city_id)
+- Row-level security: enabled and forced
+- Policy `service_providers_read` (select): using `true`
+- Policy `service_providers_register` (insert): check `(user_id = (SELECT app_user_id()))`
+- Policy `service_providers_verify` (update): using `(SELECT app_is_admin())`; check `(SELECT app_is_admin())`
 
 **admins**(<ins>admin_id</ins>, *user_id*, admin_role, department, *role*)
 
@@ -64,6 +68,8 @@
 **customer_addresses**(<ins>*customer_id*</ins> → customers, <ins>*location_id*</ins> → locations, label, house_no, is_active)
 
 - On delete: customer_id cascade; location_id cascade
+- Row-level security: enabled and forced
+- Policy `customer_addresses_own` (all): using `(customer_id = (SELECT app_customer_id()))`; check `(customer_id = (SELECT app_customer_id()))`
 
 **provider_service_areas**(<ins>*provider_id*</ins> → service_providers, <ins>*area_id*</ins> → areas)
 
@@ -95,6 +101,10 @@
 - On delete: provider_id cascade; service_id cascade
 - Check: `price >= 0`
 - Index `idx_provider_services_service`: (service_id)
+- Row-level security: enabled and forced
+- Policy `provider_services_add` (insert): check `(provider_id = (SELECT app_provider_id()))`
+- Policy `provider_services_change` (update): using `(provider_id = (SELECT app_provider_id()))`; check `(provider_id = (SELECT app_provider_id()))`
+- Policy `provider_services_read` (select): using `true`
 
 ## Booking and money
 
@@ -116,6 +126,10 @@
 - Trigger `trg_booking_status_transition`: before update → `fn_check_status_transition()`
 - Trigger `trg_booking_subtotal`: after insert or update → `fn_check_booking_subtotal()`
 - Trigger `trg_bookings_touch`: before update → `fn_touch_updated_at()`
+- Row-level security: enabled and forced
+- Policy `bookings_create` (insert): check `(customer_id = (SELECT app_customer_id()))`
+- Policy `bookings_read` (select): using `((customer_id = (SELECT app_customer_id())) OR (provider_id = (SELECT app_provider_id())) OR (SELECT app_is_admin()))`
+- Policy `bookings_update` (update): using `((customer_id = (SELECT app_customer_id())) OR (provider_id = (SELECT app_provider_id())))`; check `((customer_id = (SELECT app_customer_id())) OR (provider_id = (SELECT app_provider_id())))`
 
 **booking_items**(<ins>*booking_id*</ins> → bookings, <ins>item_no</ins>, *service_id* → services, *variant_id* → service_variants, quantity, unit_price)
 
@@ -125,11 +139,16 @@
 - Check: `unit_price >= 0`
 - Index `idx_booking_items_service`: (service_id)
 - Trigger `trg_booking_items_subtotal`: after delete or insert or update → `fn_check_booking_subtotal()`
+- Row-level security: enabled and forced
+- Policy `booking_items_create` (insert): check `(EXISTS (SELECT 1 FROM bookings b WHERE ((b.booking_id = booking_items.booking_id) AND (b.customer_id = (SELECT app_customer_id())))))`
+- Policy `booking_items_read` (select): using `(EXISTS (SELECT 1 FROM bookings b WHERE (b.booking_id = booking_items.booking_id)))`
 
 **booking_status_log**(<ins>log_id</ins>, *booking_id* → bookings, old_status, new_status, *changed_by* → users, changed_at, remarks)
 
 - On delete: booking_id cascade
 - Index `idx_status_log_booking`: (booking_id, changed_at)
+- Row-level security: enabled and forced
+- Policy `booking_status_log_read` (select): using `(EXISTS (SELECT 1 FROM bookings b WHERE (b.booking_id = booking_status_log.booking_id)))`
 
 **booking_status_transitions**(<ins>from_status</ins>, <ins>to_status</ins>)
 
@@ -149,10 +168,16 @@
 
 - On delete: booking_id cascade; coupon_id cascade; customer_id cascade
 - Unique (booking_id)
+- Row-level security: enabled and forced
+- Policy `coupon_redemptions_create` (insert): check `((customer_id = (SELECT app_customer_id())) AND (EXISTS (SELECT 1 FROM bookings b WHERE ((b.booking_id = coupon_redemptions.booking_id) AND (b.customer_id = (SELECT app_customer_id()))))))`
+- Policy `coupon_redemptions_read` (select): using `(EXISTS (SELECT 1 FROM bookings b WHERE (b.booking_id = coupon_redemptions.booking_id)))`
+- Policy `coupon_redemptions_release` (delete): using `(EXISTS (SELECT 1 FROM bookings b WHERE (b.booking_id = coupon_redemptions.booking_id)))`
 
 **idempotency_keys**(<ins>*user_id*</ins> → users, <ins>idempotency_key</ins>, request_hash, *booking_id* → bookings, created_at)
 
 - On delete: booking_id cascade; user_id cascade
+- Row-level security: enabled and forced
+- Policy `idempotency_keys_own` (all): using `(user_id = (SELECT app_user_id()))`; check `(user_id = (SELECT app_user_id()))`
 
 **payments**(<ins>payment_id</ins>, *booking_id* → bookings, payment_method, status, amount, gateway_ref, paid_at, created_at, failure_reason)
 
@@ -160,6 +185,9 @@
 - Check: `status IN ('pending', 'success', 'failed', 'refunded')`
 - Index `idx_payments_booking`: (booking_id)
 - Unique index `uq_one_successful_payment`: (booking_id) where `status = 'success'`
+- Row-level security: enabled and forced
+- Policy `payments_create` (insert): check `(EXISTS (SELECT 1 FROM bookings b WHERE ((b.booking_id = payments.booking_id) AND (b.customer_id = (SELECT app_customer_id())))))`
+- Policy `payments_read` (select): using `(EXISTS (SELECT 1 FROM bookings b WHERE (b.booking_id = payments.booking_id)))`
 
 **refunds**(<ins>refund_id</ins>, *payment_id* → payments, amount, status, requested_at, processed_at)
 
@@ -168,10 +196,17 @@
 - Index `idx_refunds_payment`: (payment_id)
 - Unique index `uq_one_active_refund`: (payment_id) where `status <> 'failed'`
 - Trigger `trg_refund_processed`: after insert or update → `fn_mark_payment_refunded()`
+- Row-level security: enabled and forced
+- Policy `refunds_create` (insert): check `(EXISTS (SELECT 1 FROM payments p WHERE (p.payment_id = refunds.payment_id)))`
+- Policy `refunds_process` (update): using `(SELECT app_is_admin())`; check `(SELECT app_is_admin())`
+- Policy `refunds_read` (select): using `(EXISTS (SELECT 1 FROM payments p WHERE (p.payment_id = refunds.payment_id)))`
 
 **cancellations**(<ins>cancel_id</ins>, *booking_id* → bookings, reason, cancelled_at, *cancelled_by* → users)
 
 - Unique (booking_id)
+- Row-level security: enabled and forced
+- Policy `cancellations_create` (insert): check `((cancelled_by = (SELECT app_user_id())) AND (EXISTS (SELECT 1 FROM bookings b WHERE (b.booking_id = cancellations.booking_id))))`
+- Policy `cancellations_read` (select): using `(EXISTS (SELECT 1 FROM bookings b WHERE (b.booking_id = cancellations.booking_id)))`
 
 ## Feedback and provider operations
 
@@ -182,6 +217,9 @@
 - Trigger `trg_after_review_change`: after delete or insert or update → `fn_update_provider_avg_rating()`
 - Trigger `trg_provider_review_allowed`: before insert → `fn_check_review_allowed()`
 - Trigger `trg_provider_reviews_touch`: before update → `fn_touch_updated_at()`
+- Row-level security: enabled and forced
+- Policy `provider_reviews_read` (select): using `true`
+- Policy `provider_reviews_write` (insert): check `(EXISTS (SELECT 1 FROM bookings b WHERE ((b.booking_id = provider_reviews.booking_id) AND (b.customer_id = (SELECT app_customer_id())))))`
 
 **service_reviews**(<ins>review_id</ins>, *service_id* → services, *booking_id* → bookings, rating, comment, created_at, updated_at)
 
@@ -191,18 +229,29 @@
 - Trigger `trg_service_in_booking`: before insert or update → `fn_check_service_in_booking()`
 - Trigger `trg_service_review_allowed`: before insert → `fn_check_review_allowed()`
 - Trigger `trg_service_reviews_touch`: before update → `fn_touch_updated_at()`
+- Row-level security: enabled and forced
+- Policy `service_reviews_read` (select): using `true`
+- Policy `service_reviews_write` (insert): check `(EXISTS (SELECT 1 FROM bookings b WHERE ((b.booking_id = service_reviews.booking_id) AND (b.customer_id = (SELECT app_customer_id())))))`
 
 **complaints**(<ins>complaint_id</ins>, *booking_id* → bookings, subject, status, description, *raised_by* → users, *assigned_admin_id* → admins, created_at, resolved_at, resolution_notes)
 
 - Check: `status IN ('open', 'in_progress', 'resolved', 'closed')`
 - Index `idx_complaints_booking`: (booking_id)
 - Index `idx_complaints_status`: (status)
+- Row-level security: enabled and forced
+- Policy `complaints_create` (insert): check `((raised_by = (SELECT app_user_id())) AND (EXISTS (SELECT 1 FROM bookings b WHERE (b.booking_id = complaints.booking_id))))`
+- Policy `complaints_handle` (update): using `(SELECT app_is_admin())`; check `(SELECT app_is_admin())`
+- Policy `complaints_read` (select): using `((raised_by = (SELECT app_user_id())) OR (SELECT app_is_admin()))`
 
 **provider_documents**(<ins>document_id</ins>, *provider_id* → service_providers, document_type, file_url, uploaded_at, description, status, *verified_by* → admins, verified_at)
 
 - On delete: provider_id cascade
 - Check: `status IN ('pending', 'verified', 'rejected')`
 - Index `idx_prov_docs_provider`: (provider_id)
+- Row-level security: enabled and forced
+- Policy `provider_documents_read` (select): using `((provider_id = (SELECT app_provider_id())) OR (SELECT app_is_admin()))`
+- Policy `provider_documents_upload` (insert): check `(provider_id = (SELECT app_provider_id()))`
+- Policy `provider_documents_verify` (update): using `(SELECT app_is_admin())`; check `(SELECT app_is_admin())`
 
 **provider_availability**(<ins>slot_id</ins>, *provider_id* → service_providers, day_of_week, start_time, end_time)
 
@@ -211,14 +260,25 @@
 - Check: `(day_of_week >= 1) AND (day_of_week <= 7)`
 - Exclusion `ex_availability_no_overlap`: `EXCLUDE USING gist (provider_id WITH =, day_of_week WITH =, timerange(start_time, end_time) WITH &&)`
 - Index `idx_availability_day`: (day_of_week)
+- Row-level security: enabled and forced
+- Policy `provider_availability_add` (insert): check `(provider_id = (SELECT app_provider_id()))`
+- Policy `provider_availability_read` (select): using `true`
+- Policy `provider_availability_remove` (delete): using `(provider_id = (SELECT app_provider_id()))`
 
 ## Views and routines
 
 - Materialized view `mv_category_revenue`, unique index on (category_name)
 - Materialized view `mv_city_revenue_summary`, unique index on (city_name)
 - Materialized view `mv_provider_leaderboard`, unique index on (provider_id)
-- View `v_provider_leaderboard`
-- Function `fn_expire_pending_bookings`
+- View `v_provider_leaderboard` (runs as the caller)
+- View `v_public_reviews` (runs with its owner's rights)
+- Function `app_customer_id`
+- Function `app_is_admin`
+- Function `app_provider_id`
+- Function `app_user_id`
+- Function `fn_expire_pending_bookings` (security definer)
+- Function `fn_login_credentials` (security definer)
 - Function `fn_provider_available`
+- Function `fn_provider_busy_times` (security definer)
 - Procedure `sp_cancel_booking`
 - Procedure `sp_confirm_booking`

@@ -17,16 +17,20 @@ public class AuthRepository {
         this.jdbc = jdbc;
     }
 
+    /** The API's role can't read password hashes; this function returns the one for this email. */
     public Optional<UserCredentials> findCredentials(String email) {
         return jdbc.sql("""
-                        SELECT u.user_id, u.password_hash, u.role, u.status,
-                               COALESCE(c.customer_id, sp.provider_id, a.admin_id) AS profile_id
-                        FROM users u
-                        LEFT JOIN customers c          ON c.user_id = u.user_id
-                        LEFT JOIN service_providers sp ON sp.user_id = u.user_id
-                        LEFT JOIN admins a             ON a.user_id = u.user_id
-                        WHERE LOWER(u.email) = LOWER(:email)
+                        SELECT user_id, password_hash, role, status, profile_id
+                        FROM fn_login_credentials(:email)
                         """).param("email", email).query(UserCredentials.class).optional();
+    }
+
+    /** A new account acts as itself for the rest of registration, so it may create its own profile. */
+    public void actAs(int userId) {
+        jdbc.sql("SELECT set_config('sevak.user_id', :id, true)")
+                .param("id", String.valueOf(userId))
+                .query(String.class)
+                .single();
     }
 
     public int insertUser(String email, String passwordHash, String role, String fullName, String phone) {

@@ -128,6 +128,9 @@ final class SchemaDocs {
 
     record Trigger(String name, String timing, String events, String function) {}
 
+    /** A row-level security policy; {@code using} and {@code withCheck} may be null. */
+    record Policy(String name, String command, String using, String withCheck) {}
+
     record Table(
             String name,
             List<Column> columns,
@@ -137,7 +140,9 @@ final class SchemaDocs {
             List<Rule> checks,
             List<Rule> exclusions,
             List<Index> indexes,
-            List<Trigger> triggers) {
+            List<Trigger> triggers,
+            boolean rowSecurity,
+            List<Policy> policies) {
 
         Column column(String name) {
             return columns.stream()
@@ -170,9 +175,9 @@ final class SchemaDocs {
         }
     }
 
-    record View(String name, boolean materialized, List<Index> indexes) {}
+    record View(String name, boolean materialized, boolean securityInvoker, List<Index> indexes) {}
 
-    record Routine(String name, String kind) {}
+    record Routine(String name, String kind, boolean securityDefiner) {}
 
     record Schema(Map<String, Table> tables, List<View> views, List<Routine> routines) {}
 
@@ -295,6 +300,33 @@ final class SchemaDocs {
                 },
                 SCHEMA);
 
+        // A policy calls its helper as (SELECT f()), which PostgreSQL prints as ( SELECT f() AS f).
+        Map<String, List<Policy>> policies = new TreeMap<>();
+        jdbc.query(
+                """
+                SELECT tablename, policyname, lower(cmd),
+                       regexp_replace(qual, '\\( SELECT (\\w+\\(\\)) AS \\w+\\)', '(SELECT \\1)', 'g'),
+                       regexp_replace(with_check, '\\( SELECT (\\w+\\(\\)) AS \\w+\\)', '(SELECT \\1)', 'g')
+                FROM pg_policies
+                WHERE schemaname = ?
+                ORDER BY tablename, policyname
+                """,
+                rs -> {
+                    policies.computeIfAbsent(rs.getString(1), k -> new ArrayList<>())
+                            .add(new Policy(
+                                    rs.getString(2),
+                                    rs.getString(3),
+                                    oneLine(rs.getString(4)),
+                                    oneLine(rs.getString(5))));
+                },
+                SCHEMA);
+
+        // Enabled and forced, so an ordinary owner is filtered too (superusers and BYPASSRLS roles are not).
+        List<String> rowSecurity = jdbc.queryForList("""
+                SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = ? AND c.relkind = 'r' AND c.relrowsecurity AND c.relforcerowsecurity
+                """, String.class, SCHEMA);
+
         Map<String, Table> tables = new LinkedHashMap<>();
         columns.forEach((name, cols) -> tables.put(
                 name,
@@ -307,29 +339,35 @@ final class SchemaDocs {
                         checks.getOrDefault(name, List.of()),
                         exclusions.getOrDefault(name, List.of()),
                         indexes.getOrDefault(name, List.of()),
-                        triggers.getOrDefault(name, List.of()))));
+                        triggers.getOrDefault(name, List.of()),
+                        rowSecurity.contains(name),
+                        policies.getOrDefault(name, List.of()))));
 
         List<View> views = jdbc.query(
                 """
-                SELECT c.relname, c.relkind = 'm'
+                SELECT c.relname, c.relkind = 'm', COALESCE('security_invoker=true' = ANY (c.reloptions), false)
                 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
                 WHERE n.nspname = ? AND c.relkind IN ('v', 'm')
                 ORDER BY c.relname
                 """,
-                (rs, i) ->
-                        new View(rs.getString(1), rs.getBoolean(2), indexes.getOrDefault(rs.getString(1), List.of())),
+                (rs, i) -> new View(
+                        rs.getString(1),
+                        rs.getBoolean(2),
+                        rs.getBoolean(3),
+                        indexes.getOrDefault(rs.getString(1), List.of())),
                 SCHEMA);
 
         // Trigger functions are listed with their triggers. Functions that belong to an extension
         // (pg_trgm, btree_gist) or that PostgreSQL made for a range type are left out.
-        List<Routine> routines = jdbc.query("""
-                SELECT DISTINCT p.proname, CASE p.prokind WHEN 'p' THEN 'procedure' ELSE 'function' END
+        List<Routine> routines =
+                jdbc.query("""
+                SELECT DISTINCT p.proname, CASE p.prokind WHEN 'p' THEN 'procedure' ELSE 'function' END, p.prosecdef
                 FROM pg_proc p
                 JOIN pg_namespace n ON n.oid = p.pronamespace
                 WHERE n.nspname = ? AND p.prorettype <> 'pg_catalog.trigger'::regtype
                   AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = p.oid AND d.deptype IN ('e', 'i'))
                 ORDER BY 1
-                """, (rs, i) -> new Routine(rs.getString(1), rs.getString(2)), SCHEMA);
+                """, (rs, i) -> new Routine(rs.getString(1), rs.getString(2), rs.getBoolean(3)), SCHEMA);
 
         return new Schema(tables, views, routines);
     }
@@ -729,6 +767,11 @@ final class SchemaDocs {
         return html.append("</table>").toString();
     }
 
+    /** PostgreSQL prints a policy's EXISTS over several lines; a Markdown list item needs one. */
+    private static String oneLine(String sql) {
+        return sql == null ? null : sql.replaceAll("\\s+", " ").replace("( ", "(");
+    }
+
     private static String escape(String s) {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
@@ -798,6 +841,15 @@ final class SchemaDocs {
                         .forEach(tr -> facts.add(
                                 "Trigger `" + tr.name() + "`: " + tr.timing().toLowerCase() + " "
                                         + tr.events().toLowerCase() + " → `" + tr.function() + "`"));
+                if (t.rowSecurity()) {
+                    facts.add("Row-level security: enabled and forced");
+                }
+                t.policies()
+                        .forEach(p -> facts.add("Policy `" + p.name() + "` (" + p.command() + ")"
+                                + (p.using() == null ? "" : ": using `" + p.using() + "`")
+                                + (p.withCheck() == null
+                                        ? ""
+                                        : (p.using() == null ? ": " : "; ") + "check `" + p.withCheck() + "`")));
                 facts.forEach(f -> out.append("- ").append(f).append('\n'));
             }
         }
@@ -808,6 +860,9 @@ final class SchemaDocs {
                     .append(" `")
                     .append(v.name())
                     .append('`');
+            if (!v.materialized()) {
+                out.append(v.securityInvoker() ? " (runs as the caller)" : " (runs with its owner's rights)");
+            }
             v.indexes()
                     .forEach(i -> out.append(", ")
                             .append(i.unique() ? "unique index on (" : "index on (")
@@ -820,7 +875,7 @@ final class SchemaDocs {
                     .append(r.kind().equals("procedure") ? "Procedure" : "Function")
                     .append(" `")
                     .append(r.name())
-                    .append("`\n");
+                    .append(r.securityDefiner() ? "` (security definer)\n" : "`\n");
         }
         return out.toString();
     }

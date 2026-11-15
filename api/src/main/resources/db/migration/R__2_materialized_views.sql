@@ -8,12 +8,18 @@ DROP MATERIALIZED VIEW IF EXISTS mv_provider_leaderboard;
 DROP MATERIALIZED VIEW IF EXISTS mv_city_revenue_summary;
 DROP MATERIALIZED VIEW IF EXISTS mv_category_revenue;
 DROP VIEW IF EXISTS v_provider_leaderboard;
+DROP VIEW IF EXISTS v_public_reviews;
 
 -- One definition for the live leaderboard and its materialized copy.
 -- weighted_rating is a Bayesian average: with few reviews a provider stays near the
 -- platform average, so one 5-star review can't beat fifty excellent ones.
 -- 5 is how many reviews it takes before a provider's own average starts to dominate.
-CREATE VIEW v_provider_leaderboard AS
+--
+-- security_invoker: a plain view reads its tables with its owner's rights, which skip row-level security,
+-- so anyone allowed to read the view would see totals built from every booking. As the invoker, the
+-- caller's policies apply. Only admins read the live view, and they can see every booking anyway.
+-- The materialized copy below is refreshed as the owner, so it is always complete.
+CREATE VIEW v_provider_leaderboard WITH (security_invoker = true) AS
 WITH platform AS (
     SELECT AVG(rating) AS avg_rating FROM provider_reviews
 ),
@@ -98,3 +104,23 @@ JOIN categories c ON c.category_id = it.category_id
 GROUP BY c.category_name;
 
 CREATE UNIQUE INDEX idx_mv_category_revenue ON mv_category_revenue (category_name);
+
+-- ── Public reviews ──────────────────────────────────────────
+-- The reviews on a provider's page are public, but finding a provider's reviews and the reviewer's name
+-- goes through bookings, which row-level security hides from everyone but the booking's own people.
+-- This view deliberately runs with its owner's rights (security_invoker = false) and shows only what the
+-- page shows: no booking, price, address or contact details.
+CREATE VIEW v_public_reviews WITH (security_invoker = false) AS
+SELECT pr.review_id, b.provider_id, pr.rating, pr.comment, cu_u.full_name AS customer_name,
+       pr.created_at AS reviewed_at
+FROM provider_reviews pr
+JOIN bookings b   ON b.booking_id = pr.booking_id
+JOIN customers cu ON cu.customer_id = b.customer_id
+JOIN users cu_u   ON cu_u.user_id = cu.user_id;
+
+-- Recreating a view drops its grants, so they live here rather than in V14.
+-- Materialized views can't have row-level security. These hold totals per provider, city and category,
+-- not anyone's bookings; only the admin endpoints read the revenue columns.
+GRANT SELECT ON v_provider_leaderboard, v_public_reviews,
+                mv_provider_leaderboard, mv_city_revenue_summary, mv_category_revenue
+    TO sevak_app;
