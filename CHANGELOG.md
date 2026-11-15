@@ -4,7 +4,21 @@ Notable changes to SEVAK, newest first. Each release links to its pull request, 
 
 ## Unreleased
 
+### Added
+- Row-level security ([ADR 0008](docs/adr/0008-row-level-security.md)). The API's requests run as `sevak_app`, a role that doesn't own the tables and can't bypass the policies, with the caller set at the start of every transaction. Policies on 16 tables let customers, providers and admins see and change only their own rows; with no caller, no private row is visible.
+- `sevak_app` also gets only the rights it needs: no `TRUNCATE` or DDL, a read-only catalog, `UPDATE` on just a booking's status, no writes to the status log or payments, and no access to password hashes (login reads one hash through `fn_login_credentials`).
+- Narrow `SECURITY DEFINER` functions where the database must see every row: the rating, status-log, refund and subtotal triggers, the expiry job, free-slot busy times and login. Each has a fixed `search_path` and can't be run by `PUBLIC`.
+- `v_public_reviews`, which shows a provider's reviews without exposing bookings. `v_provider_leaderboard` runs as the caller (`security_invoker`), and admins read it through `fn_live_leaderboard`, which refuses anyone else.
+- The API refuses to start if its requests, or its login, would skip row-level security.
+- `RowLevelSecurityTest` and `AppRoleCheckTest`; the generated schema documents list every policy.
+- Benchmark experiments 9 and 10: each private screen with and without the policies, and the spending summary before and after its rewrite. The benchmark now runs each query as its real user; the Phase 6 results moved to `docs/benchmarks/phase-6/`.
+
+### Changed
+- Configuration now has two database logins: `sevak_app` for requests (`SEVAK_APP_DB_PASSWORD`, which Flyway applies on every start) and the owner for Flyway and the maintenance jobs. See `.env.example`.
+
 ### Fixed
+- Found by measuring row-level security on 1M bookings: the policy helpers turned off parallel query (now `PARALLEL SAFE`); the admin live leaderboard took 2,821 ms under the policies (now 328 ms); the free-slots function was JIT-compiled because of its default row estimate (now `ROWS 20`); and the customer spending summary totalled every payment in the database (1,286 ms, now 0.74 ms).
+- The 1M-row load script runs `ANALYZE` before refreshing the stored summaries; otherwise a refresh could be planned on missing statistics and run for minutes.
 - A booking with no items is now rejected by the database, not only by the API. The deferred check that compares a booking's subtotal with its items also refuses a booking whose last item is removed.
 
 ## [3.0.0] - 2026-11-15: diagrams, docs and launch
