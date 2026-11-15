@@ -279,7 +279,9 @@
 - Function `fn_expire_pending_bookings` (security definer)
 - Function `fn_live_leaderboard` (security definer)
 - Function `fn_login_credentials` (security definer)
+- Function `fn_my_contact` (security definer)
 - Function `fn_provider_available`
 - Function `fn_provider_busy_times` (security definer)
+- Function `fn_stored_leaderboard` (security definer)
 - Procedure `sp_cancel_booking`
 - Procedure `sp_confirm_booking`

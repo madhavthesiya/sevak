@@ -57,8 +57,10 @@ GRANT SELECT ON cities, areas, categories, services, service_variants, booking_s
                 provider_service_areas, admins, admin_permissions
     TO sevak_app;
 
--- Every column but the password hash. Login reads one hash through fn_login_credentials (R__1).
-GRANT SELECT (user_id, email, role, status, created_at, full_name, phone) ON users TO sevak_app;
+-- Names are public (provider profiles, reviews); the password hash, email and phone are not.
+-- Login reads one hash through fn_login_credentials, and /me its own contact details through
+-- fn_my_contact (both in R__1).
+GRANT SELECT (user_id, role, status, created_at, full_name) ON users TO sevak_app;
 GRANT INSERT ON users TO sevak_app;
 
 GRANT SELECT, INSERT ON customers TO sevak_app;

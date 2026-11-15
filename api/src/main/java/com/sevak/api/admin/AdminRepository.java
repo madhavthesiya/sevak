@@ -99,9 +99,10 @@ public class AdminRepository {
             ORDER BY lb.rank, lb.provider_id
             """;
 
+    /** The stored copy. It holds emails and revenue, so admins read it through an admin-checked function. */
     public static final String LEADERBOARD_FAST_SQL = """
             SELECT lb.*, u.full_name AS provider_name
-            FROM mv_provider_leaderboard lb
+            FROM fn_stored_leaderboard() lb
             JOIN service_providers sp ON sp.provider_id = lb.provider_id
             JOIN users u ON u.user_id = sp.user_id
             ORDER BY lb.rank, lb.provider_id

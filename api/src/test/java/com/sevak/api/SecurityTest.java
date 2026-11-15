@@ -73,7 +73,10 @@ class SecurityTest extends IntegrationTest {
         String token = JsonPath.read(body, "$.accessToken");
         mvc.perform(get("/api/v1/me").header(AUTH, "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.fullName").value("Aarav Sharma"));
+                .andExpect(jsonPath("$.fullName").value("Aarav Sharma"))
+                // The API role can't read emails or phones; fn_my_contact returns the caller's own.
+                .andExpect(jsonPath("$.email").value("aarav.sharma@gmail.com"))
+                .andExpect(jsonPath("$.phone").value("9876543210"));
     }
 
     @Test

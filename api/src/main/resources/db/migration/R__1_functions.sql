@@ -380,6 +380,14 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
     WHERE LOWER(u.email) = LOWER(p_email);
 $$;
 
+-- ── Your own contact details ───────────────────────────────
+-- The API role can't read anyone's email or phone; /me reads the caller's own through this.
+CREATE OR REPLACE FUNCTION fn_my_contact()
+RETURNS TABLE (email VARCHAR, phone VARCHAR)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
+    SELECT u.email, u.phone FROM users u WHERE u.user_id = app_user_id();
+$$;
+
 -- ── Who may run what ────────────────────────────────────────
 -- PostgreSQL lets everyone execute a new function. The SECURITY DEFINER ones run with the owner's
 -- rights, so only the API role may call them, and the trigger-only ones can't be called at all.
@@ -387,8 +395,8 @@ REVOKE EXECUTE ON FUNCTION fn_update_provider_avg_rating(), fn_log_booking_statu
                            fn_check_booking_subtotal(), fn_mark_payment_refunded()
     FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION fn_expire_pending_bookings(), fn_provider_busy_times(INT, TIMESTAMPTZ, TIMESTAMPTZ),
-                           fn_login_credentials(TEXT)
+                           fn_login_credentials(TEXT), fn_my_contact()
     FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION fn_expire_pending_bookings(), fn_provider_busy_times(INT, TIMESTAMPTZ, TIMESTAMPTZ),
-                          fn_login_credentials(TEXT)
+                          fn_login_credentials(TEXT), fn_my_contact()
     TO sevak_app;

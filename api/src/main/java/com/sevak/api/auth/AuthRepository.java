@@ -67,10 +67,12 @@ public class AuthRepository {
                         """).params(params).query(Integer.class).single();
     }
 
+    /** The API role can't read emails or phones; fn_my_contact returns the caller's own. */
     public Optional<MeResponse> findMe(int userId) {
-        return jdbc.sql("SELECT user_id, email, full_name, phone, role FROM users WHERE user_id = :id")
-                .param("id", userId)
-                .query(MeResponse.class)
-                .optional();
+        return jdbc.sql("""
+                        SELECT u.user_id, c.email, u.full_name, c.phone, u.role
+                        FROM users u CROSS JOIN fn_my_contact() c
+                        WHERE u.user_id = :id
+                        """).param("id", userId).query(MeResponse.class).optional();
     }
 }

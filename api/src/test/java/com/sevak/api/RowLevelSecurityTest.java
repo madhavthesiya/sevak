@@ -325,6 +325,37 @@ class RowLevelSecurityTest extends IntegrationTest {
         assertDenied("SELECT COUNT(*) FROM v_provider_leaderboard");
     }
 
+    @Test
+    void nobodyReadsAnotherUsersEmailOrPhoneButEveryoneReadsTheirOwn() throws SQLException {
+        assertDenied("SELECT email FROM users");
+        assertDenied("SELECT phone FROM users");
+        assertThat(count("SELECT COUNT(*) FROM fn_my_contact()")).isZero(); // nobody logged in
+
+        actAs(1);
+        assertDenied("SELECT email FROM users WHERE user_id = 2");
+        try (Statement sql = app.createStatement();
+                ResultSet rs = sql.executeQuery("SELECT email, phone FROM fn_my_contact()")) {
+            assertThat(rs.next()).isTrue();
+            assertThat(rs.getString("email")).isEqualTo("aarav.sharma@gmail.com");
+            assertThat(rs.getString("phone")).isEqualTo("9876543210");
+            assertThat(rs.next()).isFalse();
+        }
+        assertThat(count("SELECT COUNT(*) FROM users")).isEqualTo(15); // names are still public
+    }
+
+    @Test
+    void theStoredLeaderboardsEmailsAndRevenueAreForAdminsOnly() throws SQLException {
+        assertDenied("SELECT email FROM mv_provider_leaderboard");
+        assertDenied("SELECT total_revenue FROM mv_provider_leaderboard");
+        assertThat(count("SELECT COUNT(weighted_score) FROM mv_provider_leaderboard"))
+                .isPositive(); // what search and the home page read
+        assertDenied("SELECT COUNT(*) FROM fn_stored_leaderboard()");
+
+        actAs(14);
+        assertThat(count("SELECT COUNT(total_revenue) FROM fn_stored_leaderboard()"))
+                .isEqualTo(5);
+    }
+
     // ── What the role can't do at all ──────────────────────
 
     @Test

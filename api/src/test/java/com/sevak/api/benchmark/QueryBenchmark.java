@@ -82,6 +82,10 @@ class QueryBenchmark {
      * The live leaderboard view read directly, as Phase 6 measured it. The app now reads it through
      * fn_live_leaderboard, which refuses anyone but an admin; experiment 09 compares the two.
      */
+    /** The stored leaderboard read directly, as Phase 6 measured it; the app reads it through a function. */
+    private static final String LEADERBOARD_STORED_SQL =
+            AdminRepository.LEADERBOARD_FAST_SQL.replace("fn_stored_leaderboard() lb", "mv_provider_leaderboard lb");
+
     private static final String LEADERBOARD_VIEW_SQL =
             AdminRepository.LEADERBOARD_LIVE_SQL.replace("fn_live_leaderboard() lb", "v_provider_leaderboard lb");
 
@@ -442,11 +446,7 @@ class QueryBenchmark {
                                         params()),
                                 new Variant(
                                         "New live view, jobs counted first", List.of(), LEADERBOARD_VIEW_SQL, params()),
-                                new Variant(
-                                        "Materialized view",
-                                        List.of(),
-                                        AdminRepository.LEADERBOARD_FAST_SQL,
-                                        params()))),
+                                new Variant("Materialized view", List.of(), LEADERBOARD_STORED_SQL, params()))),
                 new Experiment(
                         "05-pagination",
                         "Admin bookings list, 20 rows a page",

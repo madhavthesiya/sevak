@@ -4,7 +4,9 @@
 --  views once the data is loaded.
 -- ============================================================
 
-DROP FUNCTION IF EXISTS fn_live_leaderboard(); -- returns the view's row type, so it goes first
+-- These return the view's and the materialized view's row types, so they go first.
+DROP FUNCTION IF EXISTS fn_live_leaderboard();
+DROP FUNCTION IF EXISTS fn_stored_leaderboard();
 DROP MATERIALIZED VIEW IF EXISTS mv_provider_leaderboard;
 DROP MATERIALIZED VIEW IF EXISTS mv_city_revenue_summary;
 DROP MATERIALIZED VIEW IF EXISTS mv_category_revenue;
@@ -122,8 +124,11 @@ JOIN users cu_u   ON cu_u.user_id = cu.user_id;
 -- Recreating a view drops its grants, so they live here rather than in V14.
 -- Materialized views can't have row-level security. These hold totals per provider, city and category,
 -- not anyone's bookings; only the admin endpoints read the revenue columns.
-GRANT SELECT ON v_public_reviews, mv_provider_leaderboard, mv_city_revenue_summary, mv_category_revenue
-    TO sevak_app;
+GRANT SELECT ON v_public_reviews, mv_city_revenue_summary, mv_category_revenue TO sevak_app;
+-- The stored leaderboard also holds each provider's email and revenue. Search and the home page get only
+-- the columns they show; admins read the whole row through fn_stored_leaderboard below.
+GRANT SELECT (rank, provider_id, city_name, avg_rating, review_count, weighted_rating, weighted_score)
+    ON mv_provider_leaderboard TO sevak_app;
 
 -- ── The live leaderboard, for admins ────────────────────────
 -- Read through the view under row-level security, it took 4-5 s at 1M bookings instead of 0.85 s, at the
@@ -141,5 +146,16 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION fn_live_leaderboard() FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION fn_live_leaderboard() TO sevak_app;
+-- The stored copy, with every column, for admins only.
+CREATE FUNCTION fn_stored_leaderboard() RETURNS SETOF mv_provider_leaderboard
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
+BEGIN
+    IF NOT app_is_admin() THEN
+        RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'Only admins can read the full leaderboard';
+    END IF;
+    RETURN QUERY SELECT * FROM mv_provider_leaderboard;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION fn_live_leaderboard(), fn_stored_leaderboard() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fn_live_leaderboard(), fn_stored_leaderboard() TO sevak_app;

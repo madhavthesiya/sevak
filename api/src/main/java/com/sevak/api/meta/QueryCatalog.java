@@ -209,8 +209,10 @@ public class QueryCatalog {
         add(
                 "admin.leaderboard.fast",
                 "Leaderboard, materialized",
-                List.of("Materialized view", "REFRESH CONCURRENTLY"),
-                "The same ranking stored ahead of time. Faster to read, but only as fresh as the last refresh.",
+                List.of("Materialized view", "REFRESH CONCURRENTLY", "SECURITY DEFINER function"),
+                "The same ranking stored ahead of time. Faster to read, but only as fresh as the last refresh."
+                        + " It holds each provider's email and revenue, so admins read it through"
+                        + " fn_stored_leaderboard; search and the home page can read only the public columns.",
                 AdminRepository.LEADERBOARD_FAST_SQL,
                 params());
         add(
