@@ -789,6 +789,25 @@ final class SchemaDocs {
 
     static String relational(Schema schema) {
         StringBuilder out = new StringBuilder(header("<!--").replace("\n", " -->\n"));
+        // The same frame as the other docs pages: the logo back to the README, and the docs navigation.
+        out.append("""
+
+                <p align="center">
+                  <a href="../../README.md"><picture>
+                    <source media="(prefers-color-scheme: dark)" srcset="../images/logo-dark.png">
+                    <img alt="SEVAK" src="../images/logo-light.png" height="30">
+                  </picture></a>
+                </p>
+
+                <p align="center">
+                  <a href="../adr/README.md">Decisions</a> &nbsp;·&nbsp;
+                  <a href="../BENCHMARKS.md">Benchmarks</a> &nbsp;·&nbsp;
+                  <a href="README.md">Schema</a> &nbsp;·&nbsp;
+                  <a href="CONCEPTUAL_MODEL.md">Conceptual model</a> &nbsp;·&nbsp;
+                  <a href="../SEVAK_Normalization_Proof.md">Normalization</a> &nbsp;·&nbsp;
+                  <a href="../DEPLOYMENT.md">Deployment</a>
+                </p>
+                """);
         out.append("\n# SEVAK: relational schema\n\n")
                 .append(schema.tables().size())
                 .append(" tables in the `sevak` schema. Notation: <ins>primary key</ins> is underlined,")

@@ -1,6 +1,24 @@
+<p align="center">
+  <a href="../README.md"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/logo-dark.png">
+    <img alt="SEVAK" src="images/logo-light.png" height="30">
+  </picture></a>
+</p>
+
+<p align="center">
+  <a href="adr/README.md">Decisions</a> &nbsp;·&nbsp;
+  <a href="BENCHMARKS.md">Benchmarks</a> &nbsp;·&nbsp;
+  <a href="schema/README.md">Schema</a> &nbsp;·&nbsp;
+  <a href="schema/CONCEPTUAL_MODEL.md">Conceptual model</a> &nbsp;·&nbsp;
+  <b>Normalization</b> &nbsp;·&nbsp;
+  <a href="DEPLOYMENT.md">Deployment</a>
+</p>
+
 # SEVAK: Normalization Proof
 
 This document shows that the 29 base tables in the `sevak` schema are in BCNF, under the functional-dependency (FD) assumptions stated below.
+
+**On this page:** [1. Assumptions about the real world](#1-assumptions-about-the-real-world) &nbsp;·&nbsp; [2. Table-by-table proof](#2-table-by-table-proof) &nbsp;·&nbsp; [3. Controlled redundancy](#3-controlled-redundancy) &nbsp;·&nbsp; [4. Constraints that normalization can't express](#4-constraints-that-normalization-cant-express) &nbsp;·&nbsp; [5. Conclusion](#5-conclusion)
 
 **BCNF rule:** for every non-trivial FD `X → Y`, `X` is a superkey. BCNF implies 3NF, 2NF and 1NF.
 

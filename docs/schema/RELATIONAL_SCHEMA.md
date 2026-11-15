@@ -1,6 +1,22 @@
 <!-- Generated from the database that the Flyway migrations build. Don't edit by hand. -->
 <!-- Regenerate: see docs/schema/README.md -->
 
+<p align="center">
+  <a href="../../README.md"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../images/logo-dark.png">
+    <img alt="SEVAK" src="../images/logo-light.png" height="30">
+  </picture></a>
+</p>
+
+<p align="center">
+  <a href="../adr/README.md">Decisions</a> &nbsp;·&nbsp;
+  <a href="../BENCHMARKS.md">Benchmarks</a> &nbsp;·&nbsp;
+  <a href="README.md">Schema</a> &nbsp;·&nbsp;
+  <a href="CONCEPTUAL_MODEL.md">Conceptual model</a> &nbsp;·&nbsp;
+  <a href="../SEVAK_Normalization_Proof.md">Normalization</a> &nbsp;·&nbsp;
+  <a href="../DEPLOYMENT.md">Deployment</a>
+</p>
+
 # SEVAK: relational schema
 
 29 tables in the `sevak` schema. Notation: <ins>primary key</ins> is underlined, *foreign key* is in italics, and a single-column foreign key is followed by `→` and the table it references. Every constraint below is copied from the database itself.

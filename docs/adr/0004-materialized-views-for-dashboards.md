@@ -1,3 +1,19 @@
+<p align="center">
+  <a href="../../README.md"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../images/logo-dark.png">
+    <img alt="SEVAK" src="../images/logo-light.png" height="30">
+  </picture></a>
+</p>
+
+<p align="center">
+  <b>Decisions</b> &nbsp;·&nbsp;
+  <a href="../BENCHMARKS.md">Benchmarks</a> &nbsp;·&nbsp;
+  <a href="../schema/README.md">Schema</a> &nbsp;·&nbsp;
+  <a href="../schema/CONCEPTUAL_MODEL.md">Conceptual model</a> &nbsp;·&nbsp;
+  <a href="../SEVAK_Normalization_Proof.md">Normalization</a> &nbsp;·&nbsp;
+  <a href="../DEPLOYMENT.md">Deployment</a>
+</p>
+
 # 0004: Materialized views for dashboards and rankings
 
 ## Context
