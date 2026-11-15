@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.CannotCreateTransactionException;
@@ -28,7 +29,14 @@ class AppRoleCheck implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(AppRoleCheck.class);
 
     record RoleFacts(
-            String role, boolean privileged, String login, boolean loginPrivileged, boolean rlsOn, boolean rlsForced) {}
+            String role,
+            boolean privileged,
+            String login,
+            boolean loginPrivileged,
+            String owner,
+            boolean ownerBypassesRls,
+            boolean rlsOn,
+            boolean rlsForced) {}
 
     private final JdbcClient jdbc;
     private final TransactionTemplate tx;
@@ -56,14 +64,17 @@ class AppRoleCheck implements ApplicationRunner {
                                    session_user AS login,
                                    s.rolsuper OR s.rolbypassrls OR pg_has_role(session_user, c.relowner, 'USAGE')
                                        AS login_privileged,
+                                   o.rolname AS owner, o.rolsuper OR o.rolbypassrls AS owner_bypasses_rls,
                                    c.relrowsecurity AS rls_on, c.relforcerowsecurity AS rls_forced
-                            FROM pg_class c, pg_roles r, pg_roles s
+                            FROM pg_class c, pg_roles r, pg_roles s, pg_roles o
                             WHERE c.oid = 'sevak.bookings'::regclass
-                              AND r.rolname = current_user AND s.rolname = session_user
+                              AND r.rolname = current_user AND s.rolname = session_user AND o.oid = c.relowner
                             """).query(RoleFacts.class).single());
         } catch (CannotCreateTransactionException ex) {
-            // The readiness check reports an unreachable database; the roles are checked at the next start.
-            log.warn("Could not check the API's database role: the database is unreachable");
+            // The readiness check reports it; the roles are checked at the next start. The root cause tells a
+            // database that is down apart from one that refused the login, such as a wrong password.
+            Throwable cause = NestedExceptionUtils.getMostSpecificCause(ex);
+            log.warn("Could not check the API's database role: {}", cause.getMessage());
             return;
         }
         if (facts.privileged()) {
@@ -74,6 +85,13 @@ class AppRoleCheck implements ApplicationRunner {
             throw new IllegalStateException("The API logs in as '" + facts.login()
                     + "', a superuser, BYPASSRLS or table-owner role that could switch back out of '" + facts.role()
                     + "'. Log in as sevak_app.");
+        }
+        // Flyway, the jobs and every SECURITY DEFINER function run as the owner. Under FORCE an ordinary
+        // owner is filtered too: ratings would stop updating and expired requests would never expire.
+        if (!facts.ownerBypassesRls()) {
+            throw new IllegalStateException("The tables' owner '" + facts.owner()
+                    + "' is neither a superuser nor BYPASSRLS, so the policies would filter the jobs and the"
+                    + " SECURITY DEFINER functions too. Give it BYPASSRLS or use an owner that has it.");
         }
         if (!facts.rlsOn() || !facts.rlsForced()) {
             throw new IllegalStateException("Row-level security is not enabled and forced on sevak.bookings.");

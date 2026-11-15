@@ -25,7 +25,13 @@ public class AuthRepository {
                         """).param("email", email).query(UserCredentials.class).optional();
     }
 
-    /** A new account acts as itself for the rest of registration, so it may create its own profile. */
+    /**
+     * A new account acts as itself for the rest of registration, so it may create its own profile.
+     *
+     * <p>The setting lasts for this transaction only, and a @Transactional method that joins it afterwards
+     * resets the caller from the request (nobody, during registration). So call nothing @Transactional after
+     * this in register(); it would fail closed, not leak.
+     */
     public void actAs(int userId) {
         jdbc.sql("SELECT set_config('sevak.user_id', :id, true)")
                 .param("id", String.valueOf(userId))

@@ -43,4 +43,16 @@ class AppRoleCheckTest extends IntegrationTest {
         assertThatCode(() -> new AppRoleCheck(jdbcClient, transactions, true).run(null))
                 .doesNotThrowAnyException();
     }
+
+    /** Rolled back afterwards: the check joins this test's transaction, which changed the owner. */
+    @Test
+    @Transactional
+    void anOwnerThatCannotBypassRowLevelSecurityIsRefused() {
+        jdbc.execute("CREATE ROLE ordinary_owner NOLOGIN");
+        jdbc.execute("ALTER TABLE sevak.bookings OWNER TO ordinary_owner");
+
+        assertThatThrownBy(() -> new AppRoleCheck(jdbcClient, transactions, true).run(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("'ordinary_owner' is neither a superuser nor BYPASSRLS");
+    }
 }
