@@ -17,9 +17,10 @@ ADR 0002 puts business rules in the database so they hold for every code path. P
 | Policies call their lookups inside `(SELECT ...)` | PostgreSQL then runs each lookup once per query, not once per row | Policies are a little harder to read |
 | The lookups are `PARALLEL SAFE` | A function is parallel-unsafe by default, and one unsafe function in a policy turns off parallel query for the whole table | Each must really be safe: they only read a table and a setting, which parallel workers inherit |
 | Rows under a booking are visible to whoever can see the booking (`EXISTS` over `bookings`) | One rule, written once; the `bookings` policy decides for its items, payments, refunds, log, cancellations and coupon use | Each child row costs an index lookup on `bookings` |
-| Least privilege as well as policies | `sevak_app` has no `TRUNCATE` or DDL, only `SELECT` on the catalog, `UPDATE` on just `status` for bookings, no `INSERT` on the status log, no `UPDATE` on payments, and can't read `users.password_hash` | Each new table or column needs an explicit grant |
+| Least privilege as well as policies | `sevak_app` has no `TRUNCATE` or DDL, only `SELECT` on the catalog, `UPDATE` on just `status` for bookings, no `INSERT` on the status log or documents, no `UPDATE` on payments, and can't read anyone's password hash, email or phone | Each new table or column needs an explicit grant |
+| Policies check whose row it is; column grants decide which values a caller may write | Found in review: a customer could create a refund already processed, a provider could register already verified. Refunds, complaints and provider profiles may only be inserted with the columns the app sets, so the rest take their safe defaults. A new booking must be `pending`, and a customer may only change their booking to `cancelled` | Policies and grants must be read together |
 | The owner pool runs only the jobs that need the owner: the view refresh (only an owner may refresh a materialized view) and the demo reset (`TRUNCATE`) | Fixed statements; nothing a user sends reaches that pool | A second, small connection pool |
-| The API refuses to start if its requests, or its login, would skip RLS | A wrong production login would otherwise silently turn the protection off | The tests log in as the owner on purpose and must say so (`sevak.db.allow-privileged-login`) |
+| The API refuses to start if its requests, or its login, would skip RLS, or if the tables' owner can't | A wrong production login would otherwise silently turn the protection off; an owner without `BYPASSRLS` would be filtered by `FORCE`, breaking the jobs and every definer function | The tests log in as the owner on purpose and must say so (`sevak.db.allow-privileged-login`) |
 
 ### Where the database must see every row
 
@@ -34,6 +35,8 @@ A function marked `SECURITY DEFINER` runs as its owner, so it skips the policies
 | `fn_expire_pending_bookings` (scheduled job) | The job has no user and must expire every customer's stale requests. It takes no arguments |
 | `fn_provider_busy_times` (public free slots) | Free slots depend on every customer's bookings. It returns only the busy time ranges for one provider |
 | `fn_login_credentials` (login) | Login runs before anyone is known, and `sevak_app` can't read password hashes. It returns the one hash for the email being checked |
+| `fn_my_contact` (`/me`) | `sevak_app` can't read anyone's email or phone. It returns the caller's own |
+| `fn_stored_leaderboard` (admin) | The stored leaderboard holds each provider's email and revenue. The app role may read only the columns search and the home page show; this refuses anyone but an admin, then returns whole rows |
 | `fn_live_leaderboard` (admin) | Under the policies the live leaderboard took 2,821 ms instead of 436 ms: the planner, which plans before it knows the caller is an admin, priced a booking check on every payment. It refuses anyone but an admin, then reads the view as its owner (328 ms) |
 
 Checks that only look at the caller's own booking (a review needs a completed booking, a service review needs that service in the booking) still run as the caller, and fail closed when they can't see it.
@@ -46,14 +49,21 @@ Checks that only look at the caller's own booking (a review needs a completed bo
 
 ### Left without RLS, on purpose
 
-`users`, `customers`, `admins`, `admin_permissions`, `locations`, `coupons` and the catalog tables. Provider and reviewer names are public, and login reads `users` before anyone is known; the password hash is protected with a column privilege instead. `locations` are map points shared between customers, and who lives where is in `customer_addresses`, which has RLS. A test fails if a new table has neither forced RLS nor a place on this list.
+`users`, `customers`, `admins`, `admin_permissions`, `locations`, `coupons` and the catalog tables. Provider and reviewer names are public, and login reads `users` before anyone is known, so `users` is protected by columns instead: the app role can read names, role and status, but not the password hash, email or phone. Coupons are shared counters; any caller could change `used_count`, an accepted risk for a demo. `locations` are map points shared between customers, and who lives where is in `customer_addresses`, which has RLS. A test fails if a new table has neither forced RLS nor a place on this list.
 
 ## Consequences
 
-- `RowLevelSecurityTest` logs in as `sevak_app` and runs plain SQL, as a buggy query would. Customers and providers see and change only their own rows; with nobody logged in no private row is visible, yet the public screens work; repository methods that trust their caller return nothing for someone else's booking. With RLS turned off, 15 of its 21 tests fail; the other 6 test grants, public screens and the admin-checked leaderboard function, which don't depend on RLS.
+- `RowLevelSecurityTest` logs in as `sevak_app` and runs plain SQL, as a buggy query would. Customers and providers see and change only their own rows; with nobody logged in no private row is visible, yet the public screens work; repository methods that trust their caller return nothing for someone else's booking. With RLS turned off, 17 of its 29 tests fail; the other 12 test grants and column privileges, the public screens and the definer functions, which don't depend on RLS.
 - Starting the real jar as `postgres` found that the first version of the startup check looked only at the role requests run as. It now refuses a privileged login too.
 - A Flyway placeholder inside a `DO $$ ... $$` block is not replaced, so the first version set the app role's password to the literal text `${app_password}`. The login test caught it.
 - Every existing test, the web unit tests and the end-to-end journeys pass with requests running as `sevak_app`.
+- A review on a real database, before merging, found what the tests had missed:
+  - the app role's password was printed in the log on every start, because Flyway prints the rows a callback's `SELECT` returns;
+  - with `SEVAK_APP_DB_PASSWORD` unset, production would have given the role the dev password, which is public;
+  - the write-side holes above;
+  - every user's email and phone, and every provider's revenue, were readable by any request.
+
+  All four are fixed, with a test for each hole. A further test fails if a public service method that reaches the database isn't transactional, because outside a transaction no caller is set.
 - Performance, measured on 1M bookings as each screen's real user ([experiment 9](../BENCHMARKS.md#9-row-level-security-what-it-costs-phase-8)): the policies add 0.3 to 0.8 ms to a private screen. Measuring found four problems, all fixed: the policy helpers were parallel-unsafe, which turned off parallel query for every protected table; the admin live leaderboard took 2,821 ms under the policies instead of 436 ms, because the planner priced a booking check on each of about 815,000 payments (it now goes through `fn_live_leaderboard`: 328 ms); the free-slots function was JIT-compiled because of a default row estimate; and the customer spending summary had totalled every payment in the database since before Phase 8 (1,286 ms, now 0.74 ms).
 
 ## Alternatives considered

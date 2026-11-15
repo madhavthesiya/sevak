@@ -9,7 +9,8 @@ Notable changes to SEVAK, newest first. Each release links to its pull request, 
 - `sevak_app` also gets only the rights it needs: no `TRUNCATE` or DDL, a read-only catalog, `UPDATE` on just a booking's status, no writes to the status log or payments, and no access to password hashes (login reads one hash through `fn_login_credentials`).
 - Narrow `SECURITY DEFINER` functions where the database must see every row: the rating, status-log, refund and subtotal triggers, the expiry job, free-slot busy times and login. Each has a fixed `search_path` and can't be run by `PUBLIC`.
 - `v_public_reviews`, which shows a provider's reviews without exposing bookings. `v_provider_leaderboard` runs as the caller (`security_invoker`), and admins read it through `fn_live_leaderboard`, which refuses anyone else.
-- The API refuses to start if its requests, or its login, would skip row-level security.
+- The API refuses to start if its requests, or its login, would skip row-level security, or if the tables' owner can't bypass it (the jobs and definer functions need that).
+- Column privileges: refunds, complaints and provider profiles can only be inserted with the values the app sets; a new booking must be pending; a customer may only cancel; nobody can read another user's email or phone, or a provider's revenue from the stored leaderboard (admins use `fn_stored_leaderboard`, `/me` uses `fn_my_contact`).
 - `RowLevelSecurityTest` and `AppRoleCheckTest`; the generated schema documents list every policy.
 - Benchmark experiments 9 and 10: each private screen with and without the policies, and the spending summary before and after its rewrite. The benchmark now runs each query as its real user; the Phase 6 results moved to `docs/benchmarks/phase-6/`.
 
