@@ -33,7 +33,12 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  * in production. RowLevelSecurityTest also logs in as sevak_app itself.
  */
 @SpringBootTest(
-        properties = {"sevak.rate-limit.strict-per-minute=1000000", "sevak.rate-limit.general-per-minute=1000000"})
+        properties = {
+            "sevak.rate-limit.strict-per-minute=1000000",
+            "sevak.rate-limit.general-per-minute=1000000",
+            // Logging in as the owner keeps each test rollback-able; see AppRoleCheck.
+            "sevak.db.allow-privileged-login=true"
+        })
 @AutoConfigureMockMvc
 @Transactional
 public abstract class IntegrationTest {
