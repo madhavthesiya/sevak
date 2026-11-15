@@ -2,6 +2,12 @@
 
 Notable changes to SEVAK, newest first. Each release links to its pull request, where the full details are. Dates are when the GitHub release was published.
 
+## Unreleased
+
+### Added
+- The live demo: <https://sevak-tau.vercel.app>, with the API on Render and the database on Supabase, both in Singapore ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), [#21](https://github.com/madhavthesiya/sevak/pull/21)).
+- `scripts/smoke-test.mjs`, the production smoke test: 23 of 23 checks passed against the live site on 15 Nov 2026.
+
 ## [3.1.0] - 2026-11-15: row-level security
 
 Requests run under PostgreSQL row-level security, so a bug in Java can't show one user another user's data ([ADR 0008](docs/adr/0008-row-level-security.md)). Details in [#19](https://github.com/madhavthesiya/sevak/pull/19); the "no items" fix is [#18](https://github.com/madhavthesiya/sevak/pull/18).
