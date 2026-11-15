@@ -2,7 +2,9 @@
 
 Notable changes to SEVAK, newest first. Each release links to its pull request, where the full details are. Dates are when the GitHub release was published.
 
-## Unreleased
+## [3.2.0] - 2026-11-15: live deployment
+
+SEVAK is live (Phase 9): the web app on Vercel, the API on Render and the database on Supabase. Details in [#21](https://github.com/madhavthesiya/sevak/pull/21) and [#22](https://github.com/madhavthesiya/sevak/pull/22).
 
 ### Added
 - The live demo: <https://sevak-tau.vercel.app>, with the API on Render and the database on Supabase, both in Singapore ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), [#21](https://github.com/madhavthesiya/sevak/pull/21)).
@@ -89,6 +91,7 @@ Benchmarks on about 1 million bookings ([docs/BENCHMARKS.md](docs/BENCHMARKS.md)
 - **Added:** RFC 9457 Problem Details errors, input validation for paging parameters, and `sql/checks/data_integrity.sql`.
 - **Removed:** duplicate indexes and the outdated `V2_improvements.sql`. ([#1](https://github.com/madhavthesiya/sevak/pull/1))
 
+[3.2.0]: https://github.com/madhavthesiya/sevak/releases/tag/v3.2.0
 [3.1.0]: https://github.com/madhavthesiya/sevak/releases/tag/v3.1.0
 [3.0.0]: https://github.com/madhavthesiya/sevak/releases/tag/v3.0.0
 [2.4.0]: https://github.com/madhavthesiya/sevak/releases/tag/v2.4.0
