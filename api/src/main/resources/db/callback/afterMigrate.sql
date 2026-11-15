@@ -4,7 +4,9 @@
 --
 -- Flyway doesn't replace placeholders inside dollar-quoted text such as a DO block, so the password
 -- reaches the block through a setting, which is cleared straight after. It must not contain a quote (').
-SELECT set_config('sevak.app_password', '${app_password}', false);
+-- SET, not SELECT set_config(...): Flyway prints the rows a callback's SELECT returns, which put the
+-- password in the application log on every start.
+SET sevak.app_password = '${app_password}';
 
 DO $do$
 BEGIN
