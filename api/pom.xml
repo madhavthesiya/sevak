@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.sevak</groupId>
 	<artifactId>sevak-api</artifactId>
-	<version>3.0.0</version>
+	<version>3.1.0</version>
 	<name>sevak-api</name>
 	<description>REST API for SEVAK, a hyperlocal home-services marketplace built on PostgreSQL</description>
 	<url>https://github.com/madhavthesiya/sevak</url>
