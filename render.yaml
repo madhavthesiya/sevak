@@ -1,0 +1,47 @@
+# Render Blueprint for the SEVAK API (Render dashboard: New → Blueprint → this repository).
+# Connection details and secrets are entered in the dashboard (sync: false), never committed.
+# Step-by-step setup: docs/DEPLOYMENT.md.
+services:
+  - type: web
+    name: sevak-api
+    runtime: docker
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
+    region: singapore # next to the Supabase database, which is also in Singapore
+    plan: free
+    healthCheckPath: /actuator/health/readiness
+    # Deploy only after GitHub's CI passes, and only when the API changed.
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - api/**
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      # The free plan has 512 MB. Java uses a quarter of the memory for its heap by default; give it
+      # most of it, and use the serial collector, which suits a small single-CPU instance.
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=70 -XX:+UseSerialGC
+
+      # Requests: the sevak_app role, under row-level security (Supabase session pooler, port 5432).
+      - key: SEVAK_DB_URL
+        sync: false
+      - key: SEVAK_DB_USER
+        sync: false
+      - key: SEVAK_APP_DB_PASSWORD
+        sync: false
+
+      # The owner, for Flyway and the maintenance jobs. Must be a superuser or have BYPASSRLS.
+      - key: SEVAK_OWNER_DB_URL
+        sync: false
+      - key: SEVAK_OWNER_DB_USER
+        sync: false
+      - key: SEVAK_OWNER_DB_PASSWORD
+        sync: false
+
+      # Signs login tokens. Render generates a random 256-bit value.
+      - key: SEVAK_JWT_SECRET
+        generateValue: true
+      # The web app's address, for CORS. Known once the Vercel project exists.
+      - key: SEVAK_CORS_ORIGINS
+        sync: false
