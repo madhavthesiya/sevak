@@ -142,4 +142,28 @@ final class OldQueries {
                      sp.provider_id, s.service_id
             LIMIT :limit OFFSET :offset
             """;
+
+    /** A customer's spending summary until Phase 8: totals every payment, then keeps this customer's. */
+    static final String SPENDING = """
+                        WITH paid AS (
+                            SELECT booking_id,
+                                   COALESCE(SUM(amount) FILTER (WHERE status = 'success'), 0)  AS paid,
+                                   COALESCE(SUM(amount) FILTER (WHERE status = 'refunded'), 0) AS refunded
+                            FROM payments
+                            GROUP BY booking_id
+                        )
+                        SELECT
+                            COUNT(*)                                       AS total_bookings,
+                            COUNT(*) FILTER (WHERE b.status = 'completed') AS completed,
+                            COUNT(*) FILTER (WHERE b.status = 'cancelled') AS cancelled,
+                            COUNT(*) FILTER (WHERE b.status IN ('pending', 'confirmed', 'in_progress')) AS pending,
+                            COALESCE(SUM(p.paid), 0)                       AS paid,
+                            COALESCE(SUM(b.total_amount) FILTER (
+                                WHERE b.status IN ('pending', 'confirmed', 'in_progress')
+                                  AND COALESCE(p.paid, 0) = 0), 0)         AS upcoming,
+                            COALESCE(SUM(p.refunded), 0)                   AS refunded
+                        FROM bookings b
+                        LEFT JOIN paid p ON p.booking_id = b.booking_id
+                        WHERE b.customer_id = :id
+                        """;
 }
