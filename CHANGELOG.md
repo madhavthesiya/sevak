@@ -2,7 +2,9 @@
 
 Notable changes to SEVAK, newest first. Each release links to its pull request, where the full details are. Dates are when the GitHub release was published.
 
-## Unreleased
+## [3.1.0] - 2026-11-15: row-level security
+
+Requests run under PostgreSQL row-level security, so a bug in Java can't show one user another user's data ([ADR 0008](docs/adr/0008-row-level-security.md)). Details in [#19](https://github.com/madhavthesiya/sevak/pull/19); the "no items" fix is [#18](https://github.com/madhavthesiya/sevak/pull/18).
 
 ### Added
 - Row-level security ([ADR 0008](docs/adr/0008-row-level-security.md)). The API's requests run as `sevak_app`, a role that doesn't own the tables and can't bypass the policies, with the caller set at the start of every transaction. Policies on 16 tables let customers, providers and admins see and change only their own rows; with no caller, no private row is visible.
@@ -81,6 +83,7 @@ Benchmarks on about 1 million bookings ([docs/BENCHMARKS.md](docs/BENCHMARKS.md)
 - **Added:** RFC 9457 Problem Details errors, input validation for paging parameters, and `sql/checks/data_integrity.sql`.
 - **Removed:** duplicate indexes and the outdated `V2_improvements.sql`. ([#1](https://github.com/madhavthesiya/sevak/pull/1))
 
+[3.1.0]: https://github.com/madhavthesiya/sevak/releases/tag/v3.1.0
 [3.0.0]: https://github.com/madhavthesiya/sevak/releases/tag/v3.0.0
 [2.4.0]: https://github.com/madhavthesiya/sevak/releases/tag/v2.4.0
 [2.3.0]: https://github.com/madhavthesiya/sevak/releases/tag/v2.3.0
