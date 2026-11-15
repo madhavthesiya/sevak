@@ -1,0 +1,113 @@
+Live leaderboard: the view as an admin, under the policies (rejected)
+
+Sort  (cost=3692476.40..3692488.75 rows=4939 width=174) (actual time=2815.968..2816.223 rows=4939 loops=1)
+  Sort Key: (rank() OVER (?)), sp_1.provider_id
+  Sort Method: quicksort  Memory: 811kB
+  Buffers: shared hit=5839007 read=13275
+  ->  Hash Join  (cost=3690234.66..3692173.39 rows=4939 width=174) (actual time=2806.441..2813.829 rows=4939 loops=1)
+        Hash Cond: (sp.provider_id = sp_1.provider_id)
+        Buffers: shared hit=5839007 read=13275
+        ->  Hash Join  (cost=225.63..2096.21 rows=5006 width=16) (actual time=469.328..475.833 rows=5006 loops=1)
+              Hash Cond: (u.user_id = sp.user_id)
+              Buffers: shared hit=1289
+              ->  Seq Scan on users u  (cost=0.00..1726.15 rows=55015 width=16) (actual time=0.010..2.701 rows=55015 loops=1)
+                    Buffers: shared hit=1176
+              ->  Hash  (cost=163.06..163.06 rows=5006 width=8) (actual time=469.275..469.276 rows=5006 loops=1)
+                    Buckets: 8192  Batches: 1  Memory Usage: 260kB
+                    Buffers: shared hit=113
+                    ->  Seq Scan on service_providers sp  (cost=0.00..163.06 rows=5006 width=8) (actual time=468.584..468.868 rows=5006 loops=1)
+                          Buffers: shared hit=113
+        ->  Hash  (cost=3689947.28..3689947.28 rows=4939 width=162) (actual time=2337.065..2337.159 rows=4939 loops=1)
+              Buckets: 8192  Batches: 1  Memory Usage: 645kB
+              Buffers: shared hit=5837718 read=13275
+              ->  WindowAgg  (cost=3689638.60..3689947.28 rows=4939 width=162) (actual time=2333.688..2336.062 rows=4939 loops=1)
+                    Buffers: shared hit=5837718 read=13275
+                    ->  Sort  (cost=3689638.60..3689650.94 rows=4939 width=154) (actual time=2333.654..2333.927 rows=4939 loops=1)
+                          Sort Key: (CASE WHEN (sp_1.review_count > 0) THEN round(((('5'::numeric * (avg(provider_reviews.rating))) + (sp_1.avg_rating * (sp_1.review_count)::numeric)) / ((5 + sp_1.review_count))::numeric), 2) ELSE NULL::numeric END) DESC NULLS LAST, (COALESCE(j.jobs_completed, '0'::bigint)) DESC
+                          Sort Method: quicksort  Memory: 726kB
+                          Buffers: shared hit=5837718 read=13275
+                          ->  Nested Loop  (cost=3687267.55..3689335.59 rows=4939 width=154) (actual time=2323.152..2332.358 rows=4939 loops=1)
+                                Buffers: shared hit=5837718 read=13275
+                                ->  Finalize Aggregate  (cost=7313.24..7313.25 rows=1 width=32) (actual time=98.403..98.486 rows=1 loops=1)
+                                      Buffers: shared hit=4018
+                                      ->  Gather  (cost=7313.03..7313.24 rows=2 width=32) (actual time=39.765..98.436 rows=3 loops=1)
+                                            Workers Planned: 2
+                                            Workers Launched: 2
+                                            Buffers: shared hit=4018
+                                            ->  Partial Aggregate  (cost=6313.03..6313.04 rows=1 width=32) (actual time=64.622..64.623 rows=1 loops=3)
+                                                  Buffers: shared hit=4018
+                                                  ->  Parallel Seq Scan on provider_reviews  (cost=0.00..5854.02 rows=183602 width=4) (actual time=51.452..58.852 rows=146882 loops=3)
+                                                        Buffers: shared hit=4018
+                                ->  Hash Left Join  (cost=3679954.31..3681861.82 rows=4939 width=90) (actual time=2224.738..2232.691 rows=4939 loops=1)
+                                      Hash Cond: (sp_1.provider_id = j.provider_id)
+                                      Buffers: shared hit=5833700 read=13275
+                                      ->  Hash Join  (cost=225.91..2120.44 rows=4939 width=50) (actual time=0.903..8.255 rows=4939 loops=1)
+                                            Hash Cond: (sp_1.city_id = ci.city_id)
+                                            Buffers: shared hit=1290
+                                            ->  Hash Join  (cost=224.80..2095.37 rows=4939 width=47) (actual time=0.845..7.751 rows=4939 loops=1)
+                                                  Hash Cond: (u_1.user_id = sp_1.user_id)
+                                                  Buffers: shared hit=1289
+                                                  ->  Seq Scan on users u_1  (cost=0.00..1726.15 rows=55015 width=34) (actual time=0.005..2.694 rows=55015 loops=1)
+                                                        Buffers: shared hit=1176
+                                                  ->  Hash  (cost=163.06..163.06 rows=4939 width=21) (actual time=0.803..0.803 rows=4939 loops=1)
+                                                        Buckets: 8192  Batches: 1  Memory Usage: 315kB
+                                                        Buffers: shared hit=113
+                                                        ->  Seq Scan on service_providers sp_1  (cost=0.00..163.06 rows=4939 width=21) (actual time=0.010..0.347 rows=4939 loops=1)
+                                                              Filter: is_active
+                                                              Rows Removed by Filter: 67
+                                                              Buffers: shared hit=113
+                                            ->  Hash  (cost=1.05..1.05 rows=5 width=11) (actual time=0.031..0.032 rows=5 loops=1)
+                                                  Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                  Buffers: shared hit=1
+                                                  ->  Seq Scan on cities ci  (cost=0.00..1.05 rows=5 width=11) (actual time=0.016..0.016 rows=5 loops=1)
+                                                        Buffers: shared hit=1
+                                      ->  Hash  (cost=3679668.38..3679668.38 rows=4802 width=44) (actual time=2223.777..2223.784 rows=4132 loops=1)
+                                            Buckets: 8192  Batches: 1  Memory Usage: 274kB
+                                            Buffers: shared hit=5832410 read=13275
+                                            ->  Subquery Scan on j  (cost=3679560.33..3679668.38 rows=4802 width=44) (actual time=2221.837..2222.928 rows=4132 loops=1)
+                                                  Buffers: shared hit=5832410 read=13275
+                                                  ->  HashAggregate  (cost=3679560.33..3679620.35 rows=4802 width=44) (actual time=2221.834..2222.671 rows=4132 loops=1)
+                                                        Group Key: b.provider_id
+                                                        Batches: 1  Memory Usage: 1745kB
+                                                        Buffers: shared hit=5832410 read=13275
+                                                        InitPlan 1 (returns $0)
+                                                          ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.192..0.193 rows=1 loops=1)
+                                                                Buffers: shared hit=2
+                                                        InitPlan 2 (returns $1)
+                                                          ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.079..0.080 rows=1 loops=1)
+                                                                Buffers: shared hit=2
+                                                        InitPlan 3 (returns $2)
+                                                          ->  Result  (cost=0.00..0.26 rows=1 width=1) (actual time=0.070..0.070 rows=1 loops=1)
+                                                                Buffers: shared hit=1
+                                                        ->  Nested Loop Left Join  (cost=0.42..3676773.38 rows=371490 width=9) (actual time=0.583..2067.442 rows=743045 loops=1)
+                                                              Buffers: shared hit=5832410 read=13275
+                                                              ->  Seq Scan on bookings b  (cost=0.00..31390.18 rows=371490 width=8) (actual time=0.358..123.760 rows=743045 loops=1)
+                                                                    Filter: (((status)::text = 'completed'::text) AND ((customer_id = $0) OR (provider_id = $1) OR $2))
+                                                                    Rows Removed by Filter: 256965
+                                                                    Buffers: shared hit=620 read=13275
+                                                              ->  Index Scan using uq_one_successful_payment on payments p  (cost=0.42..9.80 rows=1 width=9) (actual time=0.002..0.002 rows=1 loops=743045)
+                                                                    Index Cond: (booking_id = b.booking_id)
+                                                                    Filter: (SubPlan 7)
+                                                                    Buffers: shared hit=5831790
+                                                                    SubPlan 7
+                                                                      ->  Index Scan using bookings_pkey on bookings b_1  (cost=1.21..9.23 rows=1 width=0) (actual time=0.001..0.001 rows=1 loops=720530)
+                                                                            Index Cond: (booking_id = p.booking_id)
+                                                                            Filter: ((customer_id = $4) OR (provider_id = $5) OR $6)
+                                                                            Buffers: shared hit=2882125
+                                                                            InitPlan 4 (returns $4)
+                                                                              ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.054..0.055 rows=1 loops=1)
+                                                                                    Buffers: shared hit=2
+                                                                            InitPlan 5 (returns $5)
+                                                                              ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.063..0.064 rows=1 loops=1)
+                                                                                    Buffers: shared hit=2
+                                                                            InitPlan 6 (returns $6)
+                                                                              ->  Result  (cost=0.00..0.26 rows=1 width=1) (actual time=0.052..0.053 rows=1 loops=1)
+                                                                                    Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=51
+Planning Time: 1.276 ms
+JIT:
+  Functions: 95
+  Options: Inlining true, Optimization true, Expressions true, Deforming true
+  Timing: Generation 3.470 ms, Inlining 109.426 ms, Optimization 289.625 ms, Emission 224.085 ms, Total 626.607 ms
+Execution Time: 2820.565 ms

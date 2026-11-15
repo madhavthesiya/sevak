@@ -378,6 +378,10 @@ ALTER TABLE booking_items ENABLE TRIGGER USER;
 ALTER TABLE provider_reviews ENABLE TRIGGER USER;
 ALTER TABLE refunds ENABLE TRIGGER USER;
 
+-- Statistics first. The summaries join a million rows; planned before autovacuum has analysed the new
+-- rows, PostgreSQL can think a table is nearly empty and choose a nested loop that runs for hours.
+ANALYZE;
+
 REFRESH MATERIALIZED VIEW mv_provider_leaderboard;
 REFRESH MATERIALIZED VIEW mv_city_revenue_summary;
 REFRESH MATERIALIZED VIEW mv_category_revenue;

@@ -87,16 +87,20 @@ public class QueryCatalog {
         add(
                 "providers.reviews",
                 "Provider reviews",
-                List.of("Multi-table JOIN", "Offset pagination"),
-                "Newest reviews first, showing each customer's name.",
+                List.of("Owner's-rights view", "Row-level security", "Offset pagination"),
+                "Newest reviews first, showing each customer's name. Bookings are private under row-level"
+                        + " security, so this reads v_public_reviews, a view that runs with its owner's rights and"
+                        + " shows only what this page shows.",
                 ProviderRepository.REVIEWS_SQL,
                 params("id", 1, "limit", 10, "offset", 0));
         add(
                 "providers.slots",
                 "Free time slots",
-                List.of("generate_series", "LATERAL", "Range overlap (&&)", "NOT EXISTS"),
+                List.of("generate_series", "LATERAL", "Range overlap (&&)", "SECURITY DEFINER function"),
                 "Expands weekly working hours into 30-minute start times, then removes any that would overlap an"
-                        + " open booking. Uses the same rule as the constraint that guards the table.",
+                        + " open booking. Uses the same rule as the constraint that guards the table. Row-level"
+                        + " security hides other customers' bookings, so the busy times come from"
+                        + " fn_provider_busy_times, which returns only time ranges.",
                 ProviderRepository.SLOTS_SQL,
                 params("provider", 1, "from", LocalDate.now(), "days", 14, "minutes", 60));
         add(
@@ -116,16 +120,17 @@ public class QueryCatalog {
         add(
                 "me.bookings",
                 "My bookings",
-                List.of("STRING_AGG", "Correlated subquery"),
-                "Your bookings, newest first, with the services on each one joined into a line of text.",
+                List.of("STRING_AGG", "Correlated subquery", "Row-level security"),
+                "Your bookings, newest first, with the services on each one joined into a line of text. Row-level"
+                        + " security limits the rows to yours as well, so a missing WHERE couldn't show anyone else's.",
                 CustomerRepository.BOOKINGS_SQL,
                 params("id", 1, "limit", 20, "offset", 0));
         add(
                 "me.booking",
                 "Booking detail",
-                List.of("LATERAL join", "EXISTS"),
-                "One booking with its latest payment attempt. Filters on the customer too, so nobody can read"
-                        + " another person's booking.",
+                List.of("LATERAL join", "EXISTS", "Row-level security"),
+                "One booking with its latest payment attempt. Filters on the customer too, and row-level security"
+                        + " would hide another person's booking even without that filter.",
                 CustomerRepository.BOOKING_HEADER_SQL,
                 params("booking", 1, "customer", 1));
         add(
@@ -195,15 +200,19 @@ public class QueryCatalog {
         add(
                 "admin.leaderboard",
                 "Leaderboard, live",
-                List.of("View", "RANK() window function", "Bayesian rating"),
-                "Computes the ranking from the bookings and reviews on every request.",
+                List.of("View", "RANK() window function", "Bayesian rating", "SECURITY DEFINER function"),
+                "Computes the ranking from the bookings and reviews on every request. fn_live_leaderboard checks"
+                        + " that you're an admin, then reads the view as its owner: under row-level security the"
+                        + " planner priced a check on every payment and the page took 4-5 s instead of under 1 s.",
                 AdminRepository.LEADERBOARD_LIVE_SQL,
                 params());
         add(
                 "admin.leaderboard.fast",
                 "Leaderboard, materialized",
-                List.of("Materialized view", "REFRESH CONCURRENTLY"),
-                "The same ranking stored ahead of time. Faster to read, but only as fresh as the last refresh.",
+                List.of("Materialized view", "REFRESH CONCURRENTLY", "SECURITY DEFINER function"),
+                "The same ranking stored ahead of time. Faster to read, but only as fresh as the last refresh."
+                        + " It holds each provider's email and revenue, so admins read it through"
+                        + " fn_stored_leaderboard; search and the home page can read only the public columns.",
                 AdminRepository.LEADERBOARD_FAST_SQL,
                 params());
         add(

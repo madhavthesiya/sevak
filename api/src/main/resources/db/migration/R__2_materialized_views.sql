@@ -4,16 +4,25 @@
 --  views once the data is loaded.
 -- ============================================================
 
+-- These return the view's and the materialized view's row types, so they go first.
+DROP FUNCTION IF EXISTS fn_live_leaderboard();
+DROP FUNCTION IF EXISTS fn_stored_leaderboard();
 DROP MATERIALIZED VIEW IF EXISTS mv_provider_leaderboard;
 DROP MATERIALIZED VIEW IF EXISTS mv_city_revenue_summary;
 DROP MATERIALIZED VIEW IF EXISTS mv_category_revenue;
 DROP VIEW IF EXISTS v_provider_leaderboard;
+DROP VIEW IF EXISTS v_public_reviews;
 
 -- One definition for the live leaderboard and its materialized copy.
 -- weighted_rating is a Bayesian average: with few reviews a provider stays near the
 -- platform average, so one 5-star review can't beat fifty excellent ones.
 -- 5 is how many reviews it takes before a provider's own average starts to dominate.
-CREATE VIEW v_provider_leaderboard AS
+--
+-- security_invoker: a plain view reads its tables with its owner's rights, which skip row-level security,
+-- so anyone allowed to read the view would see totals built from every booking. As the invoker, the
+-- caller's policies apply. The API role can't read it at all, though: admins reach it through
+-- fn_live_leaderboard below, and the materialized copy is refreshed as the owner.
+CREATE VIEW v_provider_leaderboard WITH (security_invoker = true) AS
 WITH platform AS (
     SELECT AVG(rating) AS avg_rating FROM provider_reviews
 ),
@@ -98,3 +107,55 @@ JOIN categories c ON c.category_id = it.category_id
 GROUP BY c.category_name;
 
 CREATE UNIQUE INDEX idx_mv_category_revenue ON mv_category_revenue (category_name);
+
+-- ── Public reviews ──────────────────────────────────────────
+-- The reviews on a provider's page are public, but finding a provider's reviews and the reviewer's name
+-- goes through bookings, which row-level security hides from everyone but the booking's own people.
+-- This view deliberately runs with its owner's rights (security_invoker = false) and shows only what the
+-- page shows: no booking, price, address or contact details.
+CREATE VIEW v_public_reviews WITH (security_invoker = false) AS
+SELECT pr.review_id, b.provider_id, pr.rating, pr.comment, cu_u.full_name AS customer_name,
+       pr.created_at AS reviewed_at
+FROM provider_reviews pr
+JOIN bookings b   ON b.booking_id = pr.booking_id
+JOIN customers cu ON cu.customer_id = b.customer_id
+JOIN users cu_u   ON cu_u.user_id = cu.user_id;
+
+-- Recreating a view drops its grants, so they live here rather than in V14.
+-- Materialized views can't have row-level security. These hold totals per provider, city and category,
+-- not anyone's bookings; only the admin endpoints read the revenue columns.
+GRANT SELECT ON v_public_reviews, mv_city_revenue_summary, mv_category_revenue TO sevak_app;
+-- The stored leaderboard also holds each provider's email and revenue. Search and the home page get only
+-- the columns they show; admins read the whole row through fn_stored_leaderboard below.
+GRANT SELECT (rank, provider_id, city_name, avg_rating, review_count, weighted_rating, weighted_score)
+    ON mv_provider_leaderboard TO sevak_app;
+
+-- ── The live leaderboard, for admins ────────────────────────
+-- Read through the view under row-level security, it took 4-5 s at 1M bookings instead of 0.85 s, at the
+-- API's 5 s query limit. PostgreSQL plans a query before it knows who is asking, so it priced the
+-- "can you see this booking?" check on each of about 815,000 payments and chose 743,000 single-row
+-- lookups. For an admin the policies filter nothing, so admins read the view through this function:
+-- it refuses anyone else, then reads the view as the owner.
+CREATE FUNCTION fn_live_leaderboard() RETURNS SETOF v_provider_leaderboard
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
+BEGIN
+    IF NOT app_is_admin() THEN
+        RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'Only admins can read the live leaderboard';
+    END IF;
+    RETURN QUERY SELECT * FROM v_provider_leaderboard;
+END;
+$$;
+
+-- The stored copy, with every column, for admins only.
+CREATE FUNCTION fn_stored_leaderboard() RETURNS SETOF mv_provider_leaderboard
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = sevak, pg_temp AS $$
+BEGIN
+    IF NOT app_is_admin() THEN
+        RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'Only admins can read the full leaderboard';
+    END IF;
+    RETURN QUERY SELECT * FROM mv_provider_leaderboard;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION fn_live_leaderboard(), fn_stored_leaderboard() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fn_live_leaderboard(), fn_stored_leaderboard() TO sevak_app;

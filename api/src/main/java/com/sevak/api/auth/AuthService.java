@@ -44,6 +44,7 @@ public class AuthService {
         try {
             int userId = repo.insertUser(
                     email, passwords.encode(request.password()), request.role(), request.fullName(), request.phone());
+            repo.actAs(userId);
             int profileId = isProvider
                     ? repo.insertProvider(userId, request.cityId(), request.bio(), request.experienceYears())
                     : repo.insertCustomer(userId);

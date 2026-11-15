@@ -47,13 +47,14 @@ flowchart LR
         services --> repos["Repositories: hand-written SQL via JdbcClient"]
         jobs["Scheduled jobs: refresh summaries and expire ignored requests (every 15 min), nightly demo reset (off by default)"]
     end
-    repos -- "JDBC, HikariCP" --> db[("PostgreSQL 16<br/>29 tables, constraints, triggers,<br/>procedures, materialized views")]
-    jobs --> db
+    repos -- "as sevak_app, with the caller set on every transaction" --> db[("PostgreSQL 16<br/>29 tables, constraints, triggers,<br/>row-level security, materialized views")]
+    jobs -- "as the owner, or a SECURITY DEFINER function" --> db
     flyway["Flyway migrations"] -. "build and version the schema" .-> db
 ```
 
 - The frontend's TypeScript types are generated from the API's OpenAPI document, and CI fails if they drift.
 - Every rule that the schema can express lives in the database, with Java checking first to give friendly errors ([ADR 0002](docs/adr/0002-enforce-business-rules-in-the-database.md)).
+- Privacy too: requests run as `sevak_app` under row-level security, so even a query that forgot its `WHERE customer_id = ...` can't return someone else's rows ([ADR 0008](docs/adr/0008-row-level-security.md)).
 
 ## Data model
 
@@ -174,6 +175,11 @@ The 12 central tables with their key columns. This diagram, like every schema do
 *Solution:* split into `locations` (coordinates are a candidate key) and `customer_addresses` (`label` and `house_no` depend on the customer and the location together). The few derived values kept for speed (`avg_rating`, `subtotal`, `total_amount`, `used_count`) are each kept correct by a trigger or a CHECK.
 *Proof:* the [normalization proof](docs/SEVAK_Normalization_Proof.md), and rating-trigger and subtotal tests.
 
+**7. A bug in Java can't show one customer another's data.**
+*Problem:* privacy rested on every query remembering `WHERE customer_id = ...` and every service checking ownership first. One miss would leak bookings, payments or addresses, and nothing would fail.
+*Solution:* PostgreSQL row-level security. The API connects as `sevak_app` (not the owner, no `BYPASSRLS`, no `TRUNCATE`, can't read password hashes, emails or phones) and sets the caller at the start of every transaction; policies on 16 tables decide which rows each person sees and changes. No caller means no private rows. Triggers that must see every row, like the rating cache, run as `SECURITY DEFINER` with a fixed `search_path`, and public screens get narrow windows: free slots see only busy times.
+*Proof:* [`RowLevelSecurityTest`](api/src/test/java/com/sevak/api/RowLevelSecurityTest.java) logs in as `sevak_app` and tries plain SQL against other people's rows; with RLS turned off, 17 of its 29 tests fail. The API refuses to start if its login could skip the policies. [ADR 0008](docs/adr/0008-row-level-security.md)
+
 Also: `Idempotency-Key` makes a retried booking return the first result; the last use of a coupon goes to exactly one of two concurrent customers; one user can't read another's data (`/me` routes, and `404` instead of `403` for other people's IDs).
 
 ## Benchmarks
@@ -186,7 +192,9 @@ Measured with `EXPLAIN (ANALYZE, BUFFERS)` on about **1 million bookings**, with
 | Admin bookings, page 5,000 | 514 ms | 2.4 ms | An index on the keyset's sort columns ([ADR 0006](docs/adr/0006-offset-vs-keyset-pagination.md)) |
 | Admin revenue chart | 4,682 ms | 0.019 ms | Stored summary, refreshed every 15 minutes |
 
-Method, all eight experiments, query plans and a k6 load test: [BENCHMARKS.md](docs/BENCHMARKS.md). All numbers come from one laptop.
+**Row-level security** (Phase 8) adds 0.3 to 0.8 ms to a private screen. Measuring it as each screen's real user also found an admin page that became 6x slower under the policies (fixed: 2,821 ms → 328 ms) and a customer query that had been slow all along (1,286 ms → 0.74 ms).
+
+Method, all ten experiments, query plans and a k6 load test: [BENCHMARKS.md](docs/BENCHMARKS.md). All numbers come from one laptop.
 
 ## API
 
@@ -259,7 +267,7 @@ docker compose up --build
 | API docs (Swagger UI) | <http://localhost:8080/swagger-ui.html> |
 | Health | <http://localhost:8080/actuator/health/readiness> |
 
-Flyway builds the schema and loads the demo data on first start. Demo accounts (password `Demo@1234`): customer `aarav.sharma@gmail.com`, provider `ravi.electrician@gmail.com`, admin `admin.raj@sevak.com`.
+Flyway, logged in as the owner (`postgres`), builds the schema, creates the `sevak_app` role the API's requests run as, and loads the demo data on first start. Demo accounts (password `Demo@1234`): customer `aarav.sharma@gmail.com`, provider `ravi.electrician@gmail.com`, admin `admin.raj@sevak.com`.
 
 <details>
 <summary><b>Developing without Docker for the app</b></summary>
@@ -277,12 +285,12 @@ After changing the API, run `npm run api:sync` in `web/` to regenerate the TypeS
 ## Testing
 
 ```bash
-cd api && ./mvnw verify     # 235 tests; needs Docker
+cd api && ./mvnw verify     # 261 tests; needs Docker
 cd web && npm test          # unit tests (Vitest)
 cd web && npx playwright test   # end-to-end, against a running API
 ```
 
-- **Backend:** integration tests against a real PostgreSQL 16 in Docker (Testcontainers), built from scratch by Flyway. Each test rolls back. They cover every endpoint, the error catalogue, security and ownership, every constraint and trigger, the stored procedures, revenue correctness and real concurrent requests. JaCoCo line coverage on 14 Nov 2026: 96.5% overall and 94.1% for the service classes (85.4% of branches); the report is in `api/target/site/jacoco`.
+- **Backend:** integration tests against a real PostgreSQL 16 in Docker (Testcontainers), built from scratch by Flyway. Each test rolls back. They cover every endpoint, the error catalogue, security and ownership, row-level security as the app's own database role, every constraint and trigger, the stored procedures, revenue correctness and real concurrent requests. JaCoCo line coverage on 14 Nov 2026: 96.5% overall and 94.1% for the service classes (85.4% of branches); the report is in `api/target/site/jacoco`.
 - **Schema docs:** `SchemaDocsTest` fails if any diagram or schema document no longer matches the database.
 - **Frontend:** unit tests, and Playwright journeys in a real browser against the real API: a customer books, the provider accepts, a coupon reprices the bill, overlapping hours are refused, and a full booking works at phone width.
 - **CI** runs all of it on every push, plus a formatting check and a check that the generated API types are current.
@@ -290,7 +298,7 @@ cd web && npx playwright test   # end-to-end, against a running API
 
 ## Design decisions
 
-Seven short [Architecture Decision Records](docs/adr/README.md): [raw SQL over JPA](docs/adr/0001-raw-sql-with-jdbcclient-over-jpa.md) · [rules in the database](docs/adr/0002-enforce-business-rules-in-the-database.md) · [exclusion constraint](docs/adr/0003-exclusion-constraint-for-double-booking.md) · [materialized views](docs/adr/0004-materialized-views-for-dashboards.md) · [procedures vs services](docs/adr/0005-stored-procedures-vs-service-layer.md) · [OFFSET vs keyset](docs/adr/0006-offset-vs-keyset-pagination.md) · [JWT](docs/adr/0007-jwt-authentication.md)
+Eight short [Architecture Decision Records](docs/adr/README.md): [raw SQL over JPA](docs/adr/0001-raw-sql-with-jdbcclient-over-jpa.md) · [rules in the database](docs/adr/0002-enforce-business-rules-in-the-database.md) · [exclusion constraint](docs/adr/0003-exclusion-constraint-for-double-booking.md) · [materialized views](docs/adr/0004-materialized-views-for-dashboards.md) · [procedures vs services](docs/adr/0005-stored-procedures-vs-service-layer.md) · [OFFSET vs keyset](docs/adr/0006-offset-vs-keyset-pagination.md) · [JWT](docs/adr/0007-jwt-authentication.md) · [row-level security](docs/adr/0008-row-level-security.md)
 
 ## Tech stack
 
@@ -326,6 +334,8 @@ docs/       Schema diagrams, ADRs, benchmarks, normalization proof
 | Stored summaries can be 15 minutes old | Fine for analytics; refresh on demand where a page needs fresher data |
 | Address coordinates are placeholders | A geocoding service |
 | Benchmarks ran on one laptop with generated data | Measure again on real servers after deployment |
+| Row-level security guards against bugs, not SQL injection: injected SQL could set the caller | Every query is parameterised; RLS is the second line |
+| `users` has no row-level security, because names are public and login reads it before anyone is known | Column privileges hide every password hash, email and phone; `/me` reads your own through a function |
 
 ## Author
 

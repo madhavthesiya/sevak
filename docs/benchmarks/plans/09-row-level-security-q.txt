@@ -1,0 +1,52 @@
+Provider's earnings: as its user, under the policies
+
+Sort  (cost=2602.85..2602.86 rows=4 width=47) (actual time=1.596..1.598 rows=1 loops=1)
+  Sort Key: (sum(p.amount)) DESC, p.payment_method
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=1745
+  InitPlan 8 (returns $8)
+    ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.093..0.093 rows=1 loops=1)
+          Buffers: shared hit=2
+  InitPlan 9 (returns $9)
+    ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.093..0.093 rows=1 loops=1)
+          Buffers: shared hit=3
+  InitPlan 10 (returns $10)
+    ->  Result  (cost=0.00..0.26 rows=1 width=1) (never executed)
+  ->  GroupAggregate  (cost=2601.59..2602.03 rows=4 width=47) (actual time=1.591..1.592 rows=1 loops=1)
+        Group Key: p.payment_method
+        Buffers: shared hit=1745
+        ->  Sort  (cost=2601.59..2601.69 rows=39 width=12) (actual time=1.557..1.565 rows=180 loops=1)
+              Sort Key: p.payment_method
+              Sort Method: quicksort  Memory: 32kB
+              Buffers: shared hit=1745
+              ->  Nested Loop  (cost=10.44..2600.56 rows=39 width=12) (actual time=0.399..1.532 rows=180 loops=1)
+                    Buffers: shared hit=1745
+                    ->  Bitmap Heap Scan on bookings b  (cost=10.01..765.84 rows=104 width=4) (actual time=0.227..0.353 rows=208 loops=1)
+                          Recheck Cond: (provider_id = 1607)
+                          Filter: ((customer_id = $8) OR (provider_id = $9) OR $10)
+                          Heap Blocks: exact=208
+                          Buffers: shared hit=216
+                          ->  Bitmap Index Scan on idx_bookings_provider_status  (cost=0.00..9.99 rows=208 width=0) (actual time=0.016..0.016 rows=208 loops=1)
+                                Index Cond: (provider_id = 1607)
+                                Buffers: shared hit=3
+                    ->  Index Scan using uq_one_successful_payment on payments p  (cost=0.42..17.63 rows=1 width=16) (actual time=0.005..0.005 rows=1 loops=208)
+                          Index Cond: (booking_id = b.booking_id)
+                          Filter: (SubPlan 4)
+                          Buffers: shared hit=1529
+                          SubPlan 4
+                            ->  Index Scan using bookings_pkey on bookings b_1  (cost=1.21..9.23 rows=1 width=0) (actual time=0.003..0.003 rows=1 loops=180)
+                                  Index Cond: (booking_id = p.booking_id)
+                                  Filter: ((customer_id = $1) OR (provider_id = $2) OR $3)
+                                  Buffers: shared hit=725
+                                  InitPlan 1 (returns $1)
+                                    ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.072..0.072 rows=1 loops=1)
+                                          Buffers: shared hit=2
+                                  InitPlan 2 (returns $2)
+                                    ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.074..0.075 rows=1 loops=1)
+                                          Buffers: shared hit=3
+                                  InitPlan 3 (returns $3)
+                                    ->  Result  (cost=0.00..0.26 rows=1 width=1) (never executed)
+Planning:
+  Buffers: shared hit=17
+Planning Time: 0.500 ms
+Execution Time: 1.736 ms

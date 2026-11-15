@@ -1,0 +1,61 @@
+Admin bookings, keyset page 5,000: as its user, under the policies
+
+Limit  (cost=2.40..9.50 rows=20 width=50) (actual time=0.416..0.595 rows=20 loops=1)
+  Buffers: shared hit=251
+  InitPlan 1 (returns $0)
+    ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.147..0.147 rows=1 loops=1)
+          Buffers: shared hit=2
+  InitPlan 2 (returns $1)
+    ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.103..0.103 rows=1 loops=1)
+          Buffers: shared hit=2
+  InitPlan 3 (returns $2)
+    ->  Result  (cost=0.00..0.26 rows=1 width=1) (actual time=0.083..0.084 rows=1 loops=1)
+          Buffers: shared hit=1
+  ->  Nested Loop  (cost=1.62..159708.53 rows=449991 width=50) (actual time=0.415..0.591 rows=20 loops=1)
+        Buffers: shared hit=251
+        ->  Nested Loop  (cost=1.32..141602.27 rows=449991 width=42) (actual time=0.401..0.547 rows=20 loops=1)
+              Buffers: shared hit=191
+              ->  Nested Loop  (cost=1.02..128906.91 rows=449991 width=42) (actual time=0.386..0.502 rows=20 loops=1)
+                    Buffers: shared hit=131
+                    ->  Nested Loop  (cost=0.72..96963.85 rows=449991 width=34) (actual time=0.374..0.433 rows=20 loops=1)
+                          Buffers: shared hit=71
+                          ->  Index Scan using idx_bookings_start_id on bookings b  (cost=0.42..72525.77 rows=449991 width=34) (actual time=0.358..0.366 rows=20 loops=1)
+                                Index Cond: (ROW(scheduled_start, booking_id) < ROW('2026-12-07 16:00:00+05:30'::timestamp with time zone, 897735))
+                                Filter: ((customer_id = $0) OR (provider_id = $1) OR $2)
+                                Buffers: shared hit=11
+                          ->  Memoize  (cost=0.30..0.32 rows=1 width=8) (actual time=0.003..0.003 rows=1 loops=20)
+                                Cache Key: b.customer_id
+                                Cache Mode: logical
+                                Hits: 0  Misses: 20  Evictions: 0  Overflows: 0  Memory Usage: 3kB
+                                Buffers: shared hit=60
+                                ->  Index Scan using customers_pkey on customers cu  (cost=0.29..0.31 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=20)
+                                      Index Cond: (customer_id = b.customer_id)
+                                      Buffers: shared hit=60
+                    ->  Memoize  (cost=0.30..0.42 rows=1 width=16) (actual time=0.003..0.003 rows=1 loops=20)
+                          Cache Key: cu.user_id
+                          Cache Mode: logical
+                          Hits: 0  Misses: 20  Evictions: 0  Overflows: 0  Memory Usage: 3kB
+                          Buffers: shared hit=60
+                          ->  Index Scan using users_pkey on users cu_u  (cost=0.29..0.41 rows=1 width=16) (actual time=0.003..0.003 rows=1 loops=20)
+                                Index Cond: (user_id = cu.user_id)
+                                Buffers: shared hit=60
+              ->  Memoize  (cost=0.29..0.31 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=20)
+                    Cache Key: b.provider_id
+                    Cache Mode: logical
+                    Hits: 0  Misses: 20  Evictions: 0  Overflows: 0  Memory Usage: 3kB
+                    Buffers: shared hit=60
+                    ->  Index Scan using service_providers_pkey on service_providers sp  (cost=0.28..0.30 rows=1 width=8) (actual time=0.001..0.001 rows=1 loops=20)
+                          Index Cond: (provider_id = b.provider_id)
+                          Buffers: shared hit=60
+        ->  Memoize  (cost=0.30..1.38 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=20)
+              Cache Key: sp.user_id
+              Cache Mode: logical
+              Hits: 0  Misses: 20  Evictions: 0  Overflows: 0  Memory Usage: 3kB
+              Buffers: shared hit=60
+              ->  Index Scan using users_pkey on users pr_u  (cost=0.29..1.37 rows=1 width=16) (actual time=0.001..0.001 rows=1 loops=20)
+                    Index Cond: (user_id = sp.user_id)
+                    Buffers: shared hit=60
+Planning:
+  Buffers: shared hit=48
+Planning Time: 1.354 ms
+Execution Time: 2.697 ms

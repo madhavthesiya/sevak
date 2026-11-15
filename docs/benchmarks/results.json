@@ -9,8 +9,8 @@
     "dockerCpus" : 18,
     "dockerMemoryGb" : 8.0,
     "os" : "Windows 11",
-    "loadSeconds" : 417,
-    "databaseSize" : "1593 MB",
+    "loadSeconds" : 630,
+    "databaseSize" : "1589 MB",
     "rows" : {
       "users" : 55015,
       "customers" : 50007,
@@ -19,245 +19,420 @@
       "customer_addresses" : 60015,
       "bookings" : 1000010,
       "booking_items" : 2000015,
-      "booking_status_log" : 3522573,
-      "payments" : 817085,
-      "provider_reviews" : 441461,
-      "complaints" : 8659
+      "booking_status_log" : 3519389,
+      "payments" : 815629,
+      "provider_reviews" : 440645,
+      "complaints" : 8643
     }
   },
   "params" : {
     "customer" : 658,
     "heavyCustomer" : 20508,
-    "provider" : 7,
+    "provider" : 1607,
     "booking" : 840182,
-    "service" : 3,
+    "service" : 11,
     "cursor" : {
-      "beforeId" : 897733,
-      "before" : "2026-12-07T05:30:00.000Z"
-    }
+      "beforeId" : 897735,
+      "before" : "2026-12-07T10:30:00.000Z"
+    },
+    "customerUser" : 666,
+    "heavyCustomerUser" : 20516,
+    "providerUser" : 51616,
+    "adminUser" : 14
   },
   "sameResults" : {
     "revenue" : "identical rows, and the stored copy matches",
     "leaderboard" : "identical rows",
     "topProviders" : "identical first 50 rows",
-    "search" : "identical 8010 offerings in identical order"
+    "search" : "identical 8010 offerings in identical order",
+    "spending" : "identical summaries for 52 customers"
   },
   "experiments" : [ {
+    "title" : "Provider search, ILIKE '%clean%' in Mumbai",
     "id" : "01-search",
     "variants" : [ {
       "label" : "Old query, without the trigram index",
-      "medianMs" : 31.721,
-      "planningMs" : 1.245,
-      "runsMs" : [ 31.449, 31.721, 32.862 ],
+      "medianMs" : 62.252,
+      "planningMs" : 2.307,
+      "runsMs" : [ 59.861, 62.252, 65.23 ],
       "plan" : "..\\docs\\benchmarks\\plans\\01-search-a.txt"
     }, {
       "label" : "Old query, with the trigram index",
-      "medianMs" : 39.0,
-      "planningMs" : 1.335,
-      "runsMs" : [ 36.548, 39.0, 39.617 ],
+      "medianMs" : 60.664,
+      "planningMs" : 2.678,
+      "runsMs" : [ 59.381, 60.664, 62.888 ],
       "plan" : "..\\docs\\benchmarks\\plans\\01-search-b.txt"
     }, {
       "label" : "Ranked by the stored leaderboard score",
-      "medianMs" : 2.382,
-      "planningMs" : 1.85,
-      "runsMs" : [ 2.361, 2.382, 2.45 ],
+      "medianMs" : 4.359,
+      "planningMs" : 3.789,
+      "runsMs" : [ 4.054, 4.359, 4.858 ],
       "plan" : "..\\docs\\benchmarks\\plans\\01-search-c.txt"
-    } ],
-    "title" : "Provider search, ILIKE '%clean%' in Mumbai"
+    } ]
   }, {
+    "title" : "Customer's My Bookings, first page",
     "id" : "02-my-bookings",
     "variants" : [ {
       "label" : "Median customer, no index on customer_id",
-      "medianMs" : 42.232,
-      "planningMs" : 0.713,
-      "runsMs" : [ 42.136, 42.232, 48.743 ],
+      "medianMs" : 76.702,
+      "planningMs" : 1.397,
+      "runsMs" : [ 76.317, 76.702, 77.325 ],
       "plan" : "..\\docs\\benchmarks\\plans\\02-my-bookings-a.txt"
     }, {
       "label" : "Median customer, single-column (customer_id), as in V1",
-      "medianMs" : 0.38,
-      "planningMs" : 0.605,
-      "runsMs" : [ 0.347, 0.38, 0.457 ],
+      "medianMs" : 0.709,
+      "planningMs" : 1.014,
+      "runsMs" : [ 0.632, 0.709, 0.823 ],
       "plan" : "..\\docs\\benchmarks\\plans\\02-my-bookings-b.txt"
     }, {
       "label" : "Median customer, composite (customer_id, scheduled_start DESC), as in V11",
-      "medianMs" : 0.399,
-      "planningMs" : 0.69,
-      "runsMs" : [ 0.348, 0.399, 0.44 ],
+      "medianMs" : 0.652,
+      "planningMs" : 0.869,
+      "runsMs" : [ 0.622, 0.652, 0.775 ],
       "plan" : "..\\docs\\benchmarks\\plans\\02-my-bookings-c.txt"
     }, {
       "label" : "Busiest customer, single-column",
-      "medianMs" : 1.842,
-      "planningMs" : 0.544,
-      "runsMs" : [ 1.806, 1.842, 2.165 ],
+      "medianMs" : 4.731,
+      "planningMs" : 1.114,
+      "runsMs" : [ 4.686, 4.731, 4.741 ],
       "plan" : "..\\docs\\benchmarks\\plans\\02-my-bookings-d.txt"
     }, {
       "label" : "Busiest customer, composite",
-      "medianMs" : 0.328,
-      "planningMs" : 0.511,
-      "runsMs" : [ 0.316, 0.328, 0.398 ],
+      "medianMs" : 0.836,
+      "planningMs" : 1.052,
+      "runsMs" : [ 0.74, 0.836, 0.839 ],
       "plan" : "..\\docs\\benchmarks\\plans\\02-my-bookings-e.txt"
-    } ],
-    "title" : "Customer's My Bookings, first page"
+    } ]
   }, {
+    "title" : "Provider's pending jobs",
     "id" : "03-pending-jobs",
     "variants" : [ {
       "label" : "Neither provider index",
-      "medianMs" : 0.508,
-      "planningMs" : 1.024,
-      "runsMs" : [ 0.49, 0.508, 0.519 ],
+      "medianMs" : 1.085,
+      "planningMs" : 2.152,
+      "runsMs" : [ 1.085, 1.085, 1.249 ],
       "plan" : "..\\docs\\benchmarks\\plans\\03-pending-jobs-a.txt"
     }, {
       "label" : "Composite (provider_id, status, scheduled_start) only",
-      "medianMs" : 0.342,
-      "planningMs" : 1.074,
-      "runsMs" : [ 0.33, 0.342, 0.344 ],
+      "medianMs" : 0.812,
+      "planningMs" : 2.034,
+      "runsMs" : [ 0.778, 0.812, 0.812 ],
       "plan" : "..\\docs\\benchmarks\\plans\\03-pending-jobs-b.txt"
     }, {
       "label" : "Partial index WHERE status = 'pending' only",
-      "medianMs" : 0.333,
-      "planningMs" : 0.955,
-      "runsMs" : [ 0.323, 0.333, 0.346 ],
+      "medianMs" : 0.799,
+      "planningMs" : 2.371,
+      "runsMs" : [ 0.763, 0.799, 0.83 ],
       "plan" : "..\\docs\\benchmarks\\plans\\03-pending-jobs-c.txt"
     }, {
       "label" : "Both, as shipped",
-      "medianMs" : 0.322,
-      "planningMs" : 1.001,
-      "runsMs" : [ 0.316, 0.322, 0.33 ],
+      "medianMs" : 0.945,
+      "planningMs" : 2.613,
+      "runsMs" : [ 0.926, 0.945, 0.954 ],
       "plan" : "..\\docs\\benchmarks\\plans\\03-pending-jobs-d.txt"
-    } ],
-    "title" : "Provider's pending jobs"
+    } ]
   }, {
+    "title" : "Provider leaderboard",
     "id" : "04-leaderboard",
     "variants" : [ {
       "label" : "Old live view, COUNT(DISTINCT)",
-      "medianMs" : 3040.804,
-      "planningMs" : 1.169,
-      "runsMs" : [ 2932.378, 3040.804, 3196.67 ],
+      "medianMs" : 5107.18,
+      "planningMs" : 1.788,
+      "runsMs" : [ 4682.016, 5107.18, 5793.508 ],
       "plan" : "..\\docs\\benchmarks\\plans\\04-leaderboard-a.txt"
     }, {
       "label" : "New live view, jobs counted first",
-      "medianMs" : 452.082,
-      "planningMs" : 1.332,
-      "runsMs" : [ 364.262, 452.082, 509.127 ],
+      "medianMs" : 1000.473,
+      "planningMs" : 2.414,
+      "runsMs" : [ 727.202, 1000.473, 1013.615 ],
       "plan" : "..\\docs\\benchmarks\\plans\\04-leaderboard-b.txt"
     }, {
       "label" : "Materialized view",
-      "medianMs" : 20.129,
-      "planningMs" : 0.574,
-      "runsMs" : [ 19.408, 20.129, 21.703 ],
+      "medianMs" : 31.459,
+      "planningMs" : 0.953,
+      "runsMs" : [ 30.751, 31.459, 33.07 ],
       "plan" : "..\\docs\\benchmarks\\plans\\04-leaderboard-c.txt"
-    } ],
-    "title" : "Provider leaderboard"
+    } ]
   }, {
+    "title" : "Admin bookings list, 20 rows a page",
     "id" : "05-pagination",
     "variants" : [ {
       "label" : "OFFSET, page 1, no index",
-      "medianMs" : 654.234,
-      "planningMs" : 1.875,
-      "runsMs" : [ 620.459, 654.234, 655.181 ],
+      "medianMs" : 1722.154,
+      "planningMs" : 3.966,
+      "runsMs" : [ 1167.726, 1722.154, 2323.446 ],
       "plan" : "..\\docs\\benchmarks\\plans\\05-pagination-a.txt"
     }, {
       "label" : "OFFSET, page 5,000, no index",
-      "medianMs" : 880.939,
-      "planningMs" : 2.353,
-      "runsMs" : [ 843.29, 880.939, 981.751 ],
+      "medianMs" : 1197.602,
+      "planningMs" : 2.308,
+      "runsMs" : [ 1084.266, 1197.602, 2190.073 ],
       "plan" : "..\\docs\\benchmarks\\plans\\05-pagination-b.txt"
     }, {
       "label" : "Keyset, page 5,000, no index",
-      "medianMs" : 513.78,
-      "planningMs" : 1.308,
-      "runsMs" : [ 498.831, 513.78, 610.26 ],
+      "medianMs" : 1036.322,
+      "planningMs" : 3.444,
+      "runsMs" : [ 1030.663, 1036.322, 1502.926 ],
       "plan" : "..\\docs\\benchmarks\\plans\\05-pagination-c.txt"
     }, {
       "label" : "OFFSET, page 1, with index",
-      "medianMs" : 3.199,
-      "planningMs" : 1.539,
-      "runsMs" : [ 3.051, 3.199, 3.333 ],
+      "medianMs" : 6.089,
+      "planningMs" : 3.982,
+      "runsMs" : [ 5.283, 6.089, 6.168 ],
       "plan" : "..\\docs\\benchmarks\\plans\\05-pagination-d.txt"
     }, {
       "label" : "OFFSET, page 5,000, with index",
-      "medianMs" : 491.978,
-      "planningMs" : 1.493,
-      "runsMs" : [ 440.175, 491.978, 635.101 ],
+      "medianMs" : 494.152,
+      "planningMs" : 1.274,
+      "runsMs" : [ 466.115, 494.152, 580.799 ],
       "plan" : "..\\docs\\benchmarks\\plans\\05-pagination-e.txt"
     }, {
       "label" : "Keyset, page 5,000, with index",
-      "medianMs" : 2.406,
-      "planningMs" : 1.42,
-      "runsMs" : [ 2.398, 2.406, 2.45 ],
+      "medianMs" : 3.675,
+      "planningMs" : 1.34,
+      "runsMs" : [ 3.273, 3.675, 4.946 ],
       "plan" : "..\\docs\\benchmarks\\plans\\05-pagination-f.txt"
-    } ],
-    "title" : "Admin bookings list, 20 rows a page"
+    } ]
   }, {
+    "title" : "Revenue by category",
     "id" : "06-revenue",
     "variants" : [ {
       "label" : "Before task 0.4 (counts payments twice)",
-      "medianMs" : 2614.537,
-      "planningMs" : 1.724,
-      "runsMs" : [ 2294.483, 2614.537, 2788.836 ],
+      "medianMs" : 2218.989,
+      "planningMs" : 1.61,
+      "runsMs" : [ 2208.917, 2218.989, 2460.838 ],
       "plan" : "..\\docs\\benchmarks\\plans\\06-revenue-a.txt"
     }, {
       "label" : "Task 0.4: CTE with a window function (correct)",
-      "medianMs" : 4681.942,
-      "planningMs" : 0.42,
-      "runsMs" : [ 4558.678, 4681.942, 4695.389 ],
+      "medianMs" : 5737.611,
+      "planningMs" : 0.343,
+      "runsMs" : [ 5462.32, 5737.611, 6151.971 ],
       "plan" : "..\\docs\\benchmarks\\plans\\06-revenue-b.txt"
     }, {
       "label" : "Phase 6: divide by the trigger-guaranteed subtotal (correct)",
-      "medianMs" : 8417.826,
-      "planningMs" : 1.088,
-      "runsMs" : [ 8165.781, 8417.826, 9763.647 ],
+      "medianMs" : 9151.99,
+      "planningMs" : 1.663,
+      "runsMs" : [ 8646.801, 9151.99, 10805.297 ],
       "plan" : "..\\docs\\benchmarks\\plans\\06-revenue-c.txt"
     }, {
       "label" : "Phase 6: read the stored summary",
-      "medianMs" : 0.019,
-      "planningMs" : 0.037,
-      "runsMs" : [ 0.019, 0.019, 0.02 ],
+      "medianMs" : 0.025,
+      "planningMs" : 0.036,
+      "runsMs" : [ 0.019, 0.025, 0.028 ],
       "plan" : "..\\docs\\benchmarks\\plans\\06-revenue-d.txt"
-    } ],
-    "title" : "Revenue by category"
+    } ]
   }, {
+    "title" : "Free time slots, which use the double-booking overlap test",
     "id" : "07-free-slots",
     "variants" : [ {
       "label" : "Without the exclusion constraint's GiST index",
-      "medianMs" : 3.8,
-      "planningMs" : 0.275,
-      "runsMs" : [ 3.732, 3.8, 3.972 ],
+      "medianMs" : 1.44,
+      "planningMs" : 0.207,
+      "runsMs" : [ 1.381, 1.44, 1.513 ],
       "plan" : "..\\docs\\benchmarks\\plans\\07-free-slots-a.txt"
     }, {
       "label" : "With it",
-      "medianMs" : 3.702,
-      "planningMs" : 0.271,
-      "runsMs" : [ 3.61, 3.702, 3.917 ],
+      "medianMs" : 1.834,
+      "planningMs" : 0.283,
+      "runsMs" : [ 1.411, 1.834, 1.955 ],
       "plan" : "..\\docs\\benchmarks\\plans\\07-free-slots-b.txt"
-    } ],
-    "title" : "Free time slots, which use the double-booking overlap test"
+    } ]
   }, {
+    "title" : "Home page \"highest rated\", 4 providers",
     "id" : "08-home-top",
     "variants" : [ {
       "label" : "Old: computed live",
-      "medianMs" : 2334.312,
-      "planningMs" : 1.143,
-      "runsMs" : [ 2240.933, 2334.312, 2661.923 ],
+      "medianMs" : 2983.192,
+      "planningMs" : 1.44,
+      "runsMs" : [ 2965.866, 2983.192, 3119.394 ],
       "plan" : "..\\docs\\benchmarks\\plans\\08-home-top-a.txt"
     }, {
       "label" : "New: read from the stored leaderboard",
-      "medianMs" : 7.968,
-      "planningMs" : 0.305,
-      "runsMs" : [ 7.934, 7.968, 8.003 ],
+      "medianMs" : 11.535,
+      "planningMs" : 0.354,
+      "runsMs" : [ 10.263, 11.535, 11.757 ],
       "plan" : "..\\docs\\benchmarks\\plans\\08-home-top-b.txt"
-    } ],
-    "title" : "Home page \"highest rated\", 4 providers"
+    } ]
+  }, {
+    "title" : "Row-level security: each screen as the owner (policies skipped), then as its real user",
+    "id" : "09-row-level-security",
+    "variants" : [ {
+      "label" : "Live leaderboard: the view, policies skipped",
+      "medianMs" : 436.412,
+      "planningMs" : 1.11,
+      "runsMs" : [ 410.908, 436.412, 460.767 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-a.txt"
+    }, {
+      "label" : "Live leaderboard: the view as an admin, under the policies (rejected)",
+      "medianMs" : 2820.565,
+      "planningMs" : 1.276,
+      "runsMs" : [ 2766.668, 2820.565, 2875.367 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-b.txt"
+    }, {
+      "label" : "Live leaderboard: as shipped, an admin-checked SECURITY DEFINER function",
+      "medianMs" : 327.977,
+      "planningMs" : 0.387,
+      "runsMs" : [ 317.305, 327.977, 378.211 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-c.txt"
+    }, {
+      "label" : "My bookings, median customer: policies skipped",
+      "medianMs" : 0.404,
+      "planningMs" : 0.94,
+      "runsMs" : [ 0.362, 0.404, 0.612 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-d.txt"
+    }, {
+      "label" : "My bookings, median customer: as its user, under the policies",
+      "medianMs" : 0.698,
+      "planningMs" : 0.766,
+      "runsMs" : [ 0.679, 0.698, 0.751 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-e.txt"
+    }, {
+      "label" : "My bookings, busiest customer: policies skipped",
+      "medianMs" : 0.361,
+      "planningMs" : 0.513,
+      "runsMs" : [ 0.358, 0.361, 0.451 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-f.txt"
+    }, {
+      "label" : "My bookings, busiest customer: as its user, under the policies",
+      "medianMs" : 0.684,
+      "planningMs" : 0.804,
+      "runsMs" : [ 0.633, 0.684, 0.72 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-g.txt"
+    }, {
+      "label" : "Booking detail: policies skipped",
+      "medianMs" : 0.391,
+      "planningMs" : 1.968,
+      "runsMs" : [ 0.326, 0.391, 0.429 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-h.txt"
+    }, {
+      "label" : "Booking detail: as its user, under the policies",
+      "medianMs" : 0.902,
+      "planningMs" : 14.945,
+      "runsMs" : [ 0.849, 0.902, 0.907 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-i.txt"
+    }, {
+      "label" : "Booking timeline: policies skipped",
+      "medianMs" : 0.059,
+      "planningMs" : 0.039,
+      "runsMs" : [ 0.058, 0.059, 0.079 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-j.txt"
+    }, {
+      "label" : "Booking timeline: as its user, under the policies",
+      "medianMs" : 0.345,
+      "planningMs" : 0.291,
+      "runsMs" : [ 0.198, 0.345, 0.402 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-k.txt"
+    }, {
+      "label" : "Spending summary: policies skipped",
+      "medianMs" : 0.267,
+      "planningMs" : 0.167,
+      "runsMs" : [ 0.264, 0.267, 0.295 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-l.txt"
+    }, {
+      "label" : "Spending summary: as its user, under the policies",
+      "medianMs" : 0.53,
+      "planningMs" : 0.384,
+      "runsMs" : [ 0.507, 0.53, 0.632 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-m.txt"
+    }, {
+      "label" : "Provider's pending jobs: policies skipped",
+      "medianMs" : 0.648,
+      "planningMs" : 1.211,
+      "runsMs" : [ 0.63, 0.648, 0.658 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-n.txt"
+    }, {
+      "label" : "Provider's pending jobs: as its user, under the policies",
+      "medianMs" : 1.071,
+      "planningMs" : 1.997,
+      "runsMs" : [ 0.972, 1.071, 1.083 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-o.txt"
+    }, {
+      "label" : "Provider's earnings: policies skipped",
+      "medianMs" : 0.911,
+      "planningMs" : 0.265,
+      "runsMs" : [ 0.894, 0.911, 1.01 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-p.txt"
+    }, {
+      "label" : "Provider's earnings: as its user, under the policies",
+      "medianMs" : 1.736,
+      "planningMs" : 0.5,
+      "runsMs" : [ 1.733, 1.736, 1.874 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-q.txt"
+    }, {
+      "label" : "Admin bookings, page 1: policies skipped",
+      "medianMs" : 2.315,
+      "planningMs" : 1.871,
+      "runsMs" : [ 2.26, 2.315, 2.416 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-r.txt"
+    }, {
+      "label" : "Admin bookings, page 1: as its user, under the policies",
+      "medianMs" : 2.713,
+      "planningMs" : 1.189,
+      "runsMs" : [ 2.593, 2.713, 2.751 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-s.txt"
+    }, {
+      "label" : "Admin bookings, keyset page 5,000: policies skipped",
+      "medianMs" : 2.264,
+      "planningMs" : 1.232,
+      "runsMs" : [ 2.164, 2.264, 2.447 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-t.txt"
+    }, {
+      "label" : "Admin bookings, keyset page 5,000: as its user, under the policies",
+      "medianMs" : 2.697,
+      "planningMs" : 1.354,
+      "runsMs" : [ 2.661, 2.697, 2.704 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-u.txt"
+    }, {
+      "label" : "Free slots (busy times via a definer function): policies skipped",
+      "medianMs" : 1.506,
+      "planningMs" : 0.252,
+      "runsMs" : [ 1.4, 1.506, 1.948 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-v.txt"
+    }, {
+      "label" : "Free slots (busy times via a definer function): as its user, under the policies",
+      "medianMs" : 1.23,
+      "planningMs" : 0.179,
+      "runsMs" : [ 1.207, 1.23, 1.391 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-w.txt"
+    }, {
+      "label" : "Provider reviews (owner's-rights view): policies skipped",
+      "medianMs" : 1.555,
+      "planningMs" : 0.749,
+      "runsMs" : [ 1.452, 1.555, 1.619 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-x.txt"
+    }, {
+      "label" : "Provider reviews (owner's-rights view): as its user, under the policies",
+      "medianMs" : 1.369,
+      "planningMs" : 0.734,
+      "runsMs" : [ 1.302, 1.369, 1.447 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\09-row-level-security-y.txt"
+    } ]
+  }, {
+    "title" : "Customer's spending summary, as that customer",
+    "id" : "10-spending",
+    "variants" : [ {
+      "label" : "Before: total every payment, then keep this customer's",
+      "medianMs" : 1286.249,
+      "planningMs" : 0.295,
+      "runsMs" : [ 1281.837, 1286.249, 1563.089 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\10-spending-a.txt"
+    }, {
+      "label" : "After: total only this customer's payments",
+      "medianMs" : 0.739,
+      "planningMs" : 0.451,
+      "runsMs" : [ 0.622, 0.739, 1.135 ],
+      "plan" : "..\\docs\\benchmarks\\plans\\10-spending-b.txt"
+    } ]
   } ],
   "revenueTotals" : {
-    "actualSuccessfulPayments" : 1130272880.00,
-    "beforeTask04" : 2608697640.00,
-    "now" : 1130272880.00
+    "actualSuccessfulPayments" : 1127589140.00,
+    "beforeTask04" : 2603330160.00,
+    "now" : 1127589140.00
   },
   "refreshMs" : {
-    "mv_provider_leaderboard" : [ 431.7, 437.0, 447.8 ],
-    "mv_city_revenue_summary" : [ 2138.8, 2267.5, 2297.8 ],
-    "mv_category_revenue" : [ 5402.7, 6019.3, 6835.3 ]
+    "mv_provider_leaderboard" : [ 368.0, 368.3, 377.7 ],
+    "mv_city_revenue_summary" : [ 2312.5, 2474.8, 3287.7 ],
+    "mv_category_revenue" : [ 4644.5, 4786.0, 4841.6 ]
   },
   "indexSizes" : [ {
     "index" : "idx_bookings_start_id",
@@ -276,31 +451,31 @@
     "size" : "10168 kB"
   }, {
     "index" : "ex_provider_no_double_booking",
-    "size" : "7752 kB"
+    "size" : "6032 kB"
   }, {
     "index" : "idx_bookings_pending",
-    "size" : "1304 kB"
+    "size" : "1208 kB"
   } ],
   "catalogTimings" : {
-    "services.list" : 0.066,
-    "providers.search" : 2.651,
-    "providers.top" : 12.764,
-    "providers.profile" : 1.157,
-    "providers.reviews" : 2.148,
-    "providers.slots" : 3.542,
-    "bookings.price" : 0.056,
-    "me.bookings" : 0.58,
-    "me.booking" : 0.307,
-    "me.addresses" : 0.126,
-    "provider.jobs" : 0.504,
-    "provider.earnings" : 1.064,
-    "provider.earningsMonthly" : 1.058,
-    "provider.services" : 0.068,
-    "admin.revenue" : 0.017,
-    "admin.cityRevenue" : 0.016,
-    "admin.leaderboard" : 448.381,
-    "admin.leaderboard.fast" : 14.768,
-    "admin.complaints" : 153.892,
-    "admin.verification" : 1.5
+    "services.list" : 0.058,
+    "providers.search" : 2.21,
+    "providers.top" : 14.783,
+    "providers.profile" : 0.771,
+    "providers.reviews" : 1.605,
+    "providers.slots" : 2.095,
+    "bookings.price" : 0.08,
+    "me.bookings" : 0.63,
+    "me.booking" : 0.991,
+    "me.addresses" : 0.178,
+    "provider.jobs" : 0.742,
+    "provider.earnings" : 1.208,
+    "provider.earningsMonthly" : 1.157,
+    "provider.services" : 0.053,
+    "admin.revenue" : 0.012,
+    "admin.cityRevenue" : 0.012,
+    "admin.leaderboard" : 409.514,
+    "admin.leaderboard.fast" : 16.449,
+    "admin.complaints" : 74.651,
+    "admin.verification" : 2.025
   }
 }

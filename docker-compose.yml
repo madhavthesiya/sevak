@@ -28,8 +28,12 @@ services:
       - "8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/sevak_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-changeme}
+      # Requests run as sevak_app, under row-level security; Flyway creates the role and sets this password.
+      SPRING_DATASOURCE_USERNAME: sevak_app
+      SEVAK_APP_DB_PASSWORD: ${SEVAK_APP_DB_PASSWORD:-sevak-app-dev-only}
+      # Flyway and the maintenance jobs run as the owner.
+      SEVAK_OWNER_DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
     depends_on:
       db:
         condition: service_healthy

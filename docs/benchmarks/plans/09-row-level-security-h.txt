@@ -1,0 +1,63 @@
+Booking detail: policies skipped
+
+Nested Loop Left Join  (cost=10.31..41.22 rows=1 width=152) (actual time=0.185..0.190 rows=1 loops=1)
+  Buffers: shared hit=29
+  ->  Nested Loop Left Join  (cost=1.86..28.30 rows=1 width=144) (actual time=0.095..0.098 rows=1 loops=1)
+        Join Filter: (c.coupon_id = b.coupon_id)
+        Rows Removed by Join Filter: 5
+        Buffers: shared hit=21
+        ->  Nested Loop  (cost=1.86..27.19 rows=1 width=139) (actual time=0.088..0.091 rows=1 loops=1)
+              Buffers: shared hit=20
+              ->  Nested Loop  (cost=1.72..26.96 rows=1 width=136) (actual time=0.078..0.080 rows=1 loops=1)
+                    Buffers: shared hit=18
+                    ->  Nested Loop  (cost=1.58..26.79 rows=1 width=119) (actual time=0.067..0.069 rows=1 loops=1)
+                          Join Filter: (ca.location_id = b.location_id)
+                          Buffers: shared hit=16
+                          ->  Nested Loop  (cost=1.29..26.43 rows=1 width=122) (actual time=0.055..0.057 rows=1 loops=1)
+                                Buffers: shared hit=13
+                                ->  Nested Loop  (cost=1.00..18.12 rows=1 width=98) (actual time=0.045..0.046 rows=1 loops=1)
+                                      Buffers: shared hit=10
+                                      ->  Nested Loop  (cost=0.71..16.75 rows=1 width=90) (actual time=0.032..0.033 rows=1 loops=1)
+                                            Buffers: shared hit=7
+                                            ->  Index Scan using bookings_pkey on bookings b  (cost=0.42..8.45 rows=1 width=86) (actual time=0.018..0.019 rows=1 loops=1)
+                                                  Index Cond: (booking_id = 840182)
+                                                  Filter: (customer_id = 658)
+                                                  Buffers: shared hit=4
+                                            ->  Index Scan using service_providers_pkey on service_providers sp  (cost=0.28..8.30 rows=1 width=8) (actual time=0.012..0.012 rows=1 loops=1)
+                                                  Index Cond: (provider_id = b.provider_id)
+                                                  Buffers: shared hit=3
+                                      ->  Index Scan using users_pkey on users u  (cost=0.29..1.37 rows=1 width=16) (actual time=0.012..0.012 rows=1 loops=1)
+                                            Index Cond: (user_id = sp.user_id)
+                                            Buffers: shared hit=3
+                                ->  Index Scan using locations_pkey on locations loc  (cost=0.29..8.31 rows=1 width=24) (actual time=0.009..0.009 rows=1 loops=1)
+                                      Index Cond: (location_id = b.location_id)
+                                      Buffers: shared hit=3
+                          ->  Index Scan using customer_addresses_pkey on customer_addresses ca  (cost=0.29..0.35 rows=1 width=17) (actual time=0.011..0.011 rows=1 loops=1)
+                                Index Cond: ((customer_id = 658) AND (location_id = loc.location_id))
+                                Buffers: shared hit=3
+                    ->  Index Scan using areas_pkey on areas ar  (cost=0.14..0.16 rows=1 width=25) (actual time=0.010..0.010 rows=1 loops=1)
+                          Index Cond: (area_id = loc.area_id)
+                          Buffers: shared hit=2
+              ->  Index Scan using cities_pkey on cities ci  (cost=0.13..0.21 rows=1 width=11) (actual time=0.010..0.010 rows=1 loops=1)
+                    Index Cond: (city_id = ar.city_id)
+                    Buffers: shared hit=2
+        ->  Seq Scan on coupons c  (cost=0.00..1.05 rows=5 width=13) (actual time=0.004..0.005 rows=5 loops=1)
+              Buffers: shared hit=1
+  ->  Limit  (cost=8.45..8.46 rows=1 width=19) (actual time=0.019..0.020 rows=1 loops=1)
+        Buffers: shared hit=4
+        ->  Sort  (cost=8.45..8.46 rows=1 width=19) (actual time=0.019..0.019 rows=1 loops=1)
+              Sort Key: payments.created_at DESC, payments.payment_id DESC
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=4
+              ->  Index Scan using idx_payments_booking on payments  (cost=0.42..8.44 rows=1 width=19) (actual time=0.013..0.014 rows=1 loops=1)
+                    Index Cond: (booking_id = b.booking_id)
+                    Buffers: shared hit=4
+  SubPlan 1
+    ->  Index Only Scan using provider_reviews_booking_id_key on provider_reviews pr  (cost=0.42..4.44 rows=1 width=0) (actual time=0.068..0.068 rows=1 loops=1)
+          Index Cond: (booking_id = b.booking_id)
+          Heap Fetches: 0
+          Buffers: shared hit=4
+Planning:
+  Buffers: shared hit=65
+Planning Time: 1.968 ms
+Execution Time: 0.391 ms

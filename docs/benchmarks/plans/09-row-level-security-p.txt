@@ -1,0 +1,29 @@
+Provider's earnings: policies skipped
+
+Sort  (cost=2494.28..2494.29 rows=4 width=47) (actual time=0.844..0.845 rows=1 loops=1)
+  Sort Key: (sum(p.amount)) DESC, p.payment_method
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=1015
+  ->  GroupAggregate  (cost=2492.63..2494.24 rows=4 width=47) (actual time=0.840..0.841 rows=1 loops=1)
+        Group Key: p.payment_method
+        Buffers: shared hit=1015
+        ->  Sort  (cost=2492.63..2493.02 rows=156 width=12) (actual time=0.804..0.811 rows=180 loops=1)
+              Sort Key: p.payment_method
+              Sort Method: quicksort  Memory: 32kB
+              Buffers: shared hit=1015
+              ->  Nested Loop  (cost=10.46..2486.95 rows=156 width=12) (actual time=0.051..0.784 rows=180 loops=1)
+                    Buffers: shared hit=1015
+                    ->  Bitmap Heap Scan on bookings b  (cost=10.04..764.83 rows=208 width=4) (actual time=0.040..0.170 rows=208 loops=1)
+                          Recheck Cond: (provider_id = 1607)
+                          Heap Blocks: exact=208
+                          Buffers: shared hit=211
+                          ->  Bitmap Index Scan on idx_bookings_provider_status  (cost=0.00..9.99 rows=208 width=0) (actual time=0.016..0.016 rows=208 loops=1)
+                                Index Cond: (provider_id = 1607)
+                                Buffers: shared hit=3
+                    ->  Index Scan using uq_one_successful_payment on payments p  (cost=0.42..8.27 rows=1 width=16) (actual time=0.003..0.003 rows=1 loops=208)
+                          Index Cond: (booking_id = b.booking_id)
+                          Buffers: shared hit=804
+Planning:
+  Buffers: shared hit=17
+Planning Time: 0.265 ms
+Execution Time: 0.911 ms

@@ -47,7 +47,6 @@ public class BookingCreationService {
 
     @Transactional
     public Outcome create(CurrentUser customer, CreateBookingRequest request, String idempotencyKey) {
-        repo.setActor(customer.userId());
 
         if (idempotencyKey != null) {
             String hash = sha256(request.toString());

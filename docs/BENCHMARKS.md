@@ -1,6 +1,9 @@
 # SEVAK benchmarks
 
-Every performance claim in this project, measured on about **1 million bookings**. The raw results are in [`benchmarks/results.json`](benchmarks/results.json), and every query plan is saved in [`benchmarks/plans/`](benchmarks/plans/).
+Every performance claim in this project, measured on about **1 million bookings**, in two runs:
+
+- **Phase 6** (14 Nov 2026). Experiments 1 to 8 below describe it. Its results and query plans are in [`benchmarks/phase-6/`](benchmarks/phase-6/).
+- **Phase 8** (15 Nov 2026), after adding row-level security. It repeats experiments 1 to 8 (every conclusion held, see [the re-run](#phase-8-re-run-of-experiments-1-to-8)), adds experiments 9 and 10, and re-measures every query in the app as the person who really sends it. Results: [`benchmarks/results.json`](benchmarks/results.json); plans: [`benchmarks/plans/`](benchmarks/plans/).
 
 ## Headline results
 
@@ -11,6 +14,10 @@ Every performance claim in this project, measured on about **1 million bookings*
 | Live leaderboard | 3,041 ms | 452 ms | Count each provider's jobs first, then join, instead of `COUNT(DISTINCT)` |
 | Search | 39.0 ms | 2.4 ms | Rank by the stored score instead of averaging 441,461 reviews per search |
 | Admin revenue chart | 4,682 ms | 0.019 ms | Store the result, refreshed every 15 minutes |
+| Customer's spending summary | 1,286 ms | 0.74 ms | Total only that customer's payments, not every payment in the database |
+| Admin live leaderboard, under row-level security | 2,821 ms | 328 ms | Admins read it through an admin-checked `SECURITY DEFINER` function |
+
+The first five rows are from the Phase 6 run and the last two from Phase 8. **Row-level security adds 0.3 to 0.8 ms to a private screen** (experiment 9).
 
 Every rewrite returned **exactly the same rows** as the query it replaced on this dataset, or the benchmark would have failed. Search returned the same 8,010 results in the same order.
 
@@ -23,6 +30,9 @@ Every rewrite returned **exactly the same rows** as the query it replaced on thi
 | Database | PostgreSQL 16.13 (`postgres:16-alpine`). `shared_buffers` 256 MB; everything else default (`work_mem` 4 MB, 2 parallel workers per query) |
 | Database size | 1,593 MB |
 | Load time | 417 seconds |
+| Phase 8 run | Same machine and settings. Load 630 seconds, database 1,589 MB |
+
+Row counts in the Phase 6 run (statuses follow the date of the run, so the Phase 8 run differs slightly, for example 815,629 payments):
 
 | Table | Rows |
 |---|---:|
@@ -39,7 +49,7 @@ Every rewrite returned **exactly the same rows** as the query it replaced on thi
 
 ### The dataset
 
-[`api/sql/benchmarks/generate_large_dataset.sql`](../api/sql/benchmarks/generate_large_dataset.sql) builds it with `generate_series`, and is reproducible because `random()` is seeded:
+[`api/sql/benchmarks/generate_large_dataset.sql`](../api/sql/benchmarks/generate_large_dataset.sql) builds it with `generate_series`, and is repeatable because `random()` is seeded. Bookings are placed relative to the day it runs, so counts shift slightly from one day to the next:
 
 - Demand is uneven: 28% of customers and providers are in Mumbai, 12% in Pune. Some customers book far more often than others.
 - Each provider works in one trade. Bookings start at 9:00, 11:00, 14:00 or 16:00 India time, from about 18 months ago to about 3 months ahead.
@@ -54,6 +64,7 @@ Every rewrite returned **exactly the same rows** as the query it replaced on thi
 - A "before" variant changes the schema, for example by dropping an index, **inside a transaction that is rolled back**. So before and after run against exactly the same data.
 - After loading, the database writes its dirty pages (`CHECKPOINT`), so a background checkpoint doesn't slow the first measurements. Before I added this, the same query varied by more than 3x between runs.
 - Where a query was rewritten, the old version is kept in [`OldQueries`](../api/src/test/java/com/sevak/api/benchmark/OldQueries.java), copied from git. The run fails unless the old and new versions return identical rows.
+- **Who runs each query (Phase 8).** The app's requests run as `sevak_app` under row-level security, with the caller set on each transaction. Run as nobody, a private query returns no rows and looks fast, so each measurement runs either as the owner (policies skipped, as Phase 6 measured, so experiments 1 to 8 stay comparable) or as a real customer, provider, admin or anonymous visitor.
 - The published numbers come from one run on a fresh database with the machine otherwise idle. Two earlier runs with other apps open gave the same conclusions, except for one rewrite, which is described below.
 
 Run it yourself (it needs Docker and takes about 15 minutes):
@@ -65,7 +76,7 @@ cd api
 
 ## Experiments
 
-All times are medians in milliseconds.
+All times are medians in milliseconds. Experiments 1 to 8 show the Phase 6 run; experiments 9 and 10, and the re-run table after them, the Phase 8 run.
 
 ### 1. Search: the trigram index didn't help; the real cost was elsewhere
 
@@ -179,6 +190,75 @@ The slots query checks for overlapping bookings. Without the GiST index, Postgre
 
 The home page's "highest rated" list ran the full live leaderboard for every visitor. It now reads the stored copy, which returns the same rows.
 
+### 9. Row-level security: what it costs (Phase 8)
+
+Each private screen first as the owner, who skips the policies, then as its real user, under them:
+
+| Screen | Policies skipped | As its user |
+|---|---:|---:|
+| My bookings, median customer | 0.40 | 0.70 |
+| My bookings, busiest customer | 0.36 | 0.68 |
+| Booking detail | 0.39 | 0.90 |
+| Booking timeline | 0.059 | 0.35 |
+| Spending summary (after experiment 10) | 0.27 | 0.53 |
+| Provider's pending jobs | 0.65 | 1.07 |
+| Provider's earnings | 0.91 | 1.74 |
+| Admin bookings, page 1 | 2.3 | 2.7 |
+| Admin bookings, keyset page 5,000 | 2.3 | 2.7 |
+| Free slots (busy times from a definer function) | 1.5 | 1.2 |
+| Provider reviews (an owner's-rights view) | 1.6 | 1.4 |
+
+**The typical cost is 0.3 to 0.8 ms a screen.** Each query looks up who is calling once (an InitPlan, because policies call their lookups as `(SELECT f())`), and each row under a booking (its items, payments or log) costs one index lookup on `bookings`. Free slots and reviews don't change: they reach private rows only through their narrow windows. Differences of a few tenths of a millisecond the other way are noise.
+
+**The live leaderboard is the exception.**
+
+| Variant | ms |
+|---|---:|
+| The view, policies skipped | 436 |
+| The view, read by an admin under the policies (rejected) | 2,821 |
+| As shipped: `fn_live_leaderboard` checks the caller is an admin, then reads the view as its owner | **328** |
+
+PostgreSQL plans a query before it knows who is asking. It priced the payments policy, "can you see this payment's booking?", on every one of about 815,000 payments, so it chose to look up each completed booking's payment one at a time:
+
+```
+->  Nested Loop Left Join  (cost=0.42..3676773.38 rows=371490) (actual time=0.583..2067.442 rows=743045 loops=1)
+      ->  Index Scan using uq_one_successful_payment on payments p
+```
+
+For an admin, the policies filter nothing, so the shipped version skips them and checks the role itself. The app role can't read the view directly.
+
+**What the trial runs found first.** Two exploratory runs, on a machine that wasn't idle, found problems before these numbers were taken:
+
+- **Parallel query was off for every table with row-level security.** PostgreSQL treats a new function as parallel-unsafe, and one unsafe function in a policy stops the whole query using parallel workers. The policy helpers only read a table and a setting, which parallel workers inherit, so they are now `PARALLEL SAFE`.
+- **Free slots was being JIT-compiled.** PostgreSQL assumes a function returns 1,000 rows, which made the plan look expensive enough to compile: 12 ms of compiling for a 0.3 ms function. `fn_provider_busy_times` now declares `ROWS 20`. Free slots went from 3.7 ms in Phase 6 to 1.8 ms here (experiment 7).
+- **The load script depended on luck.** It refreshed the stored summaries before PostgreSQL had statistics for the new rows, and one refresh ran for over 5 minutes before I stopped it. It now runs `ANALYZE` first, and the same refresh takes about 4 s.
+
+### 10. Customer's spending summary: a slow query older than row-level security (Phase 8)
+
+| Variant | ms |
+|---|---:|
+| Before: total every payment in the database, then keep this customer's | 1,286 |
+| After: total only this customer's payments | **0.74** |
+
+Experiment 9 found this one. The query grouped all 815,629 payments by booking, then joined the result to the customer's 18 bookings. It now picks the customer's bookings first and looks up only their payments. The run checks that both return identical summaries for 52 customers. Phase 6 never measured this screen; it was slow with or without row-level security.
+
+### Phase 8 re-run of experiments 1 to 8
+
+The Phase 8 run repeated every Phase 6 experiment, as the owner, on a freshly generated database. Every conclusion held:
+
+| Experiment | Phase 6 | Phase 8 |
+|---|---|---|
+| 1. Search: old, without / with the trigram index; ranked by the stored score | 31.7 / 39.0 / 2.4 | 62.3 / 60.7 / 4.4 |
+| 2. My Bookings, busiest customer: single-column / composite index | 1.84 / 0.33 | 4.73 / 0.84 |
+| 3. Pending jobs: neither index / both | 0.51 / 0.32 | 1.09 / 0.95 |
+| 4. Leaderboard: old view / new view / stored copy | 3,041 / 452 / 20.1 | 5,107 / 1,000 / 31.5 |
+| 5. Admin bookings, page 5,000: OFFSET / keyset, both with the index | 492 / 2.4 | 494 / 3.7 |
+| 6. Revenue: window function / subtotal rewrite (rejected) / stored | 4,682 / 8,418 / 0.019 | 5,738 / 9,152 / 0.025 |
+| 7. Free slots: without / with the GiST index | 3.8 / 3.7 | 1.4 / 1.8 |
+| 8. Home page: live / stored | 2,334 / 8.0 | 2,983 / 11.5 |
+
+Absolute times differ between the two runs, on the same laptop with a freshly generated database: most are higher this time (up to 2.6x, in experiment 2), a few are lower. The comparisons between variants are what each experiment is about, and they held. The subtotal rewrite was again slower than the window function, which confirms the decision in experiment 6.
+
 ### What freshness costs
 
 The stored summaries are rebuilt every 15 minutes in the background, under an advisory lock so two app instances don't do it at once:
@@ -193,30 +273,30 @@ These run outside any user request. Measuring them exposed a bug: the refresh we
 
 ## Every query in the app
 
-The "Show the SQL" drawer shows these numbers next to each query. They come from [`query-timings.json`](../api/src/main/resources/benchmarks/query-timings.json), which the benchmark writes. Values are for a typical customer and provider.
+The "Show the SQL" drawer shows these numbers next to each query. They come from [`query-timings.json`](../api/src/main/resources/benchmarks/query-timings.json), which the benchmark writes. Values are for a typical customer and provider. Phase 6 ran every query as the owner; Phase 8 runs each as the person whose screen shows it, under row-level security, which is what the drawer now shows.
 
-| Query | ms |
-|---|---:|
-| Service catalogue | 0.066 |
-| Provider search | 2.7 |
-| Highest rated providers | 12.8 |
-| Provider profile | 1.2 |
-| Provider reviews | 2.1 |
-| Free time slots | 3.5 |
-| Live price | 0.056 |
-| My bookings | 0.58 |
-| Booking detail | 0.31 |
-| Saved addresses | 0.13 |
-| Job inbox | 0.50 |
-| Earnings by method | 1.1 |
-| Earnings by month | 1.1 |
-| Services offered | 0.068 |
-| Revenue by category (stored) | 0.017 |
-| Revenue by city (stored) | 0.016 |
-| Leaderboard, live | 448 |
-| Leaderboard, stored | 14.8 |
-| Complaints board | 154 |
-| Verification queue | 1.5 |
+| Query | Phase 6, ms | Phase 8, ms |
+|---|---:|---:|
+| Service catalogue | 0.066 | 0.058 |
+| Provider search | 2.7 | 2.2 |
+| Highest rated providers | 12.8 | 14.8 |
+| Provider profile | 1.2 | 0.77 |
+| Provider reviews | 2.1 | 1.6 |
+| Free time slots | 3.5 | 2.1 |
+| Live price | 0.056 | 0.080 |
+| My bookings | 0.58 | 0.63 |
+| Booking detail | 0.31 | 0.99 |
+| Saved addresses | 0.13 | 0.18 |
+| Job inbox | 0.50 | 0.74 |
+| Earnings by method | 1.1 | 1.2 |
+| Earnings by month | 1.1 | 1.2 |
+| Services offered | 0.068 | 0.053 |
+| Revenue by category (stored) | 0.017 | 0.012 |
+| Revenue by city (stored) | 0.016 | 0.012 |
+| Leaderboard, live | 448 | 410 |
+| Leaderboard, stored | 14.8 | 16.4 |
+| Complaints board | 154 | 75 |
+| Verification queue | 1.5 | 2.0 |
 
 ## Load test
 
@@ -243,6 +323,7 @@ Raw output: [`load-test-output-pool10.txt`](benchmarks/load-test-output-pool10.t
 - **A small demo hides big problems.** Three pages were fine on 15 demo bookings and slow or failing on a million: the home page (2.3 s), the admin revenue chart (near the 5 s limit) and the admin bookings list (0.5 s a page).
 - **A noisy measurement can mislead.** The revenue rewrite looked faster in two noisy runs and was slower in a clean one. Without the clean run I would have shipped a slower query.
 - **Faster must also mean the same.** Every rewrite is checked row by row against the query it replaced.
+- **Measure as the real user.** After row-level security, a benchmark run as nobody would have returned no rows and reported great numbers. Running each query as its real user found a 5x slowdown on one admin page, and a slow customer query that had been there all along.
 - **Load testing finds what query benchmarks can't.** The refresh timeout bug only appeared when the app ran against the big database, and the first load-test attempt silently tested a stopped server, which is why the script now checks the API answers before starting.
 
 ## Limits
@@ -251,3 +332,4 @@ Raw output: [`load-test-output-pool10.txt`](benchmarks/load-test-output-pool10.t
 - Warm cache. Each query runs once before it is measured, so these are steady-state numbers, not first-request numbers.
 - EXPLAIN ANALYZE adds a little overhead of its own, the same for both sides of each comparison.
 - The data is generated. It is shaped like real use, but real data would have its own skew.
+- The load test is from Phase 6 and was not repeated with row-level security on. Experiment 9 shows the cost per query; under load, that cost adds to the time each request holds a connection.

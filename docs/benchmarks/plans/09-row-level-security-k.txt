@@ -1,0 +1,24 @@
+Booking timeline: as its user, under the policies
+
+Sort  (cost=61.66..61.67 rows=2 width=54) (actual time=0.232..0.233 rows=4 loops=1)
+  Sort Key: booking_status_log.log_id
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=23
+  ->  Index Scan using idx_status_log_booking on booking_status_log  (cost=0.43..61.66 rows=2 width=54) (actual time=0.213..0.226 rows=4 loops=1)
+        Index Cond: (booking_id = 840182)
+        Filter: (SubPlan 4)
+        Buffers: shared hit=23
+        SubPlan 4
+          ->  Index Scan using bookings_pkey on bookings b  (cost=1.21..9.23 rows=1 width=0) (actual time=0.046..0.046 rows=1 loops=4)
+                Index Cond: (booking_id = booking_status_log.booking_id)
+                Filter: ((customer_id = $1) OR (provider_id = $2) OR $3)
+                Buffers: shared hit=19
+                InitPlan 1 (returns $1)
+                  ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.147..0.147 rows=1 loops=1)
+                        Buffers: shared hit=3
+                InitPlan 2 (returns $2)
+                  ->  Result  (cost=0.00..0.26 rows=1 width=4) (never executed)
+                InitPlan 3 (returns $3)
+                  ->  Result  (cost=0.00..0.26 rows=1 width=1) (never executed)
+Planning Time: 0.291 ms
+Execution Time: 0.345 ms

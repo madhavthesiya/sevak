@@ -1,0 +1,60 @@
+Admin bookings, page 1: as its user, under the policies
+
+Limit  (cost=2.40..9.10 rows=20 width=50) (actual time=0.445..0.677 rows=20 loops=1)
+  Buffers: shared hit=252
+  InitPlan 1 (returns $0)
+    ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.186..0.187 rows=1 loops=1)
+          Buffers: shared hit=2
+  InitPlan 2 (returns $1)
+    ->  Result  (cost=0.00..0.26 rows=1 width=4) (actual time=0.093..0.093 rows=1 loops=1)
+          Buffers: shared hit=2
+  InitPlan 3 (returns $2)
+    ->  Result  (cost=0.00..0.26 rows=1 width=1) (actual time=0.084..0.084 rows=1 loops=1)
+          Buffers: shared hit=1
+  ->  Nested Loop  (cost=1.62..167573.71 rows=500121 width=50) (actual time=0.444..0.673 rows=20 loops=1)
+        Buffers: shared hit=252
+        ->  Nested Loop  (cost=1.32..148214.22 rows=500121 width=42) (actual time=0.433..0.627 rows=20 loops=1)
+              Buffers: shared hit=192
+              ->  Nested Loop  (cost=1.02..134266.36 rows=500121 width=42) (actual time=0.421..0.579 rows=20 loops=1)
+                    Buffers: shared hit=132
+                    ->  Nested Loop  (cost=0.72..101070.07 rows=500121 width=34) (actual time=0.408..0.478 rows=20 loops=1)
+                          Buffers: shared hit=72
+                          ->  Index Scan using idx_bookings_start_id on bookings b  (cost=0.42..75396.02 rows=500121 width=34) (actual time=0.392..0.402 rows=20 loops=1)
+                                Filter: ((customer_id = $0) OR (provider_id = $1) OR $2)
+                                Buffers: shared hit=12
+                          ->  Memoize  (cost=0.30..0.32 rows=1 width=8) (actual time=0.003..0.003 rows=1 loops=20)
+                                Cache Key: b.customer_id
+                                Cache Mode: logical
+                                Hits: 0  Misses: 20  Evictions: 0  Overflows: 0  Memory Usage: 3kB
+                                Buffers: shared hit=60
+                                ->  Index Scan using customers_pkey on customers cu  (cost=0.29..0.31 rows=1 width=8) (actual time=0.003..0.003 rows=1 loops=20)
+                                      Index Cond: (customer_id = b.customer_id)
+                                      Buffers: shared hit=60
+                    ->  Memoize  (cost=0.30..0.42 rows=1 width=16) (actual time=0.004..0.004 rows=1 loops=20)
+                          Cache Key: cu.user_id
+                          Cache Mode: logical
+                          Hits: 0  Misses: 20  Evictions: 0  Overflows: 0  Memory Usage: 3kB
+                          Buffers: shared hit=60
+                          ->  Index Scan using users_pkey on users cu_u  (cost=0.29..0.41 rows=1 width=16) (actual time=0.003..0.003 rows=1 loops=20)
+                                Index Cond: (user_id = cu.user_id)
+                                Buffers: shared hit=60
+              ->  Memoize  (cost=0.29..0.31 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=20)
+                    Cache Key: b.provider_id
+                    Cache Mode: logical
+                    Hits: 0  Misses: 20  Evictions: 0  Overflows: 0  Memory Usage: 3kB
+                    Buffers: shared hit=60
+                    ->  Index Scan using service_providers_pkey on service_providers sp  (cost=0.28..0.30 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=20)
+                          Index Cond: (provider_id = b.provider_id)
+                          Buffers: shared hit=60
+        ->  Memoize  (cost=0.30..1.38 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=20)
+              Cache Key: sp.user_id
+              Cache Mode: logical
+              Hits: 0  Misses: 20  Evictions: 0  Overflows: 0  Memory Usage: 3kB
+              Buffers: shared hit=60
+              ->  Index Scan using users_pkey on users pr_u  (cost=0.29..1.37 rows=1 width=16) (actual time=0.001..0.001 rows=1 loops=20)
+                    Index Cond: (user_id = sp.user_id)
+                    Buffers: shared hit=60
+Planning:
+  Buffers: shared hit=48
+Planning Time: 1.189 ms
+Execution Time: 2.713 ms

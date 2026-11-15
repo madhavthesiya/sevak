@@ -30,6 +30,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -46,6 +48,11 @@ import tools.jackson.databind.json.JsonMapper;
  * that is rolled back, so each comparison runs against the same data. Where Phase 6 rewrote a query, the
  * old version (see {@link OldQueries}) must return exactly the same rows, or the run fails.
  *
+ * <p>Row-level security: the app's requests run as sevak_app with the caller set, so every query here runs
+ * as the person who would really send it: a customer, a provider, an admin or nobody. The Phase 6
+ * experiments run as the owner, which skips the policies, so their numbers stay comparable with the
+ * ones published before Phase 8; experiment 09 measures the same screens both ways.
+ *
  * <p>While iterating, add {@code -Dbenchmark.reuse=true} with TESTCONTAINERS_REUSE_ENABLE=true to keep the
  * loaded database between runs. Published numbers come from a fresh container.
  */
@@ -54,7 +61,9 @@ import tools.jackson.databind.json.JsonMapper;
             // Some "before" queries are slow on purpose; the app's own limit is 5 seconds.
             "spring.jdbc.template.query-timeout=10m",
             "sevak.views.refresh-interval=PT24H",
-            "sevak.bookings.expiry-interval=PT24H"
+            "sevak.bookings.expiry-interval=PT24H",
+            // The container login is its superuser; each measurement picks its own role (see measure).
+            "sevak.db.allow-privileged-login=true"
         })
 class QueryBenchmark {
 
@@ -69,6 +78,17 @@ class QueryBenchmark {
             "CREATE INDEX IF NOT EXISTS idx_bookings_start_id ON bookings (scheduled_start DESC, booking_id DESC)";
     private static final String NO_START_INDEX = "DROP INDEX IF EXISTS idx_bookings_start_id";
 
+    /**
+     * The live leaderboard view read directly, as Phase 6 measured it. The app now reads it through
+     * fn_live_leaderboard, which refuses anyone but an admin; experiment 09 compares the two.
+     */
+    /** The stored leaderboard read directly, as Phase 6 measured it; the app reads it through a function. */
+    private static final String LEADERBOARD_STORED_SQL =
+            AdminRepository.LEADERBOARD_FAST_SQL.replace("fn_stored_leaderboard() lb", "mv_provider_leaderboard lb");
+
+    private static final String LEADERBOARD_VIEW_SQL =
+            AdminRepository.LEADERBOARD_LIVE_SQL.replace("fn_live_leaderboard() lb", "v_provider_leaderboard lb");
+
     @ServiceConnection
     static final PostgreSQLContainer DB = new PostgreSQLContainer("postgres:16-alpine")
             .withCommand("postgres", "-c", "shared_buffers=256MB", "-c", "max_wal_size=4GB")
@@ -78,6 +98,18 @@ class QueryBenchmark {
     static {
         DB.start();
     }
+
+    /** Flyway and the owner pool use the container's superuser, the owner of everything. */
+    @DynamicPropertySource
+    static void ownerLogin(DynamicPropertyRegistry registry) {
+        registry.add("spring.flyway.user", DB::getUsername);
+        registry.add("spring.flyway.password", DB::getPassword);
+    }
+
+    /** Who a query runs as: the owner, who skips row-level security, or nobody logged in. */
+    private static final Integer AS_OWNER = null;
+
+    private static final int AS_NOBODY = 0;
 
     @Autowired
     private JdbcClient jdbc;
@@ -94,15 +126,33 @@ class QueryBenchmark {
     @Autowired
     private JsonMapper json;
 
-    record Variant(String label, List<String> setup, String sql, Map<String, Object> params) {}
+    /** @param as the user ID to run as, {@link #AS_NOBODY}, or {@link #AS_OWNER} */
+    record Variant(String label, List<String> setup, String sql, Map<String, Object> params, Integer as) {
+
+        Variant(String label, List<String> setup, String sql, Map<String, Object> params) {
+            this(label, setup, sql, params, AS_OWNER);
+        }
+    }
 
     record Experiment(String id, String title, List<Variant> variants) {}
 
     record Measured(String label, double medianMs, double planningMs, List<Double> runsMs, String plan) {}
 
-    /** Typical rows to query: a median customer and provider, and the customer with the most bookings. */
+    /**
+     * Typical rows to query: a median customer and provider, and the customer with the most bookings,
+     * with the user IDs they log in as.
+     */
     record Params(
-            int customer, int heavyCustomer, int provider, int booking, int service, Map<String, Object> cursor) {}
+            int customer,
+            int heavyCustomer,
+            int provider,
+            int booking,
+            int service,
+            Map<String, Object> cursor,
+            int customerUser,
+            int heavyCustomerUser,
+            int providerUser,
+            int adminUser) {}
 
     @Test
     void run() throws Exception {
@@ -234,7 +284,18 @@ class QueryBenchmark {
                 provider,
                 booking,
                 service,
-                params("before", row.get("scheduled_start"), "beforeId", row.get("booking_id")));
+                params("before", row.get("scheduled_start"), "beforeId", row.get("booking_id")),
+                userOf("customers", "customer_id", customer),
+                userOf("customers", "customer_id", heavyCustomer),
+                userOf("service_providers", "provider_id", provider),
+                jdbc.sql("SELECT MIN(user_id) FROM admins").query(Integer.class).single());
+    }
+
+    private int userOf(String table, String idColumn, int id) {
+        return jdbc.sql("SELECT user_id FROM " + table + " WHERE " + idColumn + " = :id")
+                .param("id", id)
+                .query(Integer.class)
+                .single();
     }
 
     /**
@@ -253,7 +314,7 @@ class QueryBenchmark {
         // The new view adds weighted_score; compare the columns both versions have.
         String sameColumns = "SELECT rank, provider_id, email, city_name, avg_rating, review_count, weighted_rating,"
                 + " jobs_completed, total_revenue, provider_name FROM (%s) x";
-        assertThat(rows(sameColumns.formatted(AdminRepository.LEADERBOARD_LIVE_SQL), params()))
+        assertThat(rows(sameColumns.formatted(LEADERBOARD_VIEW_SQL), params()))
                 .as("leaderboard view rewrite")
                 .isEqualTo(rows(sameColumns.formatted(OldQueries.LEADERBOARD_LIVE), params()));
         checks.put("leaderboard", "identical rows");
@@ -269,6 +330,18 @@ class QueryBenchmark {
                 .as("search returns the same offerings in the same order")
                 .isEqualTo(oldSearch);
         checks.put("search", "identical " + oldSearch.size() + " offerings in identical order");
+
+        // The spending summary, for the median and busiest customers and the first 50.
+        List<Integer> spenders = new ArrayList<>(List.of(p.customer(), p.heavyCustomer()));
+        spenders.addAll(jdbc.sql("SELECT customer_id FROM customers ORDER BY customer_id LIMIT 50")
+                .query(Integer.class)
+                .list());
+        for (int customer : spenders) {
+            assertThat(rows(CustomerRepository.SPENDING_SQL, params("id", customer)))
+                    .as("spending summary for customer " + customer)
+                    .isEqualTo(rows(OldQueries.SPENDING, params("id", customer)));
+        }
+        checks.put("spending", "identical summaries for " + spenders.size() + " customers");
         return checks;
     }
 
@@ -372,15 +445,8 @@ class QueryBenchmark {
                                         OldQueries.LEADERBOARD_LIVE,
                                         params()),
                                 new Variant(
-                                        "New live view, jobs counted first",
-                                        List.of(),
-                                        AdminRepository.LEADERBOARD_LIVE_SQL,
-                                        params()),
-                                new Variant(
-                                        "Materialized view",
-                                        List.of(),
-                                        AdminRepository.LEADERBOARD_FAST_SQL,
-                                        params()))),
+                                        "New live view, jobs counted first", List.of(), LEADERBOARD_VIEW_SQL, params()),
+                                new Variant("Materialized view", List.of(), LEADERBOARD_STORED_SQL, params()))),
                 new Experiment(
                         "05-pagination",
                         "Admin bookings list, 20 rows a page",
@@ -452,14 +518,124 @@ class QueryBenchmark {
                                         "New: read from the stored leaderboard",
                                         List.of(),
                                         ProviderRepository.TOP_SQL,
-                                        params("limit", 4)))));
+                                        params("limit", 4)))),
+                new Experiment(
+                        "09-row-level-security",
+                        "Row-level security: each screen as the owner (policies skipped), then as its real user",
+                        rlsPairs(p, myBookings, heavyBookings, jobs, slots, keyset)),
+                new Experiment(
+                        "10-spending",
+                        "Customer's spending summary, as that customer",
+                        List.of(
+                                new Variant(
+                                        "Before: total every payment, then keep this customer's",
+                                        List.of(),
+                                        OldQueries.SPENDING,
+                                        params("id", p.customer()),
+                                        p.customerUser()),
+                                new Variant(
+                                        "After: total only this customer's payments",
+                                        List.of(),
+                                        CustomerRepository.SPENDING_SQL,
+                                        params("id", p.customer()),
+                                        p.customerUser()))));
+    }
+
+    /** Each screen twice: as the owner, who skips the policies, and as the person who really sends it. */
+    private List<Variant> rlsPairs(
+            Params p,
+            Map<String, Object> myBookings,
+            Map<String, Object> heavyBookings,
+            Map<String, Object> jobs,
+            Map<String, Object> slots,
+            String keyset) {
+        String page = AdminRepository.BOOKINGS_SELECT + "ORDER BY b.scheduled_start DESC, b.booking_id DESC LIMIT 20";
+        record Screen(String name, String sql, Map<String, Object> params, int as) {}
+        List<Screen> screens = List.of(
+                new Screen(
+                        "My bookings, median customer", CustomerRepository.BOOKINGS_SQL, myBookings, p.customerUser()),
+                new Screen(
+                        "My bookings, busiest customer",
+                        CustomerRepository.BOOKINGS_SQL,
+                        heavyBookings,
+                        p.heavyCustomerUser()),
+                new Screen(
+                        "Booking detail",
+                        CustomerRepository.BOOKING_HEADER_SQL,
+                        params("booking", p.booking(), "customer", p.customer()),
+                        p.customerUser()),
+                new Screen(
+                        "Booking timeline",
+                        CustomerRepository.TIMELINE_SQL,
+                        params("id", p.booking()),
+                        p.customerUser()),
+                new Screen(
+                        "Spending summary",
+                        CustomerRepository.SPENDING_SQL,
+                        params("id", p.customer()),
+                        p.customerUser()),
+                new Screen(
+                        "Provider's pending jobs",
+                        ProviderRepository.JOBS_SQL.formatted("ASC"),
+                        jobs,
+                        p.providerUser()),
+                new Screen(
+                        "Provider's earnings",
+                        ProviderRepository.EARNINGS_SQL,
+                        params("id", p.provider(), "from", null, "to", null),
+                        p.providerUser()),
+                new Screen("Admin bookings, page 1", page, params(), p.adminUser()),
+                new Screen("Admin bookings, keyset page 5,000", keyset, p.cursor(), p.adminUser()),
+                new Screen(
+                        "Free slots (busy times via a definer function)",
+                        ProviderRepository.SLOTS_SQL,
+                        slots,
+                        AS_NOBODY),
+                new Screen(
+                        "Provider reviews (owner's-rights view)",
+                        ProviderRepository.REVIEWS_SQL,
+                        params("id", p.provider(), "limit", 10, "offset", 0),
+                        AS_NOBODY));
+        List<Variant> variants = new ArrayList<>();
+        variants.add(
+                new Variant("Live leaderboard: the view, policies skipped", List.of(), LEADERBOARD_VIEW_SQL, params()));
+        variants.add(new Variant(
+                "Live leaderboard: the view as an admin, under the policies (rejected)",
+                List.of("GRANT SELECT ON v_provider_leaderboard TO sevak_app"),
+                LEADERBOARD_VIEW_SQL,
+                params(),
+                p.adminUser()));
+        variants.add(new Variant(
+                "Live leaderboard: as shipped, an admin-checked SECURITY DEFINER function",
+                List.of(),
+                AdminRepository.LEADERBOARD_LIVE_SQL,
+                params(),
+                p.adminUser()));
+        for (Screen screen : screens) {
+            variants.add(new Variant(screen.name() + ": policies skipped", List.of(), screen.sql(), screen.params()));
+            variants.add(new Variant(
+                    screen.name() + ": as its user, under the policies",
+                    List.of(),
+                    screen.sql(),
+                    screen.params(),
+                    screen.as()));
+        }
+        return variants;
     }
 
     private Measured measure(Variant variant) {
         TransactionTemplate template = new TransactionTemplate(transactions);
         return template.execute(status -> {
             status.setRollbackOnly(); // a "before" schema change never outlives its measurement
+            // The transaction starts as sevak_app with nobody logged in. Schema changes need the owner.
+            jdbc.sql("RESET ROLE").update();
             variant.setup().forEach(ddl -> jdbc.sql(ddl).update());
+            if (variant.as() != AS_OWNER) {
+                jdbc.sql("SELECT set_config('role', 'sevak_app', true), set_config('sevak.user_id', :user, true)")
+                        .param("user", variant.as() == AS_NOBODY ? "" : String.valueOf(variant.as()))
+                        .query()
+                        .singleRow();
+            }
             explain(variant.sql(), variant.params()); // warm-up
             List<List<String>> plans = new ArrayList<>();
             for (int i = 0; i < RUNS; i++) {
@@ -528,11 +704,25 @@ class QueryBenchmark {
                 continue;
             }
             Map<String, Object> values = overrides.getOrDefault(key, entry.explainParams());
-            Measured m = measure(new Variant(key, List.of(), entry.sql(), values));
+            Measured m = measure(new Variant(key, List.of(), entry.sql(), values, callerOf(key, p)));
             timings.put(key, m.medianMs());
             log.info("catalogue | {} | {} ms", key, m.medianMs());
         }
         return timings;
+    }
+
+    /** Who sends each screen's query in the app, so the drawer shows what a real request costs. */
+    private static int callerOf(String key, Params p) {
+        if (key.startsWith("me.") || key.equals("bookings.price")) {
+            return p.customerUser();
+        }
+        if (key.startsWith("provider.")) {
+            return p.providerUser();
+        }
+        if (key.startsWith("admin.")) {
+            return p.adminUser();
+        }
+        return AS_NOBODY; // the public screens
     }
 
     // ── Context for the report ──────────────────────────────

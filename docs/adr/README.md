@@ -11,5 +11,6 @@ Short records of the decisions that shape SEVAK. Each has four parts: the contex
 | [0005](0005-stored-procedures-vs-service-layer.md) | What goes in stored procedures and what goes in the service layer |
 | [0006](0006-offset-vs-keyset-pagination.md) | OFFSET pagination for most lists, keyset for the large admin list |
 | [0007](0007-jwt-authentication.md) | Stateless JWT login with one 24-hour token |
+| [0008](0008-row-level-security.md) | Row-level security, so a bug in Java can't show one user another user's data |
 
-All seven are accepted and in force.
+All eight are accepted and in force.

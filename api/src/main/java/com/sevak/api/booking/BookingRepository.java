@@ -41,14 +41,6 @@ public class BookingRepository {
         this.jdbc = jdbc;
     }
 
-    /** Lets database triggers record who made a change. Lasts until the transaction ends. */
-    public void setActor(int userId) {
-        jdbc.sql("SELECT set_config('sevak.user_id', :id, true)")
-                .param("id", String.valueOf(userId))
-                .query(String.class)
-                .single();
-    }
-
     // ── Creating a booking ──────────────────────────────────
 
     /**
