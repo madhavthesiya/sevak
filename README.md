@@ -371,7 +371,7 @@ CI runs the backend, web and end-to-end suites on every push, with a formatting 
 | Row-level security guards against bugs, not SQL injection | Every query is parameterised; RLS is the second line |
 | Rate limits are counted per server | Shared counters if there is more than one server |
 | Address coordinates are placeholders | A geocoding service |
-| Benchmarks ran on one laptop with generated data | Measure again on the live servers |
+| Benchmarks ran on one laptop with generated data | They compare variants on the same machine and data, which is what they claim. The live demo runs on free shared plans, so timing it would measure the plan, not the design; absolute numbers need dedicated hardware |
 
 ## Documentation
 
