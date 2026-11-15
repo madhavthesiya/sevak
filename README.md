@@ -178,7 +178,7 @@ The 12 central tables with their key columns. This diagram, like every schema do
 **7. A bug in Java can't show one customer another's data.**
 *Problem:* privacy rested on every query remembering `WHERE customer_id = ...` and every service checking ownership first. One miss would leak bookings, payments or addresses, and nothing would fail.
 *Solution:* PostgreSQL row-level security. The API connects as `sevak_app` (not the owner, no `BYPASSRLS`, no `TRUNCATE`, can't read password hashes) and sets the caller at the start of every transaction; policies on 16 tables decide which rows each person sees and changes. No caller means no private rows. Triggers that must see every row, like the rating cache, run as `SECURITY DEFINER` with a fixed `search_path`, and public screens get narrow windows: free slots see only busy times.
-*Proof:* [`RowLevelSecurityTest`](api/src/test/java/com/sevak/api/RowLevelSecurityTest.java) logs in as `sevak_app` and tries plain SQL against other people's rows; with RLS turned off, 15 of its 20 tests fail. The API refuses to start if its login could skip the policies. [ADR 0008](docs/adr/0008-row-level-security.md)
+*Proof:* [`RowLevelSecurityTest`](api/src/test/java/com/sevak/api/RowLevelSecurityTest.java) logs in as `sevak_app` and tries plain SQL against other people's rows; with RLS turned off, 15 of its 21 tests fail. The API refuses to start if its login could skip the policies. [ADR 0008](docs/adr/0008-row-level-security.md)
 
 Also: `Idempotency-Key` makes a retried booking return the first result; the last use of a coupon goes to exactly one of two concurrent customers; one user can't read another's data (`/me` routes, and `404` instead of `403` for other people's IDs).
 

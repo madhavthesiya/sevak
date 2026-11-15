@@ -50,7 +50,7 @@ Checks that only look at the caller's own booking (a review needs a completed bo
 
 ## Consequences
 
-- `RowLevelSecurityTest` logs in as `sevak_app` and runs plain SQL, as a buggy query would. Customers and providers see and change only their own rows; with nobody logged in no private row is visible, yet the public screens work; repository methods that trust their caller return nothing for someone else's booking. With RLS turned off, 15 of its 20 tests fail; the other 5 test grants, which don't depend on RLS.
+- `RowLevelSecurityTest` logs in as `sevak_app` and runs plain SQL, as a buggy query would. Customers and providers see and change only their own rows; with nobody logged in no private row is visible, yet the public screens work; repository methods that trust their caller return nothing for someone else's booking. With RLS turned off, 15 of its 21 tests fail; the other 6 test grants, public screens and the admin-checked leaderboard function, which don't depend on RLS.
 - Starting the real jar as `postgres` found that the first version of the startup check looked only at the role requests run as. It now refuses a privileged login too.
 - A Flyway placeholder inside a `DO $$ ... $$` block is not replaced, so the first version set the app role's password to the literal text `${app_password}`. The login test caught it.
 - Every existing test, the web unit tests and the end-to-end journeys pass with requests running as `sevak_app`.
